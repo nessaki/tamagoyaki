@@ -54,7 +54,7 @@ from bl_operators.presets import AddPresetBase
 
 
 def shapekey_presets(self, context):
-    AVASTAR_MT_shapekey_presets_menu.draw_generic(context, self.layout)
+    TAMAGOYAKI_MT_shapekey_presets_menu.draw_generic(context, self.layout)
 
 def shapekeysFromDictionary(obj, dict, update=True):
 
@@ -125,7 +125,7 @@ def add_shapekey_preset(context, filepath):
     file_preset.close()
 
 
-class AVASTAR_MT_shapekey_presets_menu(Menu):
+class TAMAGOYAKI_MT_shapekey_presets_menu(Menu):
     bl_label  = "Shapekey Presets"
     bl_description = "Shapekey Presets for the Tamagoyaki Rig"
     preset_subdir = os.path.join("tamagoyaki","shapekeys")
@@ -139,10 +139,10 @@ class AVASTAR_MT_shapekey_presets_menu(Menu):
             return
 
         row  = layout.row(align=True)
-        row.menu("AVASTAR_MT_shapekey_presets_menu")
+        row.menu("TAMAGOYAKI_MT_shapekey_presets_menu")
         row.operator("tamagoyaki.shapekey_presets_add", text="", icon=ICON_ADD)
 
-        last_select = bpy.types.AVASTAR_MT_shapekey_presets_menu.bl_label
+        last_select = bpy.types.TAMAGOYAKI_MT_shapekey_presets_menu.bl_label
         if last_select not in ["Presets", "Shapekey Presets"]:
             row  = layout.row(align=True)
             row.alignment='RIGHT'
@@ -156,7 +156,7 @@ class TamagoyakiAddPresetShapekey(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.shapekey_presets_add"
     bl_label = "Add Shapekey Preset"
     bl_description = "Create new Preset from current Shapekey settings"
-    preset_menu = "AVASTAR_MT_shapekey_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_shapekey_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","shapekeys")
 
@@ -171,11 +171,11 @@ class TamagoyakiUpdatePresetShapekey(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.shapekey_presets_update"
     bl_label = "Update Shapekey Preset"
     bl_description = "Store current Shapekey settings in last selected Preset"
-    preset_menu = "AVASTAR_MT_shapekey_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_shapekey_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","shapekeys")
 
     def invoke(self, context, event):
-        self.name = bpy.types.AVASTAR_MT_shapekey_presets_menu.bl_label
+        self.name = bpy.types.TAMAGOYAKI_MT_shapekey_presets_menu.bl_label
         print("Updating Preset", self.name)
         return self.execute(context)
 
@@ -186,7 +186,7 @@ class TamagoyakiRemovePresetShapekey(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.shapekey_presets_remove"
     bl_label = "Remove Shapekey Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "AVASTAR_MT_shapekey_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_shapekey_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","shapekeys")
 
 
@@ -224,7 +224,7 @@ def add_retarget_preset(context, filepath):
     file_preset.close()
 
 
-class AVASTAR_MT_retarget_presets_menu(Menu):
+class TAMAGOYAKI_MT_retarget_presets_menu(Menu):
     bl_label  = "Retarget Presets"
     bl_description = "Retarget Presets for the Tamagoyaki Rig"
     preset_subdir = os.path.join("tamagoyaki","targetmaps")
@@ -236,7 +236,7 @@ class TamagoyakiAddPresetRetarget(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.retarget_presets_add"
     bl_label = "Add Retarget Preset"
     bl_description = "Create new Preset from current Slider settings"
-    preset_menu = "AVASTAR_MT_retarget_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_retarget_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","targetmaps")
 
     def invoke(self, context, event):
@@ -251,11 +251,11 @@ class TamagoyakiUpdatePresetRetarget(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.retarget_presets_update"
     bl_label = "Update Retarget Preset"
     bl_description = "Retarget settings in last selected Preset"
-    preset_menu = "AVASTAR_MT_retarget_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_retarget_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","targetmaps")
 
     def invoke(self, context, event):
-        self.name = bpy.types.AVASTAR_MT_retarget_presets_menu.bl_label
+        self.name = bpy.types.TAMAGOYAKI_MT_retarget_presets_menu.bl_label
         print("Updating Preset", self.name)
         return self.execute(context)
 
@@ -267,7 +267,7 @@ class TamagoyakiRemovePresetRetarget(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.retarget_presets_remove"
     bl_label = "Remove Retarget Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "AVASTAR_MT_retarget_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_retarget_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","targetmaps")
 
 
@@ -296,7 +296,7 @@ def add_shape_preset(context, filepath):
     file_preset.close()
 
 
-class AVASTAR_MT_shape_presets_menu(Menu):
+class TAMAGOYAKI_MT_shape_presets_menu(Menu):
     bl_label  = "Shape Presets"
     bl_description = "Shape Presets for the Tamagoyaki Rig"
     preset_subdir = os.path.join("tamagoyaki","shapes")
@@ -308,7 +308,7 @@ class TamagoyakiAddPresetShape(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.shape_presets_add"
     bl_label = "Add Shape Preset"
     bl_description = "Create new Preset from current Slider settings"
-    preset_menu = "AVASTAR_MT_shape_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_shape_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","shapes")
 
@@ -323,11 +323,11 @@ class TamagoyakiUpdatePresetShape(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.shape_presets_update"
     bl_label = "Update Retarget Preset"
     bl_description = "Store current Slider settings in last selected Preset"
-    preset_menu = "AVASTAR_MT_shape_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_shape_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","shapes")
 
     def invoke(self, context, event):
-        self.name = bpy.types.AVASTAR_MT_shape_presets_menu.bl_label
+        self.name = bpy.types.TAMAGOYAKI_MT_shape_presets_menu.bl_label
         print("Updating Preset", self.name)
         return self.execute(context)
 
@@ -338,7 +338,7 @@ class TamagoyakiRemovePresetShape(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.shape_presets_remove"
     bl_label = "Remove Retarget Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "AVASTAR_MT_shape_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_shape_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","shapes")
 
 
@@ -346,15 +346,15 @@ class TamagoyakiRemovePresetShape(AddPresetBase, Operator):
 
 
 classes = (
-    AVASTAR_MT_shapekey_presets_menu,
+    TAMAGOYAKI_MT_shapekey_presets_menu,
     TamagoyakiAddPresetShapekey,
     TamagoyakiUpdatePresetShapekey,
     TamagoyakiRemovePresetShapekey,
-    AVASTAR_MT_retarget_presets_menu,
+    TAMAGOYAKI_MT_retarget_presets_menu,
     TamagoyakiAddPresetRetarget,
     TamagoyakiUpdatePresetRetarget,
     TamagoyakiRemovePresetRetarget,
-    AVASTAR_MT_shape_presets_menu,
+    TAMAGOYAKI_MT_shape_presets_menu,
     TamagoyakiAddPresetShape,
     TamagoyakiUpdatePresetShape,
     TamagoyakiRemovePresetShape,

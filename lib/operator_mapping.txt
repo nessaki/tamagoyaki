@@ -46,8 +46,8 @@ FIND_UNDEFORMABLE, bpy.ops.tamagoyaki.find_unweighted
 
 # Avatar Materials
 
-AVASTAR_MATERIAL_BAKE, bpy.ops.tamagoyaki.material_bake
-AVASTAR_MATERIAL_BAKE_CLEANUP, bpy.ops.tamagoyaki.material_bake_cleanup
+TAMAGOYAKI_MATERIAL_BAKE, bpy.ops.tamagoyaki.material_bake
+TAMAGOYAKI_MATERIAL_BAKE_CLEANUP, bpy.ops.tamagoyaki.material_bake_cleanup
 
 # Skinning Panel
 
@@ -162,7 +162,7 @@ MIRROR_BONE_WEIGHTS, bpy.ops.tamagoyaki.mirror_bone_weights
 
 # Export Collada
 
-AVASTAR_EXPORT_TROUBLE, bpy.ops.tamagoyaki.export_sl_collada
+TAMAGOYAKI_EXPORT_TROUBLE, bpy.ops.tamagoyaki.export_sl_collada
 EXPORT_SL_COLLADA, bpy.ops.tamagoyaki.export_sl_collada
 EXPORT_WARN_M001, bpy.ops.tamagoyaki.export_sl_collada
 EXPORT_WARN_M002, bpy.ops.tamagoyaki.export_sl_collada
@@ -190,5 +190,5 @@ FIRST_ANIMATION, None
 SL_SHAPES, None
 
 SKINNING_BASICS, None
-AVASTAR_BONES, None
+TAMAGOYAKI_BONES, None
 NUTS_AND_BOLTS, None

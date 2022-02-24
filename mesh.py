@@ -561,7 +561,7 @@ class PanelAvatarShapeIO(bpy.types.Panel):
     bl_category    = "Skinning"
 
     bl_label = "Avatar Shape IO"
-    bl_idname = "AVASTAR_PT_avatar_shape_io"
+    bl_idname = "TAMAGOYAKI_PT_avatar_shape_io"
     bl_context = 'object'
 
     @classmethod
@@ -587,7 +587,7 @@ class PanelAvatarShapeIO(bpy.types.Panel):
         col.operator("tamagoyaki.manage_all_shapes", icon=ICON_X, text="Manage System Meshes")
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_SHAPE_IO, id='panel_info_appearance')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_SHAPE_IO, id='panel_info_appearance')
 
     def draw(self, context):
         PanelAvatarShapeIO.draw_generic(self, context, context.active_object, self.layout)
@@ -2650,7 +2650,7 @@ but also prepares the meshes to be used with Avatar Shape'''
             meshProps = context.scene.MeshProp
             skelProps = context.scene.SkeletonProp
 
-            if self.bindSourceSelection == 'AVASTAR':
+            if self.bindSourceSelection == 'TAMAGOYAKI':
                 enforce_meshes = ["headMesh", "lowerBodyMesh", "upperBodyMesh"]
             else:
                 enforce_meshes = None
@@ -2714,7 +2714,7 @@ but also prepares the meshes to be used with Avatar Shape'''
 
                 arm.ObjectProp.slider_selector = 'SL'
                 util.set_active_object(context, active)
-                bpy.types.AVASTAR_MT_fitting_presets_menu.bl_label='Fitting Presets'
+                bpy.types.TAMAGOYAKI_MT_fitting_presets_menu.bl_label='Fitting Presets'
 
         return {'FINISHED'}
 
@@ -2892,7 +2892,7 @@ class ButtonReparentArmature(bpy.types.Operator):
 
                 arm_obj.ObjectProp.slider_selector = 'SL'
                 util.set_active_object(context, active)
-                bpy.types.AVASTAR_MT_fitting_presets_menu.bl_label='Fitting Presets'
+                bpy.types.TAMAGOYAKI_MT_fitting_presets_menu.bl_label='Fitting Presets'
 
             scope = ButtonApplyShapeSliders.exec_imp(context, [arm_obj], scope)
             active = context.scene.objects.get(active_name)
@@ -4718,7 +4718,7 @@ class UpdateTamagoyakiPopup(bpy.types.Operator):
             tamagoyaki_version, rig_version, rig_id, rig_type = util.get_version_info(armobj)
             joints = util.get_joint_cache(armobj)
             joint_count = len(joints) if joints else "no info"
-            update = rig_id != AVASTAR_RIG_ID and tamagoyaki_version != rig_version
+            update = rig_id != TAMAGOYAKI_RIG_ID and tamagoyaki_version != rig_version
             icon = ICON_ERROR if update else ICON_CHECKMARK
             if rig_version == None:
                 rig_version = "unknown"
@@ -4742,7 +4742,7 @@ class UpdateTamagoyakiPopup(bpy.types.Operator):
         col.label(text="Hint: The Update tool can only update one Rig at a time")
         col.label(text="Tip : You can update the Rigs in Object mode or in Pose mode")
         col = layout.column()
-        col.operator("wm.url_open", text="How to use the tool ...", icon=ICON_URL).url=AVASTAR_RIG_CONVERTER
+        col.operator("wm.url_open", text="How to use the tool ...", icon=ICON_URL).url=TAMAGOYAKI_RIG_CONVERTER
 
     def execute(self, context):
         self.executing = True
@@ -6016,7 +6016,7 @@ def exportCollada(context,
                 mat_images[image_node.image] = material
 
     complexity_warnings = []
-    help_page = get_help_page("AVASTAR_EXPORT_TROUBLE")
+    help_page = get_help_page("TAMAGOYAKI_EXPORT_TROUBLE")
 
 
 

@@ -84,7 +84,7 @@ def get_blender_revision():
 INDEX_COLLECTION_OBJECT=0
 INDEX_COLLECTION_HIDE=1
 
-AVASTAR_CUSTOM_SHAPES = 'tamagoyaki_custom_shapes'
+TAMAGOYAKI_CUSTOM_SHAPES = 'tamagoyaki_custom_shapes'
 
 
 
@@ -289,44 +289,44 @@ JOINT_OFFSET_TAIL_ID = 'oreltail'
 JOINT_O_HEAD_ID = 'ohead'
 JOINT_O_TAIL_ID = 'otail'
 
-AVASTAR_RIG_ID = 8
+TAMAGOYAKI_RIG_ID = 8
 BASIC_RIG = 'BASIC'
 EXTENDED_RIG = 'EXTENDED'
 REFERENCE_RIG = 'REFERENCE'
 
-MACHINIMATRIX        = "https://github.com/nessaki/tamagoyaki"
+BENTOBOX        = "https://github.com/nessaki/tamagoyaki"
 DOCUMENTATION        = "https://github.com/nessaki/tamagoyaki/wiki"
 TICKETS              = "https://github.com/nessaki/tamagoyaki/issues"
 TOOL_PARAMETER       = "addon=tamagoyaki-%s.%s.%s" % bl_info['version']
 
-AVASTAR_COLLADA        = DOCUMENTATION + "/help/io/collada-tamagoyaki/"
-AVASTAR_EXPORT_TROUBLE = DOCUMENTATION + "/reference/troubleshooting/export/"
+TAMAGOYAKI_COLLADA        = DOCUMENTATION + "/help/io/collada-tamagoyaki/"
+TAMAGOYAKI_EXPORT_TROUBLE = DOCUMENTATION + "/reference/troubleshooting/export/"
 
-AVASTAR_WORKFLOW     = DOCUMENTATION + "/help/n-panel/tamagoyaki/workflows/"
-AVASTAR_APPEARANCE   = DOCUMENTATION + "/help/n-panel/tamagoyaki/shape-editor/"
-AVASTAR_RIG_DISPLAY  = DOCUMENTATION + "/help/n-panel/tamagoyaki/rig-display/"
-AVASTAR_RIG_CONFIG   = DOCUMENTATION + "/help/n-panel/tamagoyaki/rig-config/"
-AVASTAR_RIG_CONVERTER= DOCUMENTATION + "/help/n-panel/tamagoyaki/rig-inspector/rig-update-tool/update/"
-AVASTAR_DEVKIT_MANAGER=DOCUMENTATION + "/help/n-panel/tamagoyaki/devkit_manager/"
-AVASTAR_SKINNING     = DOCUMENTATION + "/help/n-panel/tamagoyaki/skinning/"
-AVASTAR_MATERIALS    = DOCUMENTATION + "/help/n-panel/tamagoyaki/material-presets/"
-AVASTAR_WEIGHT_COPY  = DOCUMENTATION + "/help/n-panel/tamagoyaki/weight-copy/"
-AVASTAR_FITTING      = DOCUMENTATION + "/help/n-panel/tamagoyaki/the-fitting-panel/"
-AVASTAR_POSING       = DOCUMENTATION + "/help/n-panel/tamagoyaki/posing/"
-AVASTAR_TOOLS        = DOCUMENTATION + "/help/n-panel/tamagoyaki/tool-box/"
-AVASTAR_MESH_INFO    = DOCUMENTATION + "/help/n-panel/tamagoyaki/mesh-inspector/"
-AVASTAR_MAINTENANCE  = DOCUMENTATION + "/help/n-panel/tamagoyaki/maintenance/"
-AVASTAR_JOINTS       = DOCUMENTATION + "/help/properties/data/"
+TAMAGOYAKI_WORKFLOW     = DOCUMENTATION + "/help/n-panel/tamagoyaki/workflows/"
+TAMAGOYAKI_APPEARANCE   = DOCUMENTATION + "/help/n-panel/tamagoyaki/shape-editor/"
+TAMAGOYAKI_RIG_DISPLAY  = DOCUMENTATION + "/help/n-panel/tamagoyaki/rig-display/"
+TAMAGOYAKI_RIG_CONFIG   = DOCUMENTATION + "/help/n-panel/tamagoyaki/rig-config/"
+TAMAGOYAKI_RIG_CONVERTER= DOCUMENTATION + "/help/n-panel/tamagoyaki/rig-inspector/rig-update-tool/update/"
+TAMAGOYAKI_DEVKIT_MANAGER=DOCUMENTATION + "/help/n-panel/tamagoyaki/devkit_manager/"
+TAMAGOYAKI_SKINNING     = DOCUMENTATION + "/help/n-panel/tamagoyaki/skinning/"
+TAMAGOYAKI_MATERIALS    = DOCUMENTATION + "/help/n-panel/tamagoyaki/material-presets/"
+TAMAGOYAKI_WEIGHT_COPY  = DOCUMENTATION + "/help/n-panel/tamagoyaki/weight-copy/"
+TAMAGOYAKI_FITTING      = DOCUMENTATION + "/help/n-panel/tamagoyaki/the-fitting-panel/"
+TAMAGOYAKI_POSING       = DOCUMENTATION + "/help/n-panel/tamagoyaki/posing/"
+TAMAGOYAKI_TOOLS        = DOCUMENTATION + "/help/n-panel/tamagoyaki/tool-box/"
+TAMAGOYAKI_MESH_INFO    = DOCUMENTATION + "/help/n-panel/tamagoyaki/mesh-inspector/"
+TAMAGOYAKI_MAINTENANCE  = DOCUMENTATION + "/help/n-panel/tamagoyaki/maintenance/"
+TAMAGOYAKI_JOINTS       = DOCUMENTATION + "/help/properties/data/"
 RELEASE_INFO         = DOCUMENTATION + "/reference/release-changelog/"
 REFERENCE_GUIDES     = DOCUMENTATION + "/help/"
 
-AVASTAR_RIG_IMPORT   = DOCUMENTATION + "/help/rig-transfer-tool/"
-AVASTAR_SHAPE_IO     = DOCUMENTATION + "/help/properties/object/shape/io/"
-HELP_PAGE            = AVALAB + "/help/"
-AVASTAR_URL          = AVALAB + "/tamagoyaki"
-AVASTAR_REGISTER     = AVALAB + "/register-download-page/"
-AVASTAR_DOWNLOAD     = AVALAB + "/my-account/products/"
-XMLRPC_SERVICE       = AVALAB + "/xmlrpc.php"
+TAMAGOYAKI_RIG_IMPORT   = DOCUMENTATION + "/help/rig-transfer-tool/"
+TAMAGOYAKI_SHAPE_IO     = DOCUMENTATION + "/help/properties/object/shape/io/"
+HELP_PAGE            = BENTOBOX+ "/help/"
+TAMAGOYAKI_URL          = BENTOBOX+ "/tamagoyaki"
+TAMAGOYAKI_REGISTER     = BENTOBOX+ "/register-download-page/"
+TAMAGOYAKI_DOWNLOAD     = BENTOBOX+ "/my-account/products/"
+XMLRPC_SERVICE       = BENTOBOX+ "/xmlrpc.php"
 FIRST_STEPS          = DOCUMENTATION + "/reference/usermanual/first-steps/"
 
 CHECKSUM = "ava_checksum"
@@ -414,7 +414,7 @@ def get_help_page(section):
 def has_module(module_name):
     return module_name in bpy.context.preferences.addons
 
-AVASTAR_DIR    = os.path.dirname(os.path.abspath(__file__))
+TAMAGOYAKI_DIR    = os.path.dirname(os.path.abspath(__file__))
 LOCALE_DIR     = os.path.join(os.path.dirname(__file__), 'locale')
 TMP_DIR        = os.path.join(os.path.dirname(__file__), 'tmp')
 TEMPLATE_DIR   = os.path.join(os.path.dirname(__file__), 'apptemplates')
@@ -1235,7 +1235,7 @@ B_LAYER_HAND,
 B_LAYER_EXTRA
 ]
 
-B_VISIBLE_LAYERS_AVASTAR =  B_DEFAULT_POSE_LAYERS
+B_VISIBLE_LAYERS_TAMAGOYAKI =  B_DEFAULT_POSE_LAYERS
 
 B_SIMPLE_POSE_LAYERS = [ \
 B_LAYER_ORIGIN,
@@ -1560,7 +1560,7 @@ HOVER_POINTS  = ['COG', 'Pelvis', 'mPelvis']
 SLMAP = 'SL'
 MANUELMAP = 'MANUELLAB'
 GENERICMAP = 'GENERIC'
-AVASTARMAP = 'AVASTAR'
+TAMAGOYAKIMAP = 'TAMAGOYAKI'
 
 MANUEL2Tamagoyaki = {
 "upperarm_L" : "ShoulderLeft",
@@ -1853,7 +1853,7 @@ GJointType = EnumProperty(
     default='PIVOT')
 
 GSkeletonTypeItems = [
-    ('AVASTAR', 'Avatar'  , 'Create a rig for Standard Avatars  (human or creature)'),
+    ('TAMAGOYAKI', 'Avatar'  , 'Create a rig for Standard Avatars  (human or creature)'),
     ('ANIMESH', 'Animesh' , 'Create a rig for Animesh characters(human or creature)')
 ]
 
@@ -1862,9 +1862,9 @@ GSkeletonType = EnumProperty(
     name="Skeleton Type",
     description=\
 '''The Skeleton type can be:
-- AVASTAR (default, good for Avatars of any kind)
+- TAMAGOYAKI (default, good for Avatars of any kind)
 - ANIMESH (only useful for Animesh development) ''',
-    default='AVASTAR'
+    default='TAMAGOYAKI'
 )
 
 g_apply_pose = BoolProperty(
@@ -1980,11 +1980,11 @@ g_srcRigType = EnumProperty(
         (MANUELMAP,  MANUELMAP,  'Manuel Bastioni Rig\n\nWe assume the character has been imported directly from Manuellab and has not changed.'),
         (GENERICMAP, GENERICMAP, 'Generic Rig\n\nWe assume the character looks towards negative Y\nwhich means it looks at you when in Front view'),
 	(TAMAGOYAKIMAP, TAMAGOYAKIMAP, 'Tamagoyaki Rig\n\nThe character is already rigged to an Tamagoyaki or Tamagoyaki Rig\nNote: Do not use this option unless you have been instructed to set it'),
-        (AVASTARMAP, AVASTARMAP, 'Avastar Rig\n\nThe character is already rigged to an Avastar or Tamagoyaki Rig\nNote: Do not use this option unless you have been instructed to set it'),
+        (TAMAGOYAKIMAP, TAMAGOYAKIMAP, 'Avastar Rig\n\nThe character is already rigged to an Avastar or Tamagoyaki Rig\nNote: Do not use this option unless you have been instructed to set it'),
 
     ),
     name="Source Rig",
-    description="Rig Type of the active Object, can be AVASTAR, MANUELLAB, SL or Generic",
+    description="Rig Type of the active Object, can be TAMAGOYAKI, MANUELLAB, SL or Generic",
     default='SL'
 )
 

@@ -245,7 +245,7 @@ class LoggerPropListGroup(bpy.types.PropertyGroup):
     update = configure_log_level)
 
 
-class AVASTAR_UL_LoggerPropVarList(bpy.types.UIList):
+class TAMAGOYAKI_UL_LoggerPropVarList(bpy.types.UIList):
 
     def draw_item(self,
                   context,
@@ -378,13 +378,13 @@ class Tamagoyaki(AddonPreferences):
 
     username       : StringProperty(
         name       = 'User',
-        description="Your Username on the Avalab Website\n\nImportant: This is not your Secondlife User!\nWe recommend that your Avalab account name\nis different from your Avatar name in Secondlife!",
+        description="Your Username on the BENTOBOXWebsite\n\nImportant: This is not your Secondlife User!\nWe recommend that your BENTOBOXaccount name\nis different from your Avatar name in Secondlife!",
         default    =_username)
 
     password       : StringProperty(
         name       = 'Pwd',
         subtype='PASSWORD',
-        description="Your Password on the Avalab Website\n\nImportant: This is not your Secondlife Password!\nWe recommend that your Avalab account password\nis different from your Password in Secondlife!\nAlso note that the Avalab team will never(!) ask you for any password!",
+        description="Your Password on the BENTOBOXWebsite\n\nImportant: This is not your Secondlife Password!\nWe recommend that your BENTOBOXaccount password\nis different from your Password in Secondlife!\nAlso note that the BENTOBOXteam will never(!) ask you for any password!",
         default    =_password)
 
     keep_cred       : BoolProperty(
@@ -406,7 +406,7 @@ class Tamagoyaki(AddonPreferences):
 
     update_status  : EnumProperty(
         items=(
-            ('BROKEN', 'Broken', 'We could not setup the Remote caller on your system.\nPlease visit the Avalab website and\ncheck manually for new updates.'),
+            ('BROKEN', 'Broken', 'We could not setup the Remote caller on your system.\nPlease visit the BENTOBOXwebsite and\ncheck manually for new updates.'),
             ('UNKNOWN', '', 'You need to Login at Avalab\nor at least Check for Updates to see your update status'),
             ('UPTODATE', 'No new Update available', 'You have already installed the newest product version'),
             ('ONLINE', 'Up to date', 'You have already installed the newest product version'),
@@ -668,10 +668,10 @@ do not accidentally confuse this panel with the Appearance panel'''
     def draw_create_panel(self, context, box):
 
         sceneProps = context.scene.SceneProp
-        last_select = bpy.types.AVASTAR_MT_rig_presets_menu.bl_label
+        last_select = bpy.types.TAMAGOYAKI_MT_rig_presets_menu.bl_label
         row = box.row(align=True)
 
-        row.menu("AVASTAR_MT_rig_presets_menu", text=last_select )
+        row.menu("TAMAGOYAKI_MT_rig_presets_menu", text=last_select )
         row.operator("tamagoyaki.rig_presets_add", text="", icon=ICON_ADD)
         if last_select not in ["Rig Presets", "Presets"]:
             row.operator("tamagoyaki.rig_presets_update", text="", icon=ICON_FILE_REFRESH)
@@ -840,7 +840,7 @@ do not accidentally confuse this panel with the Appearance panel'''
             cols.prop(kitprop, "devkit_use_bind_pose")
             cols.prop(kitprop, "sl_bone_ends")
             cols.prop(kitprop, "sl_bone_rolls")
-            if kitprop.srcRigType == 'AVASTAR':
+            if kitprop.srcRigType == 'TAMAGOYAKI':
                 cols.prop(kitprop, "fix_reference_meshes")
 
             col = layout.column()
@@ -856,8 +856,8 @@ do not accidentally confuse this panel with the Appearance panel'''
         def draw_credentials_section(box):
             irow = box.row(align=False)
             irow.alignment='RIGHT'
-            irow.operator("wm.url_open", text="My Avalab Account",icon=ICON_BLANK1,emboss=False).url=AVASTAR_DOWNLOAD
-            irow.operator("wm.url_open", text='',icon=ICON_INFO).url=AVASTAR_DOWNLOAD
+            irow.operator("wm.url_open", text="My BENTOBOXAccount",icon=ICON_BLANK1,emboss=False).url=TAMAGOYAKI_DOWNLOAD
+            irow.operator("wm.url_open", text='',icon=ICON_INFO).url=TAMAGOYAKI_DOWNLOAD
 
             col = box.column(align=True)
 
@@ -894,7 +894,7 @@ do not accidentally confuse this panel with the Appearance panel'''
 
         def draw_logging_section(box):
             col=box.column(align=True)
-            col.template_list('AVASTAR_UL_LoggerPropVarList',
+            col.template_list('TAMAGOYAKI_UL_LoggerPropVarList',
                                     'LoggerPropList',
                                     bpy.context.window_manager,
                                     'LoggerPropList',
@@ -1158,7 +1158,7 @@ class DownloadReset(bpy.types.Operator):
 class DownloadUpdate(bpy.types.Operator):
     bl_idname = "tamagoyaki.download_update"
     bl_label  = "Download Update"
-    bl_description = "Download Tamagoyaki Update from Avalab (Freezes Blender for ~1 minute, depending on your internet)"
+    bl_description = "Download Tamagoyaki Update from BENTOBOX(Freezes Blender for ~1 minute, depending on your internet)"
 
     reset : BoolProperty(default=False, name="Reset",
         description="Reset to not logged in")
@@ -1228,7 +1228,7 @@ product_id_map = {
 class CreateReport(bpy.types.Operator):
     bl_idname = "tamagoyaki.send_report"
     bl_label  = "Create Report"
-    bl_description = "Create a Report and send the data to the Avalab website"
+    bl_description = "Create a Report and send the data to the BENTOBOXwebsite"
 
     def execute(self, context):
         import webbrowser
@@ -1275,7 +1275,7 @@ class CreateReport(bpy.types.Operator):
 class CheckForUpdates(bpy.types.Operator):
     bl_idname = "tamagoyaki.check_for_updates"
     bl_label  = "Check for Updates"
-    bl_description = "Check the Avalab Website for Tamagoyaki Update s\n\nNote: The Update Tool does not work for\nDevelopment Releases and Release Candidates"
+    bl_description = "Check the BENTOBOXWebsite for Tamagoyaki Update s\n\nNote: The Update Tool does not work for\nDevelopment Releases and Release Candidates"
 
     def execute(self, context):
         addonProps = util.getAddonPreferences()
@@ -1359,7 +1359,7 @@ class CheckForUpdates(bpy.types.Operator):
     bl_category    = "Tamagoyaki"
 
     bl_label = "Tamagoyaki %s.%s.%s" % (bl_info['version'])
-    bl_idname = "AVASTAR_PT_custom_info"
+    bl_idname = "TAMAGOYAKI_PT_custom_info"
     bl_options      = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -1396,7 +1396,7 @@ def add_rig_preset(context, filepath):
     file_preset.close()
 
 
-class AVASTAR_MT_rig_presets_menu(Menu):
+class TAMAGOYAKI_MT_rig_presets_menu(Menu):
     bl_label  = "Rig Presets"
     bl_description = "Rig Presets for the Tamagoyaki Rig\nHere you define configurations for creating Tamagoyaki Rigs.\nYou call your configurations from the the Footer of the 3DView\nNavigate to: Add -> Tamagoyaki -> ..."
     preset_subdir = os.path.join("tamagoyaki","rigs")
@@ -1407,7 +1407,7 @@ class TamagoyakiAddPresetRig(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.rig_presets_add"
     bl_label = "Add Rig Preset"
     bl_description = "Create new Preset from current Panel settings"
-    preset_menu = "AVASTAR_MT_rig_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_rig_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","rigs")
 
@@ -1422,11 +1422,11 @@ class TamagoyakiUpdatePresetRig(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.rig_presets_update"
     bl_label = "Update Rig Preset"
     bl_description = "Update active Preset from current Panel settings"
-    preset_menu = "AVASTAR_MT_rig_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_rig_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","rigs")
 
     def invoke(self, context, event):
-        self.name = bpy.types.AVASTAR_MT_rig_presets_menu.bl_label
+        self.name = bpy.types.TAMAGOYAKI_MT_rig_presets_menu.bl_label
         print("Updating Preset", self.name)
         return self.execute(context)
 
@@ -1437,7 +1437,7 @@ class TamagoyakiRemovePresetRig(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.rig_presets_remove"
     bl_label = "Remove Rig Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "AVASTAR_MT_rig_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_rig_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","rigs")
 
 
@@ -2265,7 +2265,7 @@ class PanelIKUI(bpy.types.Panel):
     bl_category    = "Rigging"
 
     bl_label       ="IK Controls"
-    bl_idname      = "AVASTAR_PT_ik_ui"
+    bl_idname      = "TAMAGOYAKI_PT_ik_ui"
 
     @classmethod
     def poll(self, context):
@@ -2613,7 +2613,7 @@ class PanelRigUI(bpy.types.Panel):
     bl_category    = "Rigging"
 
     bl_label ="Rig Controls"
-    bl_idname = "AVASTAR_PT_rig_ui"
+    bl_idname = "TAMAGOYAKI_PT_rig_ui"
 
     @classmethod
     def poll(self, context):
@@ -3305,7 +3305,7 @@ class PanelExpressions(bpy.types.Panel):
     bl_category    = "Rigging"
 
     bl_label ="Expressions"
-    bl_idname = "AVASTAR_PT_expressions"
+    bl_idname = "TAMAGOYAKI_PT_expressions"
     bl_context = 'object'
     bl_options = {'DEFAULT_CLOSED'}
 
@@ -3417,7 +3417,7 @@ class PanelAnimationExport(bpy.types.Panel):
     bl_category    = "Retarget"
 
     bl_label ="Animation Export"
-    bl_idname = "AVASTAR_PT_animation_export"
+    bl_idname = "TAMAGOYAKI_PT_animation_export"
     bl_context = 'render'
 
     @classmethod
@@ -3538,7 +3538,7 @@ class PanelAnimationExport(bpy.types.Panel):
             row.prop(armobj.AnimProp, "selected_actions")
             if armobj.AnimProp.selected_actions:
                 row.prop(armobj.AnimProp,"toggle_select")
-                layout.template_list('AVASTAR_UL_ExportActionsPropVarList',
+                layout.template_list('TAMAGOYAKI_UL_ExportActionsPropVarList',
                                  'ExportActionsList',
                                  bpy.data,
                                  'actions',
@@ -3946,7 +3946,7 @@ def fix_tamagoyaki_data_on_load(dummy):
 
         if props.rig_version_check:
             tamagoyaki_version, rig_version, rig_id, rig_type = util.get_version_info(armobj)
-            if tamagoyaki_version != rig_version and rig_id != AVASTAR_RIG_ID:
+            if tamagoyaki_version != rig_version and rig_id != TAMAGOYAKI_RIG_ID:
                 ctx = None
                 util.set_active_object(context, armobj)
                 for window in context.window_manager.windows:
@@ -4162,7 +4162,7 @@ class PanelRetargetInfo(bpy.types.Panel):
     bl_category    = "Retarget"
 
     bl_label ="Retarget"
-    bl_idname = "AVASTAR_PT_animation_retarget_info"
+    bl_idname = "TAMAGOYAKI_PT_animation_retarget_info"
 
     @classmethod
     def poll(self, context):
@@ -4215,7 +4215,7 @@ class PanelPoseTransfer(bpy.types.Panel):
     bl_category    = "Retarget"
 
     bl_label ="Retarget Transfer"
-    bl_idname = "AVASTAR_PT_animation_pose_settings"
+    bl_idname = "TAMAGOYAKI_PT_animation_pose_settings"
 
     @classmethod
     def poll(self, context):
@@ -4323,7 +4323,7 @@ class PanelMotionTransfer(bpy.types.Panel):
     bl_category    = "Retarget"
 
     bl_label ="Retarget Mapping"
-    bl_idname = "AVASTAR_PT_animation_action_transfer"
+    bl_idname = "TAMAGOYAKI_PT_animation_action_transfer"
 
     def show_interactive_mapper(self, context, box, target, selected_source_bones, selected_target_bones):
         row = box.row()
@@ -4397,8 +4397,8 @@ class PanelMotionTransfer(bpy.types.Panel):
             mcol = layout.column()
             mrow = mcol.row(align=True)
 
-            last_select = bpy.types.AVASTAR_MT_retarget_presets_menu.bl_label
-            mrow.menu("AVASTAR_MT_retarget_presets_menu", text=last_select )
+            last_select = bpy.types.TAMAGOYAKI_MT_retarget_presets_menu.bl_label
+            mrow.menu("TAMAGOYAKI_MT_retarget_presets_menu", text=last_select )
             mrow.operator("tamagoyaki.retarget_presets_add", text="", icon=ICON_ADD)
             if last_select not in ["Retarget Presets", "Presets"]:
                 mrow.operator("tamagoyaki.retarget_presets_update", text="", icon=ICON_FILE_REFRESH)
@@ -5033,8 +5033,8 @@ class AddAvatar(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class AVASTAR_MT_AddMenu(bpy.types.Menu):
-    bl_idname = "AVASTAR_MT_AddMenu"
+class TAMAGOYAKI_MT_AddMenu(bpy.types.Menu):
+    bl_idname = "TAMAGOYAKI_MT_AddMenu"
     bl_label = "Tamagoyaki..."
 
     def draw(self, context):
@@ -5047,8 +5047,8 @@ class AVASTAR_MT_AddMenu(bpy.types.Menu):
             props.file = file
 
 
-class AVASTAR_MT_AddMenu2(bpy.types.Menu):
-    bl_idname="AVASTAR_MT_AddMenu2"
+class TAMAGOYAKI_MT_AddMenu2(bpy.types.Menu):
+    bl_idname="TAMAGOYAKI_MT_AddMenu2"
     bl_label = "Tamagoyaki..."
 
     def draw(self, context):
@@ -5065,8 +5065,8 @@ class AVASTAR_MT_AddMenu2(bpy.types.Menu):
         props.rigtype = util.getAddonPreferences().target_system
 
 
-class AVASTAR_MT_DevkitMenu(bpy.types.Menu):
-    bl_idname="AVASTAR_MT_DevkitMenu"
+class TAMAGOYAKI_MT_DevkitMenu(bpy.types.Menu):
+    bl_idname="TAMAGOYAKI_MT_DevkitMenu"
     bl_label = "Devkit..."
 
     def draw(self, context):
@@ -5075,8 +5075,8 @@ class AVASTAR_MT_DevkitMenu(bpy.types.Menu):
         layout.operator("tamagoyaki.import_collada_devkit", text="Maitreya", icon=ICON_OUTLINER_OB_ARMATURE).devkit_type='MAITREYA'
         layout.operator("tamagoyaki.import_collada_devkit", text="TMP",      icon=ICON_OUTLINER_OB_ARMATURE).devkit_type='TMP'
 
-class AVASTAR_MT_TemplatesMenu(bpy.types.Menu):
-    bl_idname = "AVASTAR_MT_TemplatesMenu"
+class TAMAGOYAKI_MT_TemplatesMenu(bpy.types.Menu):
+    bl_idname = "TAMAGOYAKI_MT_TemplatesMenu"
     bl_label = "Open Template..."
 
     def draw(self, context):
@@ -5109,12 +5109,12 @@ class AVASTAR_MT_TemplatesMenu(bpy.types.Menu):
 
 
 def menu_import_tamagoyaki_devkits(self, context):
-    self.layout.menu(AVASTAR_MT_DevkitMenu.bl_idname, text="Devkit", icon=ICON_OUTLINER_OB_ARMATURE)
+    self.layout.menu(TAMAGOYAKI_MT_DevkitMenu.bl_idname, text="Devkit", icon=ICON_OUTLINER_OB_ARMATURE)
 
 
 def menu_add_tamagoyaki(self, context):
 
-    self.layout.menu(AVASTAR_MT_AddMenu.bl_idname, text="Tamagoyaki", icon=ICON_URL)
+    self.layout.menu(TAMAGOYAKI_MT_AddMenu.bl_idname, text="Tamagoyaki", icon=ICON_URL)
 
 def menu_export_collada(self, context):
 
@@ -5137,7 +5137,7 @@ def menu_add_templates(self, context):
 
     if user_templates == 'local':
         if True: #TODO: uncomment this -> get_blender_revision() < 278400:
-            self.layout.menu(AVASTAR_MT_TemplatesMenu.bl_idname, icon=ICON_OUTLINER_OB_ARMATURE)
+            self.layout.menu(TAMAGOYAKI_MT_TemplatesMenu.bl_idname, icon=ICON_OUTLINER_OB_ARMATURE)
 
 
 
@@ -5315,7 +5315,7 @@ def import_submodule(module_name, package_name='tamagoyaki'):
 classes = (
     LoggerIndexPropGroup,
     LoggerPropListGroup,
-    AVASTAR_UL_LoggerPropVarList,
+    TAMAGOYAKI_UL_LoggerPropVarList,
     Tamagoyaki,
     TamagoyakiShowPrefs,
     DownloadReload,
@@ -5324,7 +5324,7 @@ classes = (
     DownloadUpdate,
     CreateReport,
     CheckForUpdates,
-    AVASTAR_MT_rig_presets_menu,
+    TAMAGOYAKI_MT_rig_presets_menu,
     TamagoyakiAddPresetRig,
     TamagoyakiUpdatePresetRig,
     TamagoyakiRemovePresetRig,
@@ -5399,10 +5399,10 @@ classes = (
     ButtonGuessMapping,
     ButtonCopyOtherSide,
     AddAvatar,
-    AVASTAR_MT_AddMenu,
-    AVASTAR_MT_AddMenu2,
-    AVASTAR_MT_DevkitMenu,
-    AVASTAR_MT_TemplatesMenu,
+    TAMAGOYAKI_MT_AddMenu,
+    TAMAGOYAKI_MT_AddMenu2,
+    TAMAGOYAKI_MT_DevkitMenu,
+    TAMAGOYAKI_MT_TemplatesMenu,
     RetargetPropGroup,
     FactoryPresets,
     DevkitConfigurationEditor,

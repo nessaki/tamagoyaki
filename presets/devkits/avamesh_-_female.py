@@ -1,14 +1,14 @@
 import bpy
 kitprop = bpy.context.scene.UpdateRigProp
 
-kitprop.devkit_filepath=r'AVASTAR_ADDON_ROOT_FOLDER\lib\avamesh-basic.blend'
+kitprop.devkit_filepath=r'TAMAGOYAKI_ADDON_ROOT_FOLDER\lib\avamesh-basic.blend'
 kitprop.devkit_brand=r'Avamesh'
 kitprop.devkit_snail=r'Female'
-kitprop.srcRigType='AVASTAR'
+kitprop.srcRigType='TAMAGOYAKI'
 kitprop.tgtRigType='EXTENDED'
 kitprop.JointType='PIVOT'
 kitprop.tgtgJointType='PIVOT'
-kitprop.tgtgSkeletonType='AVASTAR'
+kitprop.tgtgSkeletonType='TAMAGOYAKI'
 kitprop.devkit_use_sl_head=False
 kitprop.use_male_shape=False
 kitprop.use_male_skeleton=False

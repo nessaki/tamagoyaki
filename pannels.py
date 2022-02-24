@@ -67,11 +67,11 @@ class PanelWorkflow(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Workflows"
-    bl_idname      = "AVASTAR_PT_workflow"
+    bl_idname      = "TAMAGOYAKI_PT_workflow"
     bl_options     = {'DEFAULT_CLOSED'}
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_WORKFLOW, id='panel_info_workflow')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_WORKFLOW, id='panel_info_workflow')
 
     def draw(self, context):
 
@@ -144,7 +144,7 @@ class PanelShaping(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Avatar Shape"
-    bl_idname      = "AVASTAR_PT_shaping"
+    bl_idname      = "TAMAGOYAKI_PT_shaping"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @staticmethod
@@ -233,7 +233,7 @@ class PanelShaping(bpy.types.Panel):
             supports_shapes   = sceneProps.panel_appearance_enabled
             supports_sparkles = 'toolset_pro' in dir(bpy.ops.sparkles)
 
-            last_select = bpy.types.AVASTAR_MT_shape_presets_menu.bl_label
+            last_select = bpy.types.TAMAGOYAKI_MT_shape_presets_menu.bl_label
             row = layout.row(align=True)
 
             subrow = row.row(align=True)
@@ -262,7 +262,7 @@ class PanelShaping(bpy.types.Panel):
                     subrow.operator("tamagoyaki.save_props", text="", icon=ICON_EXPORT).destination='FILE'
                     subrow.operator("tamagoyaki.load_props", text="", icon=ICON_IMPORT).source='FILE'
 
-                subrow.menu("AVASTAR_MT_shape_presets_menu", text=last_select )
+                subrow.menu("TAMAGOYAKI_MT_shape_presets_menu", text=last_select )
                 subrow.operator("tamagoyaki.shape_presets_add", text="", icon=ICON_ADD)
                 if last_select not in ["Shape Presets", "Presets"]:
                     subrow.operator("tamagoyaki.shape_presets_update", text="", icon=ICON_FILE_REFRESH)
@@ -443,7 +443,7 @@ class PanelShaping(bpy.types.Panel):
     def draw_header(self, context):
         sceneProps = context.scene.SceneProp
         row = self.layout.row(align=True)
-        util.draw_info_header(row, AVASTAR_APPEARANCE, id='panel_info_appearance', op=sceneProps, is_enabled="panel_appearance_enabled")
+        util.draw_info_header(row, TAMAGOYAKI_APPEARANCE, id='panel_info_appearance', op=sceneProps, is_enabled="panel_appearance_enabled")
 
     def draw(self, context):
         armobj = util.get_armature(context.active_object)
@@ -572,7 +572,7 @@ class PanelRigDisplay(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Rig Display"
-    bl_idname      = "AVASTAR_PT_rig_display"
+    bl_idname      = "TAMAGOYAKI_PT_rig_display"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -591,7 +591,7 @@ class PanelRigDisplay(bpy.types.Panel):
             return False
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_RIG_DISPLAY, id='panel_info_rigging')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_RIG_DISPLAY, id='panel_info_rigging')
 
     def draw(self, context):
 
@@ -662,7 +662,7 @@ class PanelRiggingConfig(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Rig Config"
-    bl_idname      = "AVASTAR_PT_rig_config"
+    bl_idname      = "TAMAGOYAKI_PT_rig_config"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -683,7 +683,7 @@ class PanelRiggingConfig(bpy.types.Panel):
             return False
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_RIG_CONFIG, id='panel_info_rigging')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_RIG_CONFIG, id='panel_info_rigging')
 
     def draw(self, context):
 
@@ -883,7 +883,7 @@ class PanelTamagoyakiRigConvert(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label = "Rig Converter"
-    bl_idname = "AVASTAR_PT_rig_convert"
+    bl_idname = "TAMAGOYAKI_PT_rig_convert"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -891,7 +891,7 @@ class PanelTamagoyakiRigConvert(bpy.types.Panel):
         return True
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_RIG_CONVERTER, id='panel_info_tools')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_RIG_CONVERTER, id='panel_info_tools')
 
     def draw(self, context):
 
@@ -930,7 +930,7 @@ class PanelTamagoyakiRigImport(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label = "Developer Kits"
-    bl_idname = "AVASTAR_PT_devkit_manager"
+    bl_idname = "TAMAGOYAKI_PT_devkit_manager"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -938,7 +938,7 @@ class PanelTamagoyakiRigImport(bpy.types.Panel):
         return True
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_DEVKIT_MANAGER, id='panel_info_devkit_manager')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_DEVKIT_MANAGER, id='panel_info_devkit_manager')
 
     def draw(self, context):
 
@@ -973,7 +973,7 @@ class PanelRigJointOffsets(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Joint Positions"
-    bl_idname      = "AVASTAR_PT_rig_joint_offsets"
+    bl_idname      = "TAMAGOYAKI_PT_rig_joint_offsets"
     bl_context     = 'data'
     bl_options     = {'DEFAULT_CLOSED'}
 
@@ -999,7 +999,7 @@ class PanelRigJointOffsets(bpy.types.Panel):
             return False
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_JOINTS, id='panel_info_rigging')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_JOINTS, id='panel_info_rigging')
 
     def draw(self, context):
         layout = self.layout
@@ -1013,7 +1013,7 @@ class PanelRigJointOffsets(bpy.types.Panel):
             row.prop(armobj.RigProp,"display_joint_tails")
             row.label(text='Offsets, values in [mm]')
             col = layout.column()
-            col.template_list('AVASTAR_UL_JointOffsetPropVarList',
+            col.template_list('TAMAGOYAKI_UL_JointOffsetPropVarList',
                              'JointOffsetList',
                              armobj.data,
                              'JointOffsetList',
@@ -1031,12 +1031,12 @@ class PanelAvatarMaterials(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Avatar Materials"
-    bl_idname      = "AVASTAR_PT_avatar_materials"
+    bl_idname      = "TAMAGOYAKI_PT_avatar_materials"
 
     bl_options      = {'DEFAULT_CLOSED'}
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_MATERIALS, id='panel_info_materials')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_MATERIALS, id='panel_info_materials')
 
     def draw(self, context):
         arm, objects = mesh.BakeMaterialsOperator.get_animated_objects(context)
@@ -1151,7 +1151,7 @@ class PanelSkinning(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Skinning"
-    bl_idname      = "AVASTAR_PT_skinning"
+    bl_idname      = "TAMAGOYAKI_PT_skinning"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -1170,7 +1170,7 @@ class PanelSkinning(bpy.types.Panel):
             return False
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_SKINNING, id='panel_info_skinning')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_SKINNING, id='panel_info_skinning')
 
     def check_bindable(self, detached):
         state = 0
@@ -1430,7 +1430,7 @@ class PanelWeightCopy(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Weight Copy"
-    bl_idname      = "AVASTAR_PT_weight_copy"
+    bl_idname      = "TAMAGOYAKI_PT_weight_copy"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -1443,7 +1443,7 @@ class PanelWeightCopy(bpy.types.Panel):
         return False
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_WEIGHT_COPY, id='panel_info_weight_copy')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_WEIGHT_COPY, id='panel_info_weight_copy')
 
     def draw(self, context):
 
@@ -1497,7 +1497,7 @@ class PanelPosing(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Posing"
-    bl_idname      = "AVASTAR_PT_panel_posing"
+    bl_idname      = "TAMAGOYAKI_PT_panel_posing"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -1569,7 +1569,7 @@ class PanelPosing(bpy.types.Panel):
 
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_POSING, id='panel_info_posing')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_POSING, id='panel_info_posing')
 
     def draw(self, context):
 
@@ -1593,7 +1593,7 @@ class PanelPosing(bpy.types.Panel):
         rts = rigtype[0].upper() + rigtype[1:].lower()
         label ="%s (%s)" % (rts,mod)
         row = layout.row(align=True)
-        util.draw_info_header(row, AVASTAR_TOOLS, msg=msg)
+        util.draw_info_header(row, TAMAGOYAKI_TOOLS, msg=msg)
         row.label(text=label)
 
         if ui_level > UI_SIMPLE:
@@ -1611,13 +1611,13 @@ class PanelPosing(bpy.types.Panel):
         if ui_level > UI_ADVANCED:
             layout.separator()
             sceneProps  = scn.SceneProp
-            last_select = bpy.types.AVASTAR_MT_armature_presets_menu.bl_label
+            last_select = bpy.types.TAMAGOYAKI_MT_armature_presets_menu.bl_label
             row = layout.row(align=True)
             row.prop(sceneProps, "armature_preset_apply_as_Restpose", text='', icon=ICON_FREEZE)
             row.prop(sceneProps, "armature_preset_apply_all_bones",   text='', icon=ICON_GROUP_BONE)
             if not sceneProps.armature_preset_apply_as_Restpose:
                 row.prop(sceneProps, "armature_preset_adjust_tails",   text='', icon=ICON_LINKED)
-            row.menu("AVASTAR_MT_armature_presets_menu", text=last_select )
+            row.menu("TAMAGOYAKI_MT_armature_presets_menu", text=last_select )
             row.operator("tamagoyaki.armature_presets_add", text="", icon=ICON_ADD)
             if last_select not in ["Armature Presets", "Presets"]:
                 row.operator("tamagoyaki.armature_presets_update", text="", icon=ICON_FILE_REFRESH)
@@ -1734,7 +1734,7 @@ class PanelFitting(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Fitting"
-    bl_idname      = "AVASTAR_PT_panel_fitting"
+    bl_idname      = "TAMAGOYAKI_PT_panel_fitting"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -1750,7 +1750,7 @@ class PanelFitting(bpy.types.Panel):
         weights.ButtonGenerateWeights.draw_fitting_section(context, self.layout)
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_FITTING, msg=panel_info_fitting)
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_FITTING, msg=panel_info_fitting)
 
 
 
@@ -1765,7 +1765,7 @@ class PanelAvatarShape(bpy.types.Panel):
     bl_category    = "Skinning"
 
     bl_label = "Avatar Shape"
-    bl_idname = "AVASTAR_PT_avatar_shape"
+    bl_idname = "TAMAGOYAKI_PT_avatar_shape"
     bl_context = 'object'
     bl_options     = {'DEFAULT_CLOSED'}
 
@@ -1793,7 +1793,7 @@ class PanelAvatarShape(bpy.types.Panel):
         else:
             icon = ICON_NONE
             id = 'panel_info_appearance'
-        util.draw_info_header(row, AVASTAR_APPEARANCE, id=id, icon=icon)
+        util.draw_info_header(row, TAMAGOYAKI_APPEARANCE, id=id, icon=icon)
 
     def draw(self, context):
         PanelShaping.draw_generic(self, context, context.active_object, self.layout)
@@ -1933,7 +1933,7 @@ class PanelTamagoyakiTool(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label = "Tool Box"
-    bl_idname = "AVASTAR_PT_tools"
+    bl_idname = "TAMAGOYAKI_PT_tools"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -1965,7 +1965,7 @@ class PanelTamagoyakiTool(bpy.types.Panel):
 
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_TOOLS, id='panel_info_tools')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_TOOLS, id='panel_info_tools')
 
 
     def draw_operator(self, col, operator_blid, text=None, icon_left=None, icon_right=None):
@@ -2168,7 +2168,7 @@ class PanelCustomExport(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Collada"
-    bl_idname      = "AVASTAR_PT_custom_collada"
+    bl_idname      = "TAMAGOYAKI_PT_custom_collada"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -2184,7 +2184,7 @@ class PanelCustomExport(bpy.types.Panel):
             return False
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_COLLADA, msg=panel_info_collada)
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_COLLADA, msg=panel_info_collada)
 
     def draw(self, context):
         layout = self.layout
@@ -2206,7 +2206,7 @@ class ArmatureInfo(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Rig Inspector"
-    bl_idname      = "AVASTAR_PT_armature_maintenance"
+    bl_idname      = "TAMAGOYAKI_PT_armature_maintenance"
     bl_options     = {'DEFAULT_CLOSED'}
 
 
@@ -2221,7 +2221,7 @@ class ArmatureInfo(bpy.types.Panel):
 
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_RIG_CONVERTER, id='panel_info_tools')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_RIG_CONVERTER, id='panel_info_tools')
 
 
     def draw(self, context):
@@ -2285,7 +2285,7 @@ class ArmatureInfo(bpy.types.Panel):
             col    = box.column(align=True)
             row    = col.row(align=True)
             row.operator("tamagoyaki.display_version_operator", text="Tamagoyaki", emboss=False)
-            row.operator("tamagoyaki.display_version_operator", text="%s(%s)" %(tamagoyaki_version, AVASTAR_RIG_ID), emboss=False)
+            row.operator("tamagoyaki.display_version_operator", text="%s(%s)" %(tamagoyaki_version, TAMAGOYAKI_RIG_ID), emboss=False)
 
             if rig_version != None:
                 row    = col.row(align=True)
@@ -2296,7 +2296,7 @@ class ArmatureInfo(bpy.types.Panel):
                 row.operator("tamagoyaki.display_rigversion_operator", text="Rig", emboss=False)
                 row.operator("tamagoyaki.display_rigversion_operator", text="unknown (%s)" %(rig_id), emboss=False)
 
-            if rig_version != tamagoyaki_version and rig_id != AVASTAR_RIG_ID:
+            if rig_version != tamagoyaki_version and rig_id != TAMAGOYAKI_RIG_ID:
                 row    = col.row(align=True)
                 row.operator("tamagoyaki.version_mismatch", text='Outdated Rig', icon=ICON_ERROR, emboss=False)
         else:
@@ -2394,7 +2394,7 @@ class PanelMeshInfo(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Mesh Inspector"
-    bl_idname      = "AVASTAR_PT_mesh_inspector"
+    bl_idname      = "TAMAGOYAKI_PT_mesh_inspector"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -2406,7 +2406,7 @@ class PanelMeshInfo(bpy.types.Panel):
 
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_MESH_INFO, msg=panel_info_mesh)
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_MESH_INFO, msg=panel_info_mesh)
 
     def draw(self, context):
 
@@ -2680,7 +2680,7 @@ class PanelTamagoyakiUpdate(bpy.types.Panel):
     bl_category = "Tamagoyaki"
 
     bl_label    = "Maintenance"
-    bl_idname   = "AVASTAR_PT_update_migrate"
+    bl_idname   = "TAMAGOYAKI_PT_update_migrate"
     bl_options  = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -2688,7 +2688,7 @@ class PanelTamagoyakiUpdate(bpy.types.Panel):
         return True
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_MAINTENANCE, id='panel_info_register')
+        util.draw_info_header(self.layout.row(), TAMAGOYAKI_MAINTENANCE, id='panel_info_register')
 
     def draw(self, context):
 
@@ -2736,7 +2736,7 @@ class PanelTamagoyakiUpdate(bpy.types.Panel):
         col.prop(addonProps, "update_status", text='', emboss=False, icon=ICON_NONE)
 
         col = box.column(align=True)
-        col.operator("wm.url_open", text="Open My Download page", icon=ICON_URL).url=AVASTAR_DOWNLOAD
+        col.operator("wm.url_open", text="Open My Download page", icon=ICON_URL).url=TAMAGOYAKI_DOWNLOAD
 
 class PanelRiggingInfo(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
@@ -2744,7 +2744,7 @@ class PanelRiggingInfo(bpy.types.Panel):
     bl_category    = "Rigging"
 
     bl_label ="Rigging"
-    bl_idname = "AVASTAR_PT_animation_rigging_info"
+    bl_idname = "TAMAGOYAKI_PT_animation_rigging_info"
 
     @classmethod
     def poll(self, context):
@@ -2803,7 +2803,7 @@ class PanelRigLayers(bpy.types.Panel):
     bl_category    = "Rigging"
 
     bl_label ="Mesh display"
-    bl_idname = "AVASTAR_PT_rig_layers"
+    bl_idname = "TAMAGOYAKI_PT_rig_layers"
     bl_context = 'data'
 
     @classmethod

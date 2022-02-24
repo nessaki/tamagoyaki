@@ -135,7 +135,7 @@ def smart_bone_connector(armobj, rigType, jointType):
 
     return
 
-def createAvatar(context, name="Avatar", quads=False, use_restpose=False, no_mesh=False, rigType='EXTENDED', jointType='PIVOT', skeletonType='AVASTAR', max_param_id=-1, use_welding=True, mesh_ids=None):
+def createAvatar(context, name="Avatar", quads=False, use_restpose=False, no_mesh=False, rigType='EXTENDED', jointType='PIVOT', skeletonType='TAMAGOYAKI', max_param_id=-1, use_welding=True, mesh_ids=None):
     from . import propgroups
     use_restpose = use_restpose or skeletonType == 'ANIMESH'
     with_meshes = not no_mesh
@@ -172,7 +172,7 @@ def createAvatar(context, name="Avatar", quads=False, use_restpose=False, no_mes
     arm_obj = create_empty_armature(context, name, display_type='STICK')
 
 
-    arm_obj['tamagoyaki'] = AVASTAR_RIG_ID
+    arm_obj['tamagoyaki'] = TAMAGOYAKI_RIG_ID
     arm_obj['version'] = bl_info['version']
     arm_obj.RigProp.RigType   = rigType
     arm_obj.RigProp.JointType = jointType
@@ -258,7 +258,7 @@ def generate_system_meshes(context, arm_obj, armname, rigType, mesh_ids, progres
     arm_obj.RigProp.Hand_Posture = HAND_POSTURE_DEFAULT
 
     generated = {}
-    AVASTAR_MESHES = {}
+    TAMAGOYAKI_MESHES = {}
     meshes = add_container(context, arm_obj, armname+"_meshes")
 
     for mesh in MESHES.values():
@@ -269,7 +269,7 @@ def generate_system_meshes(context, arm_obj, armname, rigType, mesh_ids, progres
             continue
 
         obj = createMesh(context, name, mesh)
-        AVASTAR_MESHES[name]=obj
+        TAMAGOYAKI_MESHES[name]=obj
 
         obj["weight"]       = "locked"
         obj["tamagoyaki-mesh"] = 1
@@ -307,7 +307,7 @@ def generate_system_meshes(context, arm_obj, armname, rigType, mesh_ids, progres
     for name, obj in generated.items():
         addGeneratedWeights(context, arm_obj, obj, name, rigType)
 
-    return AVASTAR_MESHES
+    return TAMAGOYAKI_MESHES
 
 
 def create_empty_armature(context, name, display_type='STICK'):

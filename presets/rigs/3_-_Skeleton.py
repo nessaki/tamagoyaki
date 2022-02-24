@@ -6,4 +6,4 @@ sceneProps  = bpy.context.scene.SceneProp
 sceneProps.tamagoyakiMeshType   = 'NONE'
 sceneProps.tamagoyakiRigType    = 'EXTENDED'
 sceneProps.tamagoyakiJointType  = 'PIVOT'
-sceneProps.tamagoyakiSkeletonType = 'AVASTAR'
+sceneProps.tamagoyakiSkeletonType = 'TAMAGOYAKI'

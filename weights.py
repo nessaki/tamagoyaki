@@ -797,7 +797,7 @@ util.ensure_mode_is(amode)
     )
     file_preset.close()
 
-class AVASTAR_MT_fitting_presets_menu(Menu):
+class TAMAGOYAKI_MT_fitting_presets_menu(Menu):
     bl_label  = "Fitting Presets"
     bl_description = "Fitting Presets for custom attachments"
     preset_subdir = os.path.join("tamagoyaki","fittings")
@@ -808,7 +808,7 @@ class TamagoyakiAddPresetFitting(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.fitting_presets_add"
     bl_label = "Add Fitting Preset"
     bl_description = "Create new Preset from current Fitting Slider settings"
-    preset_menu = "AVASTAR_MT_fitting_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_fitting_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","fittings")
 
@@ -823,11 +823,11 @@ class TamagoyakiUpdatePresetFitting(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.fitting_presets_update"
     bl_label = "Update Fitting Preset"
     bl_description = "Store current Slider settings in last selected Preset"
-    preset_menu = "AVASTAR_MT_fitting_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_fitting_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","fittings")
 
     def invoke(self, context, event):
-        self.name = bpy.types.AVASTAR_MT_fitting_presets_menu.bl_label
+        self.name = bpy.types.TAMAGOYAKI_MT_fitting_presets_menu.bl_label
         print("Updating Preset", self.name)
         return self.execute(context)
 
@@ -838,7 +838,7 @@ class TamagoyakiRemovePresetFitting(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.fitting_presets_remove"
     bl_label = "Remove Fitting Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "AVASTAR_MT_fitting_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_fitting_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","fittings")
 
 def setPresetFitting(state):
@@ -2747,9 +2747,9 @@ class ButtonGenerateWeights(bpy.types.Operator):
 
         bones = armobj.data.bones
 
-        last_select = bpy.types.AVASTAR_MT_fitting_presets_menu.bl_label
+        last_select = bpy.types.TAMAGOYAKI_MT_fitting_presets_menu.bl_label
         row = col.row(align=True)
-        row.menu("AVASTAR_MT_fitting_presets_menu", text=last_select )
+        row.menu("TAMAGOYAKI_MT_fitting_presets_menu", text=last_select )
         row.operator("tamagoyaki.fitting_presets_add", text="", icon=ICON_ADD)
         if last_select not in ["Fitting Presets", "Presets"]:
             row.operator("tamagoyaki.fitting_presets_update", text="", icon=ICON_FILE_REFRESH)
@@ -2931,7 +2931,7 @@ class ButtonGenerateWeights(bpy.types.Operator):
                 if ob.ObjectProp.is_selected:
                     selected_mesh_count += 1
 
-            col.template_list('AVASTAR_UL_MeshesPropVarList',
+            col.template_list('TAMAGOYAKI_UL_MeshesPropVarList',
                               'MeshesPropList',
                                bpy.context.window_manager,
                               'MeshesPropList',
@@ -3012,7 +3012,7 @@ class ButtonGenerateWeights(bpy.types.Operator):
                 draw_include_binding(selection_box, skelProp, weightBoneSelection, armobj.RigProp.RigType)
             can_run = (enabled_count != 0 and selected_count != 0)
 
-        if weightSourceSelection in ['COPY', 'AVASTAR', 'EXTENDED']:
+        if weightSourceSelection in ['COPY', 'TAMAGOYAKI', 'EXTENDED']:
             can_run = ButtonGenerateWeights.display_weights_from_meshes(context, armobj, op, selection_box, weightSourceSelection)
 
         if True:
@@ -3311,7 +3311,7 @@ class MeshesProp(bpy.types.PropertyGroup):
     select : BoolProperty()
     name : StringProperty()
 
-class AVASTAR_UL_MeshesPropVarList(bpy.types.UIList):
+class TAMAGOYAKI_UL_MeshesPropVarList(bpy.types.UIList):
 
     def draw_item(self,
                   context,
@@ -3488,7 +3488,7 @@ def create_weight_groups(wcontext, for_bind):
             c = util.removeEmptyWeightGroups(target, depsgraph)
 
 
-    elif copy_type in ['COPY', 'AVASTAR']:
+    elif copy_type in ['COPY', 'TAMAGOYAKI']:
 
         armobj = util.get_armature(target)
         weight_sources = wcontext.weight_sources
@@ -3603,7 +3603,7 @@ def copy_mesh_weights(operator,
         return obj != target and is_visible(obj) and is_regular_mesh(obj) #and is_in_scene_layer(obj)
 
     def is_valid_source(obj, copy_type):
-        return obj != target and (copy_type != 'AVASTAR' or "tamagoyaki-mesh" in obj)
+        return obj != target and (copy_type != 'TAMAGOYAKI' or "tamagoyaki-mesh" in obj)
 
     def is_visible(obj):
         return not util.object_hide_get(obj)
@@ -3668,7 +3668,7 @@ def copy_mesh_weights(operator,
             obname="your current Selection"
 
         if other_mesh_count == 0:
-            if copy_type == 'AVASTAR':
+            if copy_type == 'TAMAGOYAKI':
                 msg = msg_no_tamagoyaki_meshes_to_copy_from
             else:
                 msg = msg_no_objects_to_copy_from
@@ -4167,7 +4167,7 @@ classes = (
     ButtonRegeneratePhysics,
     ButtonEnablePhysics,
     ButtonGeneratePhysics,
-    AVASTAR_MT_fitting_presets_menu,
+    TAMAGOYAKI_MT_fitting_presets_menu,
     TamagoyakiAddPresetFitting,
     TamagoyakiUpdatePresetFitting,
     TamagoyakiRemovePresetFitting,
@@ -4184,7 +4184,7 @@ classes = (
     ButtonGenerateWeights,
     MeshesIndexPropGroup,
     MeshesProp,
-    AVASTAR_UL_MeshesPropVarList,
+    TAMAGOYAKI_UL_MeshesPropVarList,
     DisplayWeightsPerVert,
     DisplayInconsistentWeights
 )

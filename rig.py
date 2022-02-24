@@ -3176,7 +3176,7 @@ def add_armature_preset(context, filepath):
     file_preset.write("rig.armatureFromDictionary(context, armobj, dict)\n")
     file_preset.close()
 
-class AVASTAR_MT_armature_presets_menu(Menu):
+class TAMAGOYAKI_MT_armature_presets_menu(Menu):
     bl_label  = "Armature Presets"
     bl_description = "Armature Presets (bone configurations)\nStore the editbone matrix values for a complete Armature\nThis can later be used\n\n- as Restpose template to setup other Armatures\n- as pose template for posing another armature."
     preset_subdir = os.path.join("tamagoyaki","armatures")
@@ -3187,7 +3187,7 @@ class TamagoyakiAddPresetArmature(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.armature_presets_add"
     bl_label = "Add Armature Preset"
     bl_description = "Create new Preset from current Rig"
-    preset_menu = "AVASTAR_MT_armature_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_armature_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","armatures")
 
@@ -3202,11 +3202,11 @@ class TamagoyakiUpdatePresetArmature(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.armature_presets_update"
     bl_label = "Update Armature Preset"
     bl_description = "Store current Slider settings in last selected Preset"
-    preset_menu = "AVASTAR_MT_armature_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_armature_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","armatures")
 
     def invoke(self, context, event):
-        self.name = bpy.types.AVASTAR_MT_armature_presets_menu.bl_label
+        self.name = bpy.types.TAMAGOYAKI_MT_armature_presets_menu.bl_label
         print("Updating Preset", self.name)
         return self.execute(context)
 
@@ -3217,7 +3217,7 @@ class TamagoyakiRemovePresetArmature(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.armature_presets_remove"
     bl_label = "Remove Armature Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "AVASTAR_MT_armature_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_armature_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","armatures")
 
 def getActiveArmature(context):
@@ -5230,7 +5230,7 @@ classes = (
     TamagoyakiMergeWeights,
     FocusOnBone,
     DrawOffsets,
-    AVASTAR_MT_armature_presets_menu,
+    TAMAGOYAKI_MT_armature_presets_menu,
     TamagoyakiAddPresetArmature,
     TamagoyakiUpdatePresetArmature,
     TamagoyakiRemovePresetArmature,

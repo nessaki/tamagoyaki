@@ -230,7 +230,7 @@ to get more information about each option.
 panel_info_debug_settings = '''Debug settings|This section is only good for debugging!
 Please do never change these settings unless you exactly know what you are doing'''
 
-panel_info_credentials = '''Credentials|If you have an account on the Avalab Website
+panel_info_credentials = '''Credentials|If you have an account on the BENTOBOXWebsite
 and if you have registered your Tamagoyaki purchase then
 you can get inbuilt Updates (see the Tamagoyaki Maintenance panel)
 You can plakce your credentials here if you do not want to
@@ -265,7 +265,7 @@ hints:
 1.) Create Avatar (with Tris or with Quads)
 2.) Rig Type Basic (Legacy Rig) or Externded (Bento Rig)
 3.) Joint Type Pivot(recommended) or Pos(only rarely needed)
-4.) Skeleton Type AVASTAR or ANIMESH
+4.) Skeleton Type TAMAGOYAKI or ANIMESH
 
 When you reset to Factory (see above), then Tamagoyaki ensures
 the settings are restored like from a fresh Tamagoyaki Installation.
@@ -783,7 +783,7 @@ possible codes:
 - 407 No Version provided
 - 409 No purchaseid for given user
 
-Important: Please use your Avalab account name to login.
+Important: Please use your BENTOBOXaccount name to login.
 Just using the email address will log you in, but you can not use
 it for downloading anything from the server.
 

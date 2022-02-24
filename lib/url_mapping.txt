@@ -46,8 +46,8 @@ FIND_UNDEFORMABLE, help/n-panel/tamagoyaki/rig-config
 
 # Avatar Materials
 
-AVASTAR_MATERIAL_BAKE, help/n-panel/tamagoyaki/material-presets
-AVASTAR_MATERIAL_BAKE_CLEANUP, help/n-panel/tamagoyaki/material-presets
+TAMAGOYAKI_MATERIAL_BAKE, help/n-panel/tamagoyaki/material-presets
+TAMAGOYAKI_MATERIAL_BAKE_CLEANUP, help/n-panel/tamagoyaki/material-presets
 
 # Skinning Panel
 
@@ -162,7 +162,7 @@ MIRROR_BONE_WEIGHTS, help/io/animation-exporter
 
 # Export Collada
 
-AVASTAR_EXPORT_TROUBLE, help/io/collada-tamagoyaki
+TAMAGOYAKI_EXPORT_TROUBLE, help/io/collada-tamagoyaki
 EXPORT_SL_COLLADA, help/io/collada-tamagoyaki
 EXPORT_WARN_M001, help/io/collada-tamagoyaki/m001
 EXPORT_WARN_M002, help/io/collada-tamagoyaki/m002
@@ -189,5 +189,5 @@ FIRST_ANIMATION, reference/usermanual/my-first-animation
 SL_SHAPES, reference/usermanual/use-sl-shapes
 
 SKINNING_BASICS, knowledge/skinning-basics
-AVASTAR_BONES, knowledge/tamagoyaki-bones
+TAMAGOYAKI_BONES, knowledge/tamagoyaki-bones
 NUTS_AND_BOLTS, knowledge/nutsbolts-of-fitted-mesh

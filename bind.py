@@ -251,7 +251,7 @@ def add_bind_preset(context, filepath):
     file_preset.close()
 
 
-class AVASTAR_MT_bind_presets_menu(Menu):
+class TAMAGOYAKI_MT_bind_presets_menu(Menu):
     bl_label  = "Bind Presets"
     bl_description = "Bind Presets for the Tamagoyaki Rig"
     preset_subdir = os.path.join("tamagoyaki","bindings")
@@ -262,7 +262,7 @@ class TamagoyakiAddPresetBind(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.bind_presets_add"
     bl_label = "Add Bind Preset"
     bl_description = "Create new Preset from current Slider settings"
-    preset_menu = "AVASTAR_MT_bind_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_bind_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","bindings")
 
@@ -277,11 +277,11 @@ class TamagoyakiUpdatePresetBind(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.bind_presets_update"
     bl_label = "Update Bind Preset"
     bl_description = "Store current Slider settings in last selected Preset"
-    preset_menu = "AVASTAR_MT_bind_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_bind_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","bindings")
 
     def invoke(self, context, event):
-        self.name = bpy.types.AVASTAR_MT_bind_presets_menu.bl_label
+        self.name = bpy.types.TAMAGOYAKI_MT_bind_presets_menu.bl_label
         log.info("Updating Preset", self.name)
         return self.execute(context)
 
@@ -292,7 +292,7 @@ class TamagoyakiRemovePresetBind(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.bind_presets_remove"
     bl_label = "Remove Bind Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "AVASTAR_MT_bind_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_bind_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","bindings")
 
 def cleanup_binding(context, armobj, sync=True, with_ik_bones=False, with_joint_tails=True, delete_only=False, only_meta=False):
@@ -847,7 +847,7 @@ classes = (
     TamagoyakiDisplayInRestpose,
     TamagoyakiCleanupBinding,
     TamagoyakiAlterToRestpose,
-    AVASTAR_MT_bind_presets_menu,
+    TAMAGOYAKI_MT_bind_presets_menu,
     TamagoyakiAddPresetBind,
     TamagoyakiUpdatePresetBind,
     TamagoyakiRemovePresetBind,

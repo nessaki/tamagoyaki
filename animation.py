@@ -271,7 +271,7 @@ class ExportActionsProp(bpy.types.PropertyGroup):
                 default = False,
     )
 
-class AVASTAR_UL_ExportActionsPropVarList(bpy.types.UIList):
+class TAMAGOYAKI_UL_ExportActionsPropVarList(bpy.types.UIList):
 
     def draw_item(self,
                   context,
@@ -316,7 +316,7 @@ class JointOffsetProp(bpy.types.PropertyGroup):
                 description = "Location of Joint in restpose (Object Local Space)",
     )
 
-class AVASTAR_UL_JointOffsetPropVarList(bpy.types.UIList):
+class TAMAGOYAKI_UL_JointOffsetPropVarList(bpy.types.UIList):
 
     def draw_item(self,
                   context,
@@ -3075,10 +3075,10 @@ def tag_redraw(type='ALL'):
 classes = (
     ExportActionsPropIndex,
     ExportActionsProp,
-    AVASTAR_UL_ExportActionsPropVarList,
+    TAMAGOYAKI_UL_ExportActionsPropVarList,
     JointOffsetPropIndex,
     JointOffsetProp,
-    AVASTAR_UL_JointOffsetPropVarList,
+    TAMAGOYAKI_UL_JointOffsetPropVarList,
     AvatarAnimationTrimOp,
     ImportAvatarAnimationOp,
     ButtonTransfereMotion,

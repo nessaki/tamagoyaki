@@ -403,9 +403,9 @@ def add_custom_shape(name, collection):
     return obj, mesh
 
 def get_custom_shape_collection():
-    collection = bpy.data.collections.get(AVASTAR_CUSTOM_SHAPES)
+    collection = bpy.data.collections.get(TAMAGOYAKI_CUSTOM_SHAPES)
     if not collection:
-        collection = bpy.data.collections.new(AVASTAR_CUSTOM_SHAPES)
+        collection = bpy.data.collections.new(TAMAGOYAKI_CUSTOM_SHAPES)
         collection.hide_render=True
         collection.hide_select=True
         collection.hide_viewport=True
