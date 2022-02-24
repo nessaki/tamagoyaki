@@ -1,12 +1,11 @@
 ### Copyright     2021 The Machinimatrix Team
-### Modifications 2022 Nessaki
+###
 ### This file is part of Tamagoyaki
 ###
 ### The module has been created based on this document:
 ### A Beginners Guide to Dual-Quaternions:
 ### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
 ###
-
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -24,6 +23,7 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # ##### END GPL LICENSE BLOCK #####
+
 from mathutils import Vector, Matrix, Euler, Quaternion
 
 class DualQuaternion():
@@ -54,6 +54,7 @@ class DualQuaternion():
             else:
                 raise #Illegal combination of constructor parameters
 
+
     def __str__(self):
         return "real: %s\ndual:%s" % (self.quat_real, self.quat_dual)
 
@@ -64,19 +65,23 @@ class DualQuaternion():
     def dot(dqa, dqb):
         return Quaternion.dot( dqa.quat_real, dqb.quat_real )
 
+
     def scaled(self, factor):
         dqa = DualQuaternion(self.quat_real, self.quat_dual)
         dqa.scale(factor)
         return dqa
 
+
     def scale(self, factor):
         self.quat_real *= factor
         self.quat_dual *= factor
+
 
     def normalized(self):
         dqa = DualQuaternion(self.quat_real, self.quat_dual)
         dqa.normalize()
         return dqa
+
 
     def normalize(self):
         mag = Quaternion.dot( self.quat_real, self.quat_real )
@@ -86,19 +91,23 @@ class DualQuaternion():
         else:
             raise
 
+
     def conjugated(self):
         dqa = DualQuaternion(self.quat_real, self.quat_dual)
         dqa.conjugate()
         return dqa
 
+
     def conjugate(self):
         Quaternion.conjugate( self.quat_real )
         Quaternion.conjugate( self.quat_dual )
+
 
     def __matmul__(self, rhs):
         quatr = rhs.quat_real @ self.quat_real
         quatd = rhs.quat_dual @ self.quat_real + rhs.quat_real @ self.quat_dual
         return DualQuaternion(quatr, quatd)
+
 
     @staticmethod
     def __add__(self, rhs):
@@ -106,12 +115,15 @@ class DualQuaternion():
         quatd = self.quat_dual + rhs.quat_dual
         return DualQuaternion(quatr, quatd)
 
+
     def to_rotation(self):
         return self.quat_real
+
 
     def to_translation(self):
         t = (self.quat_dual * 2) @ Quaternion.conjugated(self.quat_real)
         return Vector((t.x, t.y, t.z))
+
 
     def to_matrix(self):
         q = DualQuaternion.normalized( self )

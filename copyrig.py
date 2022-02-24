@@ -1,8 +1,7 @@
-### Copyright 2016, Matrice Laville
-### Modifications: Nessaki 2022
+### Copyright     2021 The Machinimatrix Team
 ###
 ### This file is part of Tamagoyaki
-### 
+###
 ### The module has been created based on this document:
 ### A Beginners Guide to Dual-Quaternions:
 ### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
@@ -94,7 +93,7 @@ def copy_collection(toCollection, fromCollection):
 def set_joint_data(armobj, joint_data):
     sl_joints = joint_data[0]
     JointOffsetList = joint_data[1]
-    
+
     if sl_joints:
         armobj['sl_joints'] = sl_joints
     if JointOffsetList:
@@ -124,7 +123,7 @@ def copy_tamagoyaki(self,
     scene = context.scene
     util.set_active_object(context, src_armature)
     util.ensure_mode_is('OBJECT')
-    
+
     action = src_armature.animation_data.action
     shape_data = shape.copy_to_scene(scene, src_armature).copy()
     shape.reset_to_restpose(context, src_armature)
@@ -190,7 +189,7 @@ def copy_tamagoyaki(self,
 
         if self.transferMeshes:
             log.info("| Copy Meshes from [%s] to [%s]" % (src_armature.name, arm.name) )
-            self.move_objects_to_target(context, self.sources, arm, self.srcRigType)  # copy from Avastar to Avastar
+            self.move_objects_to_target(context, self.sources, arm, self.srcRigType)  # copy from Tamagoyaki to Tamagoyaki
 
         if self.appearance_enabled:
             log.info("| Attach Sliders to Armature [%s]" % (arm.name) )
@@ -336,7 +335,7 @@ def convert_to_tamagoyaki(self,
     util.ensure_mode_is('POSE')
     bpy.ops.pose.select_all(action="SELECT")
     src_armature.data.pose_position = 'POSE'
-    bpy.ops.pose.paste()  
+    bpy.ops.pose.paste()
     log.warning("copyrig-convert-tamagoyaki: paste pose from pose buffer to %s" % (active_obj.name) )
 
     util.ensure_mode_is(self.active_mode)
@@ -356,7 +355,7 @@ def update_tamagoyaki(self,
         skeys = child.data.shape_keys
         if not skeys:
             return
-        
+
 
 
         animdata = skeys.animation_data
@@ -425,11 +424,11 @@ def update_tamagoyaki(self,
     skeletonType = self.SkeletonType
 
     log.warning("+========================================================================")
-    log.warning("| update     : %s Rig Update for Armature \"%s\"" % (tgt_rig_type, armature_name))
-    log.warning("| joint type : %s" % (jointType) )
+    log.warning("| update        : %s Rig Update for Armature \"%s\"" % (tgt_rig_type, armature_name))
+    log.warning("| joint type    : %s" % (jointType) )
     log.warning("| Skeleton type : %s" % (skeletonType) )
     if self.must_rebind():
-        log.warning("| rebinding  : %d rebind candidates" % len(self.sources))
+        log.warning("| rebinding     : %d rebind candidates" % len(self.sources))
     log.warning("+========================================================================")
 
     no_mesh = not mesh_repair
@@ -441,7 +440,7 @@ def update_tamagoyaki(self,
     util.ensure_mode_is('EDIT')
     use_bind_pose = util.use_sliders(context) and src_armature.RigProp.rig_use_bind_pose
     if rig.has_modified_joint_info(src_armature):
-        bpy.ops.avastar.armature_jointpos_store(store_as_bind_pose=False)
+        bpy.ops.tamagoyaki.armature_jointpos_store(store_as_bind_pose=False)
 
     util.ensure_mode_is('OBJECT')
     if not src_armature.animation_data:
@@ -480,7 +479,7 @@ def update_tamagoyaki(self,
         else:
             shape.manage_tamagoyaki_shapes(context, src_armature, [])
 
-    log.warning("| Creating the new Avastar Rig")
+    log.warning("| Creating the new Tamagoyaki Rig")
     tgt_armature = create.createAvatar(context, quads=True, use_restpose=True, rigType=tgt_rig_type, jointType=jointType, skeletonType=skeletonType, no_mesh=no_mesh)
     util.copy_collection_visibility(context, tgt_armature, src_armature)
 
@@ -524,7 +523,6 @@ def update_tamagoyaki(self,
         if self.sl_bone_rolls:
             rig.restore_source_bone_rolls(arm)
 
-      
         if arm.RigProp.rig_use_bind_pose != use_bind_pose:
             arm.RigProp.rig_use_bind_pose = use_bind_pose
 
@@ -533,7 +531,7 @@ def update_tamagoyaki(self,
 
         log.debug("| move objects to target")
         all_children = util.getChildren(src_armature)
-        self.move_objects_to_target(context, all_children, arm, self.srcRigType, src_armature) # update avastar
+        self.move_objects_to_target(context, all_children, arm, self.srcRigType, src_armature) # update tamagoyaki
 
 
         if self.appearance_enabled:
@@ -683,7 +681,7 @@ def convert_sl(self,
 
         util.set_active_object(context, tgt_armature)
         if tgt_armature.ShapeDrivers.male_80 != self.use_male_shape:
-            propgroups.gender_update(tgt_armature, self.use_male_shape) # implicit call to refreshAvastarShape
+            propgroups.gender_update(tgt_armature, self.use_male_shape) # implicit call to refreshTamagoyakiShape
         else:
             shape.refreshTamagoyakiShape(context)
 
@@ -765,7 +763,7 @@ def convert_sl(self,
     util.set_active_object(context, active_obj)
     util.object_select_set(active_obj, actsel)
     util.ensure_mode_is(self.active_mode)
-    
+
     if inplace_transfer:
         log.warning("convert sl:| Finish %s Inplace Rig Migration with new rig '%s'" % (tgt_rig_type, active_obj.name))
     else:
@@ -835,7 +833,7 @@ def import_blend(context, filepath):
             util.link_object(context, ch)
             link_recursive(ch, indent=indent+4)
         if ob.type == 'EMPTY':
-           util.object_hide_set(ob, True)
+            util.object_hide_set(ob, True)
 
     before = [o for o in scene.objects]
     with bpy.data.libraries.load(filepath) as (data_from, data_to):
@@ -863,7 +861,7 @@ def import_rig_from_file(context, prop):
     if not os.path.exists(shapefile):
         shapefile = ""
     ext = os.path.splitext(filepath)[1]
-    
+
     log.warning("Import Devkit from file %s with extension %s" % (filepath, ext) )
 
     if ext == '.dae':
@@ -883,7 +881,7 @@ def import_rig_from_file(context, prop):
     armobj = arms[0]
 
     util.set_active_object(context, armobj)
-    
+
     scale = prop.devkit_scale
     if scale != 1.0:
         armobj.scale = scale*armobj.scale
@@ -897,6 +895,7 @@ def import_rig_from_file(context, prop):
     prop.handleTargetMeshSelection = 'HIDE'
 
     armobj.RigProp.JointType = prop.JointType
+
     armobj.RigProp.rig_use_bind_pose = prop.devkit_use_bind_pose
     use_male_shape = scene.UpdateRigProp.use_male_shape
     use_male_skeleton = scene.UpdateRigProp.use_male_skeleton
@@ -908,6 +907,7 @@ def import_rig_from_file(context, prop):
         use_male_shape    = False,
         use_male_skeleton = use_male_skeleton,
         JointType     = prop.tgtJointType,
+        SkeletonType  = armobj.RigProp.SkeletonType,
         srcRigType    = prop.srcRigType,
         tgtRigType    = prop.tgtRigType,
         sl_bone_ends  = prop.sl_bone_ends,
@@ -1013,7 +1013,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
     )
 
     appearance_enabled = True
-    
+
     applyRotation : const.g_applyRotation
     use_male_shape : const.g_use_male_shape
     use_male_skeleton : const.g_use_male_skeleton
@@ -1075,7 +1075,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
         items=(
             ('DEFORM_TO_ANIMATION',   'Pelvis', 'Move mPelvis to Pelvis'),
             ('ANIMATION_TO_DEFORM',   'mPelvis', 'Move Pelvis to mPelvis')
-        )        
+        )
     )
 
     align_to_rig : EnumProperty(
@@ -1121,6 +1121,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
     apply_pose : g_apply_pose
     handleTargetMeshSelection : g_handleTargetMeshSelection
     JointType : GJointType
+    SkeletonType : GSkeletonType
 
     inplace_transfer = False
     src_armature     = None
@@ -1161,9 +1162,9 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
         custom_count = len(custom_mesh)
         system_count = len(all_mesh) - len(custom_mesh)
         joint_count = rig.get_joint_offset_count(src_armature)
-        
+
         is_armature = context.active_object and context.active_object.type == 'ARMATURE'
-        
+
         if op:
             updateRigProp = op
         else:
@@ -1188,52 +1189,44 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
         row = box.row(align=True)
         row.prop(src_armature.data,"pose_position", expand=True)
         box.separator()
-    
+
         if is_armature and not "tamagoyaki" in src_armature:
-                create_transfer_preset(box)
-                box.separator()
+            create_transfer_preset(box)
+            box.separator()
 
         if not is_armature:
             box.label(text="Only for Armatures",icon=ICON_INFO)
             return
 
         tamagoyaki_version, rig_version, rig_id, rig_type = util.get_version_info(src_armature)
-        
+
         armobj = context.active_object
         col = box.column(align=True)
-        if 'avastar' in armobj:
+        if 'tamagoyaki' in armobj:
             tag = " (Animesh)" if armobj.RigProp.SkeletonType=='ANIMESH' else ""
             col.label(text="Source Rig: AVASTAR%s"%tag)
-
-
         else:
             row = col.row(align=True)
             row.label(text="Source Rig:")
             row.prop(updateRigProp, "srcRigType", text='')
             row.prop(updateRigProp, "up_axis", text='')
 
-        if srcRigType =='AVASTAR' and not 'avastar' in armobj:
-            col   = box.column(align=True)
-            col.label(text="Source rig is not Avastar",icon=ICON_ERROR)
-            col.label(text="You Reimport an Avastar?", icon=ICON_BLANK1)
-            col.label(text="Then use Source Rig: SL", icon=ICON_BLANK1)
-            return
-
-        if srcRigType =='TAMAGOYAKI' and not 'tamagoyaki' in armobj:
+        if srcRigType =='AVASTAR' and not 'tamagoyaki' in armobj:
             col   = box.column(align=True)
             col.label(text="Source rig is not Tamagoyaki",icon=ICON_ERROR)
             col.label(text="You Reimport an Tamagoyaki?", icon=ICON_BLANK1)
             col.label(text="Then use Source Rig: SL", icon=ICON_BLANK1)
             return
-        
+
         if len(targets) == 0:
 
             draw_selector(updateRigProp, box, "tgtRigType", "Target Rig")
             draw_selector(updateRigProp, box, "JointType", "Joint Type")
+
             col = box.column()
 
         if op or len(targets) > 0 or srcRigType!='AVASTAR':
-        
+
             if True:#len(targets) == 0:
 
                 split = col.split(factor=0.52)
@@ -1266,7 +1259,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                     bcol.prop(updateRigProp, "show_offsets")
                     bcol.enabled = True
 
-                col = col.column(align=True)                
+                col = col.column(align=True)
 
                 col.prop(updateRigProp, "use_male_shape")
                 col.prop(updateRigProp, "use_male_skeleton")
@@ -1345,7 +1338,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                     if abox:
                         col  = box.column()
 
-                    col.alert=False                    
+                    col.alert=False
                     col.separator()
                     col.prop(updateRigProp, "sl_bone_rolls")
                     col.prop(updateRigProp, "applyRotation")
@@ -1371,15 +1364,16 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                             row=col.row(align=True)
                             row.label(text='',icon=ICON_BLANK1)
                             row.prop(src_armature.RigProp, "generate_joint_tails")
-                        
+
                         col = box.column(align=True)
-                    	
                         col.prop(updateRigProp, "fix_reference_meshes")
 
                         if util.get_ui_level() > UI_ADVANCED:
                             col = box.column(align=True)
                             col.prop(updateRigProp, "show_offsets")
                             col.enabled = True
+
+
 
                 else:
                     label = "Convert to Tamagoyaki Rig"
@@ -1394,7 +1388,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
             row.prop(updateRigProp,"apply_pose", icon=ICON_FREEZE, text='')
 
 
-            if "tamagoyaki" in src_armature or "avastar" in src_armature:
+            if "tamagoyaki" in src_armature:
                 pass
             else:
                 props.srcRigType    = updateRigProp.srcRigType
@@ -1410,7 +1404,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
             props.show_offsets  = updateRigProp.show_offsets
             props.sl_bone_ends  = updateRigProp.sl_bone_ends
             props.sl_bone_rolls = updateRigProp.sl_bone_rolls
-            
+
             if util.is_linked_hierarchy([src_armature]) or util.is_linked_hierarchy(all_mesh):
                 row.enabled = False
                 col = box.column(align=True)
@@ -1455,7 +1449,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                 row.label(text="Rig ID", icon=ICON_BLANK1)
                 row.label(text=str(rig_id))
 
-            if "tamagoyaki" in src_armature or "avastar" in src_armature:
+            if "tamagoyaki" in src_armature:
                 row = col.row(align=True)
                 row.label(text="Joint offsets", icon=ICON_BLANK1)
                 row.label(text=str(joint_count))
@@ -1469,29 +1463,29 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
             row.label(text=str(system_count))
 
     def roll_neutral_rotate(self, context, arm, rot, srot):
-            print("Transfer(sl): Rotate Armature: [%s] %s (preserving boneroll)" % (arm.name, srot))
+        print("Transfer(sl): Rotate Armature: [%s] %s (preserving boneroll)" % (arm.name, srot))
 
 
 
 
-            arm.matrix_world = mulmat(arm.matrix_world, rot)
-            bpy.ops.object.select_all(action='DESELECT')
-            util.object_select_set(arm, True)
-            bpy.ops.object.transform_apply(rotation=True)
+        arm.matrix_world = mulmat(arm.matrix_world, rot)
+        bpy.ops.object.select_all(action='DESELECT')
+        util.object_select_set(arm, True)
+        bpy.ops.object.transform_apply(rotation=True)
 
 
 
 
-            util.ensure_mode_is("OBJECT")
-            util.update_view_layer(context)
+        util.ensure_mode_is("OBJECT")
+        util.update_view_layer(context)
 
     def rig_rotate(self, context, arm, rot, srot):
-            log.debug("Transfer(sl): Rotate Armature: [%s] %s " % (arm.name, srot))
+        log.debug("Transfer(sl): Rotate Armature: [%s] %s " % (arm.name, srot))
 
-            arm.matrix_world = mulmat(arm.matrix_world, rot)
-            bpy.ops.object.select_all(action='DESELECT')
-            util.object_select_set(arm, True)
-            bpy.ops.object.transform_apply(rotation=True)
+        arm.matrix_world = mulmat(arm.matrix_world, rot)
+        bpy.ops.object.select_all(action='DESELECT')
+        util.object_select_set(arm, True)
+        bpy.ops.object.transform_apply(rotation=True)
 
     def freeze_armature(self, context, armobj):
         log.debug("Transfer(sl): Freeze bound meshes to current pose (%s)" % armobj.name)
@@ -1512,12 +1506,12 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
 
     def copy_skeletons(self, context, src_armature, target_armatures, src_rig_type, tgt_rig_type, skeletonType, transfer_joints=True, sync=True, bone_store=None):
 
-        log.info("| Transfer from %s armature [%s] to %d target armatures" 
+        log.info("| Transfer from %s armature [%s] to %d target armatures"
               % (src_armature.RigProp.RigType, src_armature.name,len(target_armatures)))
 
         for tgt_armature in target_armatures:
             if self.handleTargetMeshSelection in ["HIDE","DELETE"]:
-                self.prepare_avastar_meshes(context, tgt_armature)
+                self.prepare_tamagoyaki_meshes(context, tgt_armature)
             self.copy_skeleton(context, src_armature, tgt_armature, src_rig_type, tgt_rig_type, skeletonType, bone_store, transfer_joints, sync)
 
     def prepare_tamagoyaki_meshes(self, context, tgt_armature):
@@ -1680,7 +1674,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
             for obj in newsources:
                 util.object_select_set(obj, True)
                 util.object_hide_set(obj, False)
-            util.object_select_set(tgt_parent, True) 
+            util.object_select_set(tgt_parent, True)
             util.set_active_object(context, tgt_parent)
             bpy.ops.object.parent_set(type='OBJECT', keep_transform=False)
 
@@ -1709,7 +1703,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
             y = (ymin + ymax) / 2
             z = (zmin + zmax) / 2
 
-            return Vector((x,y,z))        
+            return Vector((x,y,z))
 
         log.warning("Adjust Manuellab Rig, context is target armature: %s : %s" % (context.mode, context.object.name) )
         try:
@@ -1751,7 +1745,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
             mal_eye = None
             for eye in eyes:
                 verts = eye.data.vertices
-                if verts[0].co[0] < 0: 
+                if verts[0].co[0] < 0:
                     continue # Not the left eye
 
                 log.info("Transfer(armature): Found left eye candidate %s" % eye.name)
@@ -1783,9 +1777,9 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                         bone.tail[1] -= 0.005
 
                 break # No need to continue the loop, face is adjusted
-        
+
         except:
-             log.info("Transfer(armature): Can not adjust eye bones")
+            log.info("Transfer(armature): Can not adjust eye bones")
 
         try:
             log.info("Transfer(armature): Fixing the face IK ...")
@@ -1869,14 +1863,14 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                 can_deform = key.startswith('m') or not ebones.get('m'+key)
                 can_animate = not key.startswith('m')
 
-                bone_id  = key  if 'tamagoyaki'  in src_armature or 'avastar' in src_armature  else map_sl_to_Tamagoyaki(key, src_rig_type, all=False)
+                bone_id  = key  if 'tamagoyaki' in src_armature else map_sl_to_Tamagoyaki(key, src_rig_type, all=False)
                 if bone_id is None or not bone_id in ebones:
                     continue
 
                 tgt_is_connected = None
                 src_parent_key= bone_data[BONE_DATA_PARENT]
                 if src_parent_key:
-                    tgt_parent_key = src_parent_key if 'tamagoyaki' in src_armature or 'avastar' in src_armature  else map_sl_to_Tamagoyaki(src_parent_key, src_rig_type, all=False)
+                    tgt_parent_key = src_parent_key if 'tamagoyaki' in src_armature else map_sl_to_Tamagoyaki(src_parent_key, src_rig_type, all=False)
                     parent_bone_id, tgt_is_connected = data.fixate_special_bone_parent(bone_id, tgt_parent_key)
                     if tgt_parent_key != parent_bone_id:
                         set_bone_parent(bone_id, parent_bone_id, ebones)
@@ -1911,12 +1905,12 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                     tgt_sebone.tail = tail.copy()
                     if tgt_sebone.use_connect and tgt_sebone.parent:
                         if (head - tgt_sebone.parent.head).magnitude < MIN_BONE_LENGTH:
-                            log.error("Can not set %s.parent.tail to %s.head at %s" % (tgt_sebone.parent.name, tgt_sebone.name, head) ) 
+                            log.error("Can not set %s.parent.tail to %s.head at %s" % (tgt_sebone.parent.name, tgt_sebone.name, head) )
                         else:
                             tgt_sebone.parent.tail  = head.copy()
 
                         if (head - tgt_ebone.parent.head).magnitude < MIN_BONE_LENGTH:
-                            log.error("Can not set %s.parent.tail to %s.head at %s" % (tgt_ebone.parent.name, tgt_ebone.name, head) ) 
+                            log.error("Can not set %s.parent.tail to %s.head at %s" % (tgt_ebone.parent.name, tgt_ebone.name, head) )
                         else:
                             tgt_ebone.parent.tail  = head.copy()
 
@@ -1989,7 +1983,6 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
 
 
             if bone_group_name:
-               
                 bone_group = bgroups.get(bone_group_name)
                 if not bone_group:
                     bone_group = pbone.bone_group
@@ -2188,7 +2181,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
             tgt_pbone.use_ik_limit_x = iklimits[0]
             tgt_pbone.use_ik_limit_y = iklimits[1]
             tgt_pbone.use_ik_limit_z = iklimits[2]
-        
+
         def add_contraint_data(tgt_pbone,const_info):
 
             #
@@ -2228,7 +2221,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
         util.set_active_object(context, tgt_armature)
         omode = util.ensure_mode_is("OBJECT")
 
-        bpy.ops.avastar.unset_rotation_limits(True)
+        bpy.ops.tamagoyaki.unset_rotation_limits(True)
 
 
 
@@ -2363,6 +2356,10 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
 
 
 
+
+
+
+
                 continue
 
 
@@ -2443,7 +2440,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
             meshProp.removeArmature = original_attributes[REMOVE_ARMATURE]
             meshProp.handleOriginalMeshSelection = original_attributes[HANDLE_ORIGINAL_MESH_SELECTION]
             meshProp.joinParts = original_attributes[JOIN_PARTS]
-            
+
         def prepare_mesh_copy_attributes(meshProp):
             original_attributes = [
                 meshProp.standalonePosed,
@@ -2463,7 +2460,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
 
         def get_visible_layers_for(src_rig_type):
             if src_rig_type in ['SL', 'GENERIC']:
-                layers = [ l in B_VISIBLE_LAYERS_SL for l in range(0,32)]                
+                layers = [ l in B_VISIBLE_LAYERS_SL for l in range(0,32)]
             elif src_rig_type == 'MANUELLAB':
                 layers = [l in B_VISIBLE_LAYERS_MANUEL for l in range(0,32)]
             else:
@@ -2518,6 +2515,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
 
         tgt_armature.RigProp.generate_joint_ik = src_armature.RigProp.generate_joint_ik
         tgt_armature.RigProp.generate_joint_tails = src_armature.RigProp.generate_joint_tails
+
         self.set_ik(src_armature, tgt_armature)
 
         if self.inplace_transfer:
@@ -2525,7 +2523,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
             origin = bones.get("Origin")
             origin_mismatch = origin != None and Vector(origin.head).magnitude > MIN_JOINT_OFFSET
 
-            if "tamagoyaki" in src_armature or "avastar" in src_armature and self.adjust_pelvis and rig.needTinkerFix(src_armature):
+            if "tamagoyaki" in src_armature and self.adjust_pelvis and rig.needTinkerFix(src_armature):
                 rig.matchTinkerToPelvis(context, src_armature, alignToDeform=self.align_to_deform)
 
             children    = util.getChildren(src_armature)
@@ -2551,7 +2549,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
 
         matrix_world = src_armature.matrix_world.copy()
         util.set_cursor(context, src_armature.location)
-        
+
         util.ensure_mode_is("OBJECT")
         bpy.ops.object.select_all(action='DESELECT')
 
@@ -2648,12 +2646,12 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                             tbone.tail = ebone.tail
                             log.debug("Adjusted bone %s to imported bone %s" % (tbone.name, ebone.name) )
 
+            util.adjust_hand_structure(tgt_armature, 1.4) #TODO: check if structure bones have joint edits!
 
 
 
 
-
-            if "tamagoyaki" in src_armature or "avastar" in src_armature and self.adjust_rig and rig.needRigFix(src_armature):
+            if "tamagoyaki" in src_armature and self.adjust_rig and rig.needRigFix(src_armature):
 
                 rig.adjustAvatarCenter(tgt_armature)
                 rig.adjustSLToRig(tgt_armature) if self.align_to_rig == 'DEFORM_TO_ANIMATION' else rig.adjustRigToSL(tgt_armature)
@@ -2731,13 +2729,12 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
 
         self.active_mode = self.active.mode
         self.sources = None
-        self.use_all_sources = False 
+        self.use_all_sources = False
 
         updateRigProp = scene.UpdateRigProp
-      	if 'avastar' in self.src_armature:
-            self.srcRigType = 'TAMAGOYAKI'
+
         if 'tamagoyaki' in self.src_armature:
-            self.srcRigType = 'TAMAGOYAKI'
+            self.srcRigType = 'AVASTAR'
         else:
             self.srcRigType = updateRigProp.srcRigType
 
@@ -2786,7 +2783,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
             for child in armature.children:
                 if child.type == 'EMPTY':
                     util.remove_object(context, child, do_unlink=True, recursive=True)
-
+        
         animated_meshes = name_to_mesh(context, animated_mesh_names)
         select_hide_states = util.get_select_and_hide(animated_meshes, select=None, hide_select=None, hide=False, hide_viewport=False)
         rig_sections = [B_EXTENDED_LAYER_ALL]
@@ -2823,8 +2820,8 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
             for name in system_mesh_names:
                 ob = context.scene.objects.get(name)
                 if ob:
-                ob.parent = container
-                ob.matrix_parent_inverse = container.matrix_world.inverted()
+                    ob.parent = container
+                    ob.matrix_parent_inverse = container.matrix_world.inverted()
 
         util.set_select_and_hide(context, select_hide_states)
 
@@ -2839,7 +2836,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
 
         self.src_armature              = util.get_armature(context.object)
 
-        if self.src_armature and 'tamagoyaki' in self.src_armature or self.src_armature and 'avastar' in self.src_armature:
+        if self.src_armature and 'tamagoyaki' in self.src_armature:
             self.srcRigType            = 'AVASTAR'
             self.use_male_shape        = self.src_armature.RigProp.gender == 'MALE'
             self.use_male_skeleton     = self.src_armature.RigProp.gender == 'MALE'
@@ -2849,7 +2846,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
             self.srcRigType            = updateRigProp.srcRigType
             self.use_male_shape        = updateRigProp.use_male_shape
             self.use_male_skeleton     = updateRigProp.use_male_skeleton
-        
+
         self.transferMeshes            = updateRigProp.transferMeshes
         self.appearance_enabled        = sceneProp.panel_appearance_enabled
         self.applyRotation             = updateRigProp.applyRotation
@@ -2957,7 +2954,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                 self.transferJoints,
                 shapefile=self.devkit_shapepath
                 )
-            log.warning("Copy Rig:| Created an Tamagoyaki - %s Armature" % tgt_armature.RigProp.JointType)
+            log.warning("Copy Rig:| Created an %s - %s Armature" % (tgt_armature.RigProp.SkeletonType, tgt_armature.RigProp.JointType))
 
         else:
             propgroups.gender_update(self.src_armature, self.use_male_shape)
@@ -2966,7 +2963,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                 self.transferMeshes = True
                 if self.src_armature.ShapeDrivers.male_80:
                     self.use_male_shape = False
-                    propgroups.gender_update(self.src_armature, self.use_male_shape) 
+                    propgroups.gender_update(self.src_armature, self.use_male_shape)
                     shape.refreshTamagoyakiShape(context)
                     log.info("| Setting rig %s male=False" % (self.src_armature.name))
 
@@ -2974,8 +2971,8 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                     self,
                     context,
                     tgt_rigtype,
-                    self.active, 
-                    self.src_armature, 
+                    self.active,
+                    self.src_armature,
                     self.structure_repair,
                     self.mesh_repair,
                     self.transferJoints
@@ -2989,7 +2986,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                     log.info("| Fixing reference meshes...")
                     bpy.ops.tamagoyaki.reparent_armature()
             else:
-            
+
                 if self.fix_reference_meshes:
 
                     log.info("| Fixing reference meshes...")
@@ -3000,8 +2997,8 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                     self,
                     context,
                     tgt_rigtype,
-                    self.active, 
-                    self.src_armature, 
+                    self.active,
+                    self.src_armature,
                     self.bone_repair,
                     self.mesh_repair
                     )
@@ -3060,6 +3057,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
 
         util.set_operate_in_user_mode(oumode)
         util.ensure_mode_is(active_mode)
+
 
         src_data = self.src_armature.data
         util.remove_object(context, self.src_armature, recursive=True)
@@ -3158,15 +3156,15 @@ def extract_bone_data(context, armature, bone_store, rot):
         util.ensure_mode_is(omode)
 
     return bone_store
-        
+
 
 
 
 
 def create_transfer_preset(layout):
-    last_select = bpy.types.TAMAGOYAKI_MT_transfer_presets_menu.bl_label
+    last_select = bpy.types.AVASTAR_MT_transfer_presets_menu.bl_label
     row = layout.row(align=True)
-    row.menu("TAMAGOYAKI_MT_transfer_presets_menu", text=last_select )
+    row.menu("AVASTAR_MT_transfer_presets_menu", text=last_select )
     row.operator("tamagoyaki.transfer_presets_add", text="", icon=ICON_ADD)
     if last_select not in ["Transfer Presets", "Presets"]:
         row.operator("tamagoyaki.transfer_presets_update", text="", icon=ICON_FILE_REFRESH)
@@ -3211,7 +3209,7 @@ def add_transfer_preset(context, filepath):
 
     file_preset.close()
 
-class TAMAGOYAKI_MT_transfer_presets_menu(Menu):
+class AVASTAR_MT_transfer_presets_menu(Menu):
     bl_label  = "Transfer Presets"
     bl_description = "Transfer Presets for Tamagoyaki\nHere you define configurations for updating/importing Rigs."
     preset_subdir = os.path.join("tamagoyaki","transfers")
@@ -3222,7 +3220,7 @@ class TamagoyakiAddPresetTransfer(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.transfer_presets_add"
     bl_label = "Add Transfer Preset"
     bl_description = "Create new Preset from current Panel settings"
-    preset_menu = "TAMAGOYAKI_MT_transfer_presets_menu"
+    preset_menu = "AVASTAR_MT_transfer_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","transfers")
 
@@ -3237,11 +3235,11 @@ class TamagoyakiUpdatePresetTransfer(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.transfer_presets_update"
     bl_label = "Update Transfer Preset"
     bl_description = "Update active Preset from current Panel settings"
-    preset_menu = "TAMAGOYAKI_MT_transfer_presets_menu"
+    preset_menu = "AVASTAR_MT_transfer_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","transfers")
 
     def invoke(self, context, event):
-        self.name = bpy.types.TAMAGOYAKI_MT_transfer_presets_menu.bl_label
+        self.name = bpy.types.AVASTAR_MT_transfer_presets_menu.bl_label
         print("Updating Preset", self.name)
         return self.execute(context)
 
@@ -3252,7 +3250,7 @@ class TamagoyakiRemovePresetTransfer(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.transfer_presets_remove"
     bl_label = "Remove Transfer Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "TAMAGOYAKI_MT_transfer_presets_menu"
+    preset_menu = "AVASTAR_MT_transfer_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","transfers")
 
 #######################################################################
@@ -3260,18 +3258,18 @@ class TamagoyakiRemovePresetTransfer(AddPresetBase, Operator):
 #######################################################################
 
 def create_devkit_preset(layout):
-    last_select = bpy.types.TAMAGOYAKI_MT_devkit_presets_menu.bl_label
+    last_select = bpy.types.AVASTAR_MT_devkit_presets_menu.bl_label
     row = layout.row(align=True)
-    prop = row.menu("TAMAGOYAKI_MT_devkit_presets_menu", text=last_select)
-    
+    prop = row.menu("AVASTAR_MT_devkit_presets_menu", text=last_select)
+
 
     if last_select not in ["Devkit Presets", "Presets"]:
         row.operator("tamagoyaki.devkit_presets_update", text="", icon=ICON_FILE_REFRESH)
         row.operator("tamagoyaki.devkit_presets_remove", text="", icon=ICON_REMOVE).remove_active = True
 
 def create_devkit_exec(layout):
-    last_select = bpy.types.TAMAGOYAKI_MT_devkit_preset_exec_menu.bl_label
-    paths =  bpy.utils.preset_paths(bpy.types.TAMAGOYAKI_MT_devkit_presets_menu.preset_subdir)
+    last_select = bpy.types.AVASTAR_MT_devkit_preset_exec_menu.bl_label
+    paths =  bpy.utils.preset_paths(bpy.types.AVASTAR_MT_devkit_presets_menu.preset_subdir)
     col = layout.column(align=True)
 
     has_presets = False
@@ -3296,7 +3294,7 @@ def create_devkit_exec(layout):
                     icon  = ICON_BLANK1
                     alert = False
                 else:
-                    icon  = ICON_ERROR 
+                    icon  = ICON_ERROR
                     alert = True
 
                 col.alert = alert
@@ -3309,7 +3307,7 @@ def create_devkit_exec(layout):
         col.alert = False
         col.operator("tamagoyaki.pref_show", text="Add/Edit Configuration", icon=ICON_MODIFIER)
 
-    
+
     else:
         col.label(text="No Devkit Config found")
         col.label(text="Hint: You add Devkits")
@@ -3360,28 +3358,28 @@ def add_devkit_preset(context, filepath, allow_overwrite):
         os.remove(newpath)
     return None
 
-class TAMAGOYAKI_MT_devkit_presets_menu(Menu):
-    bl_idname = "TAMAGOYAKI_MT_devkit_presets_menu"
+class AVASTAR_MT_devkit_presets_menu(Menu):
+    bl_idname = "AVASTAR_MT_devkit_presets_menu"
     bl_label  = "Devkit Presets"
     bl_description = "Devkit Presets for Tamagoyaki\nHere you define configurations for updating/importing Rigs."
     preset_subdir = os.path.join("tamagoyaki","devkits")
     preset_operator = "tamagoyaki.load_devkit_preset"
     draw = Menu.draw_preset
-    
-class TAMAGOYAKI_MT_devkit_preset_exec_menu(Menu):
+
+class AVASTAR_MT_devkit_preset_exec_menu(Menu):
     bl_label  = "Devkit Presets"
     bl_description = "Devkit Presets for Tamagoyaki\nHere you define configurations for updating/importing Rigs."
     preset_subdir = os.path.join("tamagoyaki","devkits")
     preset_operator = "tamagoyaki.execute_devkit_preset"
     draw = Menu.draw_preset
-    
+
 def menu_devkit_presets(self, context):
     layout = self.layout
     layout.separator()
     bop = getattr(context, "button_operator", None)
     if bop:
-        is_avastar_devkit = hasattr(bop, 'is_avastar_devkit')
-        if is_avastar_devkit:
+        is_tamagoyaki_devkit = hasattr(bop, 'is_tamagoyaki_devkit')
+        if is_tamagoyaki_devkit:
             filepath = getattr(bop, 'filepath')
             name = bpy.path.display_name(filepath)
             op = layout.operator(WM_OT_AVASTAR_RemoveDevkitPreset.bl_idname,
@@ -3400,7 +3398,7 @@ class WM_MT_button_context(Menu):
 
 class WM_OT_AVASTAR_RemoveDevkitPreset(Operator):
     """Remove a developer kit preset"""
-    bl_idname = "avastar.remove_devkit_preset"
+    bl_idname = "tamagoyaki.remove_devkit_preset"
     bl_label = "Delete"
     bl_options = {'REGISTER','UNDO'}
 
@@ -3416,7 +3414,7 @@ class WM_OT_AVASTAR_RemoveDevkitPreset(Operator):
 '''Remove the Developerkit Preset [%s]
 
 Note: Removing a preset only deletes 
-the configuration of the preset in Avastar. 
+the configuration of the preset in Tamagoyaki. 
 All actual developerkit files are preserved.''' % name
         return text
 
@@ -3446,7 +3444,7 @@ class WM_OT_AVASTAR_ExecuteDevkitPreset(Operator):
             options={'SKIP_SAVE'},
             )
 
-    is_avastar_devkit: BoolProperty(default=True)
+    is_tamagoyaki_devkit: BoolProperty(default=True)
 
     def execute(self, context):
         prop = context.scene.UpdateRigProp
@@ -3457,12 +3455,12 @@ class WM_OT_AVASTAR_ExecuteDevkitPreset(Operator):
 
 
         try :
-            status = bpy.ops.script.execute_preset(filepath=self.filepath, menu_idname=TAMAGOYAKI_MT_devkit_presets_menu.bl_idname)
+            status = bpy.ops.script.execute_preset(filepath=self.filepath, menu_idname=AVASTAR_MT_devkit_presets_menu.bl_idname)
             if not 'FINISHED' in status:
                 return status
 
             if import_rig_from_file(context, prop):
-                return {'FINISHED'}     
+                return {'FINISHED'}
 
             self.report({'ERROR'}, "Import of Developerkit failed.\nPlease open the developerkit configuration\nand check if the Developerkit file exists")
             return {'CANCELLED'}
@@ -3494,7 +3492,7 @@ class LoadDevkitPreset(Operator):
         context.scene.UpdateRigProp.devkit_scale=1.0 #reset the scale for old preset definitions
         context.scene.UpdateRigProp.up_axis = 'Z'
 
-        status = bpy.ops.script.execute_preset(filepath=self.filepath, menu_idname=TAMAGOYAKI_MT_devkit_presets_menu.bl_idname)
+        status = bpy.ops.script.execute_preset(filepath=self.filepath, menu_idname=AVASTAR_MT_devkit_presets_menu.bl_idname)
 
         return status
 
@@ -3503,7 +3501,7 @@ class TamagoyakiAddPresetDevkit(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.devkit_presets_add"
     bl_label = "Add Devkit Preset"
     bl_description = "Create new Preset from current Panel settings"
-    preset_menu = "TAMAGOYAKI_MT_devkit_presets_menu"
+    preset_menu = "AVASTAR_MT_devkit_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","devkits")
 
@@ -3523,11 +3521,11 @@ class TamagoyakiUpdatePresetDevkit(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.devkit_presets_update"
     bl_label = "Update Devkit Preset"
     bl_description = "Update active Preset from current Panel settings"
-    preset_menu = "TAMAGOYAKI_MT_devkit_presets_menu"
+    preset_menu = "AVASTAR_MT_devkit_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","devkits")
 
     def invoke(self, context, event):
-        self.name = bpy.types.TAMAGOYAKI_MT_devkit_presets_menu.bl_label
+        self.name = bpy.types.AVASTAR_MT_devkit_presets_menu.bl_label
         print("Updating Preset", self.name)
         return self.execute(context)
 
@@ -3542,7 +3540,7 @@ class TamagoyakiRemovePresetDevkit(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.devkit_presets_remove"
     bl_label = "Remove Devkit Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "TAMAGOYAKI_MT_devkit_presets_menu"
+    preset_menu = "AVASTAR_MT_devkit_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","devkits")
 
 #######################################################################
@@ -3592,7 +3590,7 @@ def transfer_constraints(context, tgt_armature, src_armature):
             continue
 
         copycons(tbone, sbone, 'COPY_ROTATION')
-        tcbone, tcpbone = get_control_bone(tbone, ebones, pbones) 
+        tcbone, tcpbone = get_control_bone(tbone, ebones, pbones)
 
         copycons(tbone, sbone, 'COPY_LOCATION', tcbone, tcpbone)
         if tbone.name == 'Torso':
@@ -3642,13 +3640,13 @@ def move_rigged(context, from_rig, to_rig):
 classes = (
     ImportColladaDevkit,
     ButtonCopyTamagoyaki,
-    TAMAGOYAKI_MT_transfer_presets_menu,
+    AVASTAR_MT_transfer_presets_menu,
     TamagoyakiAddPresetTransfer,
     TamagoyakiUpdatePresetTransfer,
     TamagoyakiRemovePresetTransfer,
-    TAMAGOYAKI_MT_devkit_presets_menu,
-    TAMAGOYAKI_MT_devkit_preset_exec_menu,
-      WM_OT_AVASTAR_ExecuteDevkitPreset,
+    AVASTAR_MT_devkit_presets_menu,
+    AVASTAR_MT_devkit_preset_exec_menu,
+    WM_OT_AVASTAR_ExecuteDevkitPreset,
     WM_OT_AVASTAR_RemoveDevkitPreset,
     WM_MT_button_context,
     LoadDevkitPreset,

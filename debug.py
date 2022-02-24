@@ -1,9 +1,11 @@
-### Copyright 2016, Matrice Laville
-### Modifications 2016 None
+### Copyright     2021 The Machinimatrix Team
 ###
-### This file is part of Tamagoyaki 2.
-### 
-
+### This file is part of Tamagoyaki
+###
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -22,16 +24,19 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-import logging, traceback
-import bpy, sys, os, gettext
+import logging
+import traceback
+import bpy
+import sys
+import os
+import gettext
+import bmesh
+
 from mathutils import Vector, Matrix, Color
-
 from . import const, data, util, rig, shape
-
 from .const import *
 from .util import *
 from . import bl_info
-import bmesh
 from bpy.app.handlers import persistent
 from bpy.props import *
 from .data import Skeleton
@@ -51,15 +56,15 @@ def get_scaled_position(bone):
 
     pos = Vector(bone.get(JOINT_BASE_HEAD_ID, (0,0,0)))
     off = Vector(bone.get('offset',  (0,0,0)))
- 
-    parent = get_parent(bone) 
+
+    parent = get_parent(bone)
     if parent:
         scale = util.get_bone_scale(parent)
     else:
         scale = Vector((1,1,1))
 
     pos   = pos + off
-    
+
     if parent:
         pos  = Vector([scale[0]*pos[0], scale[1]*pos[1], scale[2]*pos[2]])
         pos += get_scaled_position(parent)
@@ -80,7 +85,7 @@ def get_restposition(rbone):
         format = "(% 0.6f % 0.6f % 0.6f)"
         spos = format % (pos[0], pos[1], pos[2])
         sh   = format % (h[0],   h[1],   h[2])
-        spoh = format % (pos[0]+h[0], pos[1]+h[1], pos[2]+h[2])        
+        spoh = format % (pos[0]+h[0], pos[1]+h[1], pos[2]+h[2])
 
         pos += h
     return pos
@@ -119,17 +124,17 @@ def test_active_head_matrix(context=None, bind=True, with_joints=True, boneset=N
         print("test head matrix: %d bones passed" % (test_counter))
     else:
         print("test head matrix: found %d mismatches in %d tested bones" % (mismatch_counter, test_counter))
-        
+
     util.ensure_mode_is(omode)
     util.set_active_object(context, active)
 
 def test_restpose(context=None):
 
     EXCEPTIONS = ['head_length_773', 'male_skeleton_32']
-    
+
     if not context: context = bpy.context
     armobj = util.get_armature(context.object)
-    
+
     active = context.object
     util.set_active_object(context, armobj)
     omode = util.ensure_mode_is('EDIT')
@@ -158,39 +163,39 @@ def test_restpose(context=None):
                         val = P.get('value_default', 0)
                         fv = 100 * (val - min) / (max - min)
                         f0 = 100 * (0 - min) / (max - min) if min<=0 and max >=0 else fv
-                        print("    '%s' : %f," % (pid, f0))    
+                        print("    '%s' : %f," % (pid, f0))
     print("}")
-    
+
     util.ensure_mode_is(omode)
     util.set_active_object(context, active    )
-    
+
 def test_control_rig(context=None, magnitude=0.0000001):
 
     if not context: context = bpy.context
     armobj = util.get_armature(context.object)
-    
+
     active = context.object
     util.set_active_object(context, armobj)
     omode = util.ensure_mode_is('EDIT')
-    
+
     bs = rig.get_all_deform_bones(armobj, sort=True, order='TOPDOWN')
     mbones = [b for b in bs if b.name[0]=='m']
     bones = util.get_modify_bones(armobj)
-    
+
     for mbone in mbones:
         mname = mbone.name
         cname = mbone.name[1:]
         cbone = bones[cname]
-        diff = (mbone.head - cbone.head) 
+        diff = (mbone.head - cbone.head)
         mag = diff.magnitude
         if mag > magnitude:
             print("test joint bones: diff mbone/cbone. mag:%f bone:%s" % (mag, mbone.name) )
             print("     mbone head : %s" % mbone.head)
             print("     cbone head : %s" % cbone.head)
-            
+
     util.ensure_mode_is(omode)
     util.set_active_object(context, active)
-    
+
 classes = (
 
 )

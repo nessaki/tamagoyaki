@@ -1,0 +1,194 @@
+SET_ROTATION_LIMITS, bpy.ops.tamagoyaki.*set_rotation_limits
+ADD_AVATAR, bpy.ops.tamagoyaki.add_avatar
+
+# workflows panel
+
+BASIC_PRESET, bpy.ops.tamagoyaki.basic_preset
+EXPERT_PRESET, bpy.ops.tamagoyaki.expert_preset
+ALL_PRESET, bpy.ops.tamagoyaki.all_preset
+BONE_PRESET, bpy.ops.tamagoyaki.bone_preset_*
+LOAD_ANIMATION_WORKSPACE, bpy.ops.tamagoyaki.load_sl_animation_workspace
+PREF_SHOW, bpy.ops.tamagoyaki.pref_show
+
+# Avatar shape panel
+
+LOAD_SHAPE_UI, bpy.ops.tamagoyaki.load_shape_ui
+RESET_TO_DEFAULT, bpy.ops.tamagoyaki.reset_to_default
+RESET_TO_RESTPOSE, bpy.ops.tamagoyaki.reset_to_restpose
+BAKE_SHAPE, bpy.ops.tamagoyaki.bake_shape
+SHAPE_COPY, bpy.ops.tamagoyaki.shape_copy
+SHAPE_PASTE, bpy.ops.tamagoyaki.shape_paste
+SHAPE_PRESETS_ADD, bpy.ops.tamagoyaki.shape_presets_add
+SHAPE_PRESETS_REMOVE, bpy.ops.tamagoyaki.shape_presets_remove
+SHAPE_PRESETS_UPDATE, bpy.ops.tamagoyaki.shape_presets_update
+SHAPE_TYPE_BONE_HINT, bpy.ops.tamagoyaki.shape_type_bone_hint
+RESET_SHAPE_SECTION, bpy.ops.tamagoyaki.reset_shape_section
+IMPORT_SHAPE, bpy.ops.tamagoyaki.import_shape
+
+# Tamagoyaki Shape IO Panel
+
+SAVE_PROPS, bpy.ops.tamagoyaki.save_props
+REFRESH_CHARACTER_SHAPE, bpy.ops.tamagoyaki.refresh_character_shape
+LOAD_PROPS, bpy.ops.tamagoyaki.load_props
+
+# Rig Display Panel
+
+IK_APPLY, bpy.ops.tamagoyaki.ik_apply
+
+# Rig Config Panel
+
+ARMATURE_DEFORM_DISABLE, bpy.ops.tamagoyaki.armature_deform_disable
+ARMATURE_DEFORM_ENABLE, bpy.ops.tamagoyaki.armature_deform_enable
+ARMATURE_ALLOW_STRUCTURE_SELECT, bpy.ops.tamagoyaki.armature_allow_structure_select
+ARMATURE_RESTRICT_STRUCTURE_SELECT, bpy.ops.tamagoyaki.armature_restrict_structure_select
+RESET_SPINE_BONES, bpy.ops.tamagoyaki.reset_spine_bones
+FIND_UNDEFORMABLE, bpy.ops.tamagoyaki.find_unweighted
+
+# Avatar Materials
+
+AVASTAR_MATERIAL_BAKE, bpy.ops.tamagoyaki.material_bake
+AVASTAR_MATERIAL_BAKE_CLEANUP, bpy.ops.tamagoyaki.material_bake_cleanup
+
+# Skinning Panel
+
+UNPARENT_ARMATURE, bpy.ops.tamagoyaki.rebind_armature
+REBIND_ARMATURE, bpy.ops.tamagoyaki.unparent_armature
+FREEZE_SHAPE, bpy.ops.tamagoyaki.freeze_shape
+PARENT_ARMATURE, bpy.ops.tamagoyaki.parent_armature
+APPLY_SHAPE_SLIDERS, bpy.ops.tamagoyaki.apply_shape_sliders
+
+# Weight Copy Panel
+
+GENERATE_WEIGHTS, bpy.ops.tamagoyaki.generate_weights
+
+# Posing Panel
+
+ARMATURE_*LOCK_*, bpy.ops.tamagoyaki.armature_*lock_*
+ARMATURE_APPLY_RESTPOSE, bpy.ops.tamagoyaki.apply_as_restpose
+ARMATURE_RESET_POSE_LSL, bpy.ops.tamagoyaki.armature_reset_pose_lsl
+ARMATURE_ADJUST_BASE2RIG, bpy.ops.tamagoyaki.armature_adjust_base2rig
+ARMATURE_BAKE, bpy.ops.tamagoyaki.armature_bake
+ARMATURE_JOINTPOS_REMOVE, bpy.ops.tamagoyaki.armature_jointpos_remove
+ARMATURE_JOINTPOS_STORE, bpy.ops.tamagoyaki.armature_jointpos_store
+
+# Developer Kits panel
+
+DEVKIT_EXECUTE, bpy.ops.tamagoyaki.execute_devkit_preset
+
+# Tool Box Panel
+
+MANAGE_ALL_SHAPES, bpy.ops.tamagoyaki.manage_all_shapes
+COPY_TIMELINE, bpy.ops.sparkles.copy_timeline
+REBAKE_UV, bpy.ops.tamagoyaki.rebake_uv
+FIND_DOUBLES, bpy.ops.tamagoyaki.find_doubles
+FIND_ASYMMETRIES, bpy.ops.tamagoyaki.find_asymmetries
+SNAP_TO_MESH, bpy.ops.tamagoyaki.snap_to_mesh
+CLEAR_BONE_WEIGHT_GROUPS, bpy.ops.tamagoyaki.clear_bone_weight_groups
+FIND_TOOMANYWEIGHTS, bpy.ops.tamagoyaki.find_toomanyweights
+SHOW_WEIGHTS_PER_VERT, bpy.ops.sparkles.show_weights_per_vert
+FIND_UNWEIGHTED, bpy.ops.tamagoyaki.find_unweighted
+FIND_ZEROWEIGHTS, bpy.ops.tamagoyaki.find_zeroweights
+CHECK_HIERARCHY, bpy.ops.tamagoyaki.check_hierarchy
+CLEAR_BONE_WEIGTHS, bpy.ops.tamagoyaki.clear_bone_weigths
+COPY_BONE_WEIGHTS, bpy.ops.tamagoyaki.copy_bone_weights
+COPY_WEIGHTS_FROM_RIGGED, bpy.ops.tamagoyaki.copy_weights_from_rigged
+COPY_WEIGHTS_FROM_SELECTED, bpy.ops.tamagoyaki.copy_weights_from_selected
+ENSURE_MIRRORED_GROUPS, bpy.ops.tamagoyaki.ensure_mirrored_groups
+WELD_WEIGHTS_FROM_RIGGED, bpy.ops.tamagoyaki.weld_weights_from_rigged
+
+# Fitting Panel
+
+FITTING_PRESETS_ADD, bpy.ops.tamagoyaki.fitting_presets_add
+FITTING_GENERATE_PHYSICS, bpy.ops.tamagoyaki.generate_physics
+FITTING_ENABLE_PHYSICS, bpy.ops.tamagoyaki.enable_physics
+FITTING_ENABLE_PHYSICS, bpy.ops.tamagoyaki.enable_physics
+FITTING_ADJUST_VIEWPORT, bpy.ops.tamagoyaki.bone_preset_fit
+FITTING_SMOOTH_WEIGHTS, bpy.ops.tamagoyaki.smooth_weights
+FITTING_BONE_DELETE_PGROUP, bpy.ops.tamagoyaki.fitting_bone_delete_pgroup
+FITTING_BONE_SELECTED_HINT, bpy.ops.tamagoyaki.fitting_bone_selected_hint
+
+# Mesh Inspector
+
+MESH_INSPECTOR_UPDATE_STATS, bpy.ops.tamagoyaki.update_mesh_stats
+CHECK_MESH, bpy.ops.tamagoyaki.check_mesh
+
+# Rig Inspector
+
+COPY_RIG, bpy.ops.tamagoyaki.copy_rig
+RIG_MIGRATE, bpy.ops.tamagoyaki.version_mismatch
+ OBJECT_SELECT_OPERATOR, bpy.ops.tamagoyaki.object_select_operator
+
+# Maintenance Panel
+
+MAINTENANCE_COPY_SUPPORT_INFO, bpy.ops.tamagoyaki.copy_support_info
+CHECK_FOR_UPDATES, bpy.ops.tamagoyaki.check_for_updates
+
+# IK Controls
+
+IK_MATCH_ALL, bpy.ops.tamagoyaki.ik_match_all
+IK_ORIENT, bpy.ops.tamagoyaki.ik_*_orient
+CHAIN, bpy.ops.tamagoyaki.chain_*
+IK_ENABLE, bpy.ops.tamagoyaki.ik*_enable
+IK_ARMS_ENABLE, bpy.ops.tamagoyaki.ik_arms_enable
+IK_LEGS_ENABLE, bpy.ops.tamagoyaki.ik_legs_enable
+IK_LIMBS_ENABLE, bpy.ops.tamagoyaki.ik_limbs_enable
+
+# Rig Controls
+
+BREATHE, bpy.ops.tamagoyaki.breathe_*
+ROTATION_LIMITS, bpy.ops.tamagoyaki.unset_rotation_limits
+
+# Retarget panel
+
+TRANSFER_POSE, bpy.ops.tamagoyaki.transfer_pose
+TRANSFER_MOTION, bpy.ops.tamagoyaki.transfer_motion
+GUESS_BONE_MAP, bpy.ops.tamagoyaki.guess_bone_map
+MATCH_SCALES, bpy.ops.tamagoyaki.match_scales
+CLEAR_BONE_MAP, bpy.ops.tamagoyaki.clear_bone_map
+COPY_OTHER_SIDE, bpy.ops.tamagoyaki.copy_other_side
+SET_SOURCE_BONE, bpy.ops.tamagoyaki.set_source_bone
+DELETE_MOTION, bpy.ops.tamagoyaki.delete_motion
+
+# Import Animation
+
+IMPORT_AVATAR_ANIMATION, bpy.ops.tamagoyaki.import_avatar_animation
+
+# Export Animation
+
+ACTION_TRIM, bpy.ops.tamagoyaki.action_trim
+EXPORT_BULK_ANIM, bpy.ops.tamagoyaki.export_bulk_anim
+EXPORT_SINGLE_ANIM, bpy.ops.tamagoyaki.export_single_anim
+MIRROR_BONE_WEIGHTS, bpy.ops.tamagoyaki.mirror_bone_weights
+
+# Export Collada
+
+AVASTAR_EXPORT_TROUBLE, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_SL_COLLADA, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M001, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M002, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M003, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M004, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M005, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M006, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M007, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M008, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M009, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M010, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M011, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M012, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M013, bpy.ops.tamagoyaki.export_sl_collada
+EXPORT_WARN_M014, bpy.ops.tamagoyaki.export_sl_collada
+
+
+UPDATE, None
+INTRO, None
+GETTING_HELP, None
+FIRST_STEPS, None
+POSE_CHARACTER, None
+ATTACHMENTS, None
+FIRST_ANIMATION, None
+SL_SHAPES, None
+
+SKINNING_BASICS, None
+AVASTAR_BONES, None
+NUTS_AND_BOLTS, None

@@ -1,9 +1,11 @@
-### Copyright 2011, Magus Freston, Domino Marama, and Gaia Clary
-### Modifications 2013-2015 Gaia Clary
+### Copyright     2021 The Machinimatrix Team
 ###
-### This file is part of Tamagoyaki 1.
-### 
-
+### This file is part of Tamagoyaki
+###
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -21,24 +23,28 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # ##### END GPL LICENSE BLOCK #####
-from collections import OrderedDict
-from operator import add
 
 import bpy
+import time
+import logging
+import traceback
+import os
+import gettext
+import array
+
+from collections import OrderedDict
+from operator import add
 from bpy.props import *
 import  xml.etree.ElementTree as et
 from mathutils import Vector, Matrix
-import time, logging, traceback, os, gettext
-
 from math import fabs, radians
 from bpy.app.handlers import persistent
-
 from . import context_util, bind, const, data, util, rig, propgroups
 from .data import Skeleton
 from .util import rescale, s2b, PVector, mulmat
 from .const import *
 from .context_util import *
-import array
+
 LOCALE_DIR = os.path.join(os.path.dirname(__file__), 'locale')
 
 log = logging.getLogger("tamagoyaki.shape")
@@ -81,7 +87,7 @@ HANDS = {
 10:{'id':10, 'label': 'R Salute', 'mesh': 'hands_salute_r_766'},
 11:{'id':11, 'label': 'Typing', 'mesh': 'hands_typing_672'},
 12:{'id':12, 'label': 'R Peace', 'mesh': 'hands_peace_r_791'},
-13:{'id':13, 'label': 'R Splayed', 'mesh': 'hands_spread_r_792'}, 
+13:{'id':13, 'label': 'R Splayed', 'mesh': 'hands_spread_r_792'},
 14:{'id':-1, 'label': 'None', 'mesh': 'Hands_Spread'}
 }
 
@@ -113,7 +119,7 @@ HANDS = {
 
 
 
-
+#
 
 
 
@@ -194,21 +200,21 @@ def is_set_to_default(obj, pid):
 
     ensure_drivers_initialized(obj)
     value   = getShapeValue(obj, pid)
-    default = get_default_value(obj,pid)               
+    default = get_default_value(obj,pid)
     result = fabs(value - default)
     return result < 0.001
-    
+
 def get_default_value(obj,pid):
     D = obj.ShapeDrivers.DRIVERS[pid][0]
     if pid == "male_80":
         return False
-        
-    default = rescale(D['value_default'], D['value_min'], D['value_max'], 0, 100)                        
+
+    default = rescale(D['value_default'], D['value_min'], D['value_max'], 0, 100)
     return default
 
 
 def shapeInitialisation():
-    
+
     ##
 
     ##
@@ -222,7 +228,7 @@ def terminate():
 
     del bpy.types.Object.ShapeValues
     del bpy.types.Object.ShapeDrivers
-    
+
 
 
 
@@ -290,7 +296,7 @@ def get_driven_bones(dbones, DRIVERS, D, joints, indent=""):
                 s = Vector(s).magnitude
                 if s > 0 or o > 0:
                     dos = driven_bones.get(bname,[False,False])
-                    driven_bones[bname] = [o>0 or dos[0], s>0 or dos[1]] 
+                    driven_bones[bname] = [o>0 or dos[0], s>0 or dos[1]]
                     if o>0:
                         offsets.append(bname)
                         dbone = dbones.get(bname,None)
@@ -310,7 +316,7 @@ def get_driven_bones(dbones, DRIVERS, D, joints, indent=""):
                 joint_count += hj
                 for key,val in subbones.items():
                     dos = driven_bones.get(key,[False,False])
-                    driven_bones[key] = [val[0] or dos[0], val[1] or dos[1]] 
+                    driven_bones[key] = [val[0] or dos[0], val[1] or dos[1]]
 
 
     return driven_bones, joint_count
@@ -439,7 +445,7 @@ class ShapeDebug(bpy.types.Operator):
     bl_idname = "tamagoyaki.shape_debug"
     bl_label = "Object from Basis Shape"
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     shape : EnumProperty(
         items=(
             (REFERENCE_SHAPE, 'Original Shape', "Original Mesh"),
@@ -479,7 +485,7 @@ class ShapeDebug(bpy.types.Operator):
             nob.data = ob.data.copy()
             nob.name = nob_name
             nob.location = location
-            
+
 
             co = get_shape_data(nob, self.shape)
             nob.data.vertices.foreach_set('co',co)
@@ -509,12 +515,12 @@ class ShapePaste(bpy.types.Operator):
         arm_obj = util.get_armature(ob)
         paste_from_scene(context.scene, arm_obj)
         return {'FINISHED'}
-    
+
 class PrintSliderRelationship(bpy.types.Operator):
     """Print slider relationship to console"""
     bl_idname = "tamagoyaki.print_slider_relationship"
     bl_label = "Slider Details"
-    
+
     WP_HEADER        = "%(canvas)s"
     WP_FOOTER        = ""
     WP_BR            = "\n"
@@ -549,7 +555,7 @@ class PrintSliderRelationship(bpy.types.Operator):
 <td class="translist">%(translist)s</td>
 <td class="scalelist">%(scalelist)s</td>
 </tr>'''
-    
+
     @classmethod
     def poll(self, context):
         ob = context.object
@@ -571,7 +577,7 @@ def createShapeDrivers(DRIVERS):
     for section in SHAPEUI.keys():
         sectionitems.append((section, section, section))
 
-    ShapeDrivers.Sections = EnumProperty( items=sectionitems, name='Sections', default='Body' )    
+    ShapeDrivers.Sections = EnumProperty( items=sectionitems, name='Sections', default='Body' )
 
 
     ShapeDrivers.DRIVERS = DRIVERS
@@ -588,8 +594,8 @@ def createShapeDrivers(DRIVERS):
 
             if pid=="male_80":
 
-                setattr(target, pid,  
-                        BoolProperty(name = D['label'], 
+                setattr(target, pid,
+                        BoolProperty(name = D['label'],
 
                                     update=eval("lambda a,b:shape_slider_driver(a,b,'%s')"%pid),
                                     description = "Gender switch\ndisabled:Female\nenabled:Male",
@@ -599,8 +605,8 @@ def createShapeDrivers(DRIVERS):
 
                 default = rescale(D['value_default'], D['value_min'], D['value_max'], 0, 100)
                 description = "%s - %s"%(D['label_min'], D['label_max'])
-                setattr(target, pid,  
-                        IntProperty(name = D['label'], 
+                setattr(target, pid,
+                        IntProperty(name = D['label'],
 
                                     update=eval("lambda a,b:shape_slider_driver(a,b,'%s')"%pid),
                                     description = description,
@@ -608,8 +614,8 @@ def createShapeDrivers(DRIVERS):
                                     soft_min = 0, soft_max = 100,
                                     default = int(round(default))))
 
-                setattr(values, pid,  
-                        FloatProperty(name = D['label'], 
+                setattr(values, pid,
+                        FloatProperty(name = D['label'],
                                     min      = 0, max      = 100,
                                     soft_min = 0, soft_max = 100,
                                     default = default))
@@ -621,7 +627,7 @@ def createMeshShapes(MESHES):
 
 
     MESHSHAPES = {}
-    
+
     for mesh in MESHES.values():
         util.progress_update(10, False)
         meshname = mesh['name']
@@ -629,11 +635,11 @@ def createMeshShapes(MESHES):
 
 
 
-        WEIGHTS = {} 
+        WEIGHTS = {}
         if 'skinJoints' in mesh:
             for joint in mesh['skinJoints']:
                 WEIGHTS[joint] = {}
-            
+
             for vidx, (bi, w) in enumerate(mesh['weights']):
                 if vidx in mesh['vertexRemap']:
                     continue
@@ -650,7 +656,7 @@ def createMeshShapes(MESHES):
         for pid, morph in mesh['morphs'].items():
             util.progress_update(1, False)
 
-            DVS = {} 
+            DVS = {}
             for v in morph['vertices']:
                 ii = v['vertexIndex']
                 if ii in mesh['vertexRemap']:
@@ -676,7 +682,7 @@ def createMeshShapes(MESHES):
         MESH['co'] = co
 
         MESHSHAPES[meshname]=MESH
-    
+
     ShapeDrivers.MESHSHAPES = MESHSHAPES
 
 def initialize(rigType):
@@ -736,12 +742,12 @@ def setShapeValue(obj, pid, default, min, max, prec=False):
 
 def printProperties(obj):
     male = obj.ShapeDrivers.male_80
-    blockname = "Shape for: '%s'"%obj.name 
+    blockname = "Shape for: '%s'"%obj.name
     textblock = bpy.data.texts.new(blockname)
-   
+
     textblock.write("Shape sliders for '%s' (%s)\n"%(obj.name, time.ctime()))
     textblock.write("Custom values marked with 'M' at begin of line.\n")
-    
+
     ensure_drivers_initialized(obj)
     for section, pids in SHAPEUI.items():
         textblock.write("\n=== %s ===\n\n"%section)
@@ -751,9 +757,9 @@ def printProperties(obj):
             modified = "M"
             if is_set_to_default(obj,pid):
                 modified = " "
-                
+
             if s is None or (s=='male' and male==True) or (s=='female' and male==False):
-                textblock.write("%c  %s: %d\n"%(modified, D["label"], round(getShapeValue(obj, pid))))                
+                textblock.write("%c  %s: %d\n"%(modified, D["label"], round(getShapeValue(obj, pid))))
 
     logging.info("Wrote shape data to textblock '%s'",blockname)
 
@@ -790,7 +796,7 @@ def fromDictionary(obj, dict, update=True, init=False):
 
         log.info("|- Updated shape of [%s]" % (armobj.name) )
 
-    log.info("|- Updated %d pids for in [%s]" % (pidcount, armobj.name) )
+    log.info("|- Updated %d pids for [%s]" % (pidcount, armobj.name) )
 
 
 def asDictionary(obj, full=False):
@@ -804,7 +810,7 @@ def asDictionary(obj, full=False):
     section = armobj.ShapeDrivers.Sections
     if section:
         dict['section']=section
-    
+
 
     pidcount = 0
     for section, pids in SHAPEUI.items():
@@ -813,7 +819,7 @@ def asDictionary(obj, full=False):
             D     = armobj.ShapeDrivers.DRIVERS[pid][0]
             sex   = D['sex']
             if True: #sex is None or (sex=='male' and male==True) or (sex=='female' and male==False):
-                dict[pid]  = getattr(armobj.ShapeValues,pid)
+                dict[pid]  = getShapeValue(armobj, pid)
                 pidcount += 1
 
     log.info("|- Added %d pids to dictionary of [%s]" % (pidcount, armobj.name) )
@@ -821,20 +827,20 @@ def asDictionary(obj, full=False):
 
 def saveProperties(obj, filepath, normalize=False, pack=False):
 
-        
 
-   
+
+
     comment = et.Comment("Generated with Tamagoyaki on %s"%time.ctime())
     comment.tail = os.linesep
-    pool = et.Element('linden_genepool', attrib={'version':'1.0'})  
+    pool = et.Element('linden_genepool', attrib={'version':'1.0'})
     pool.tail = os.linesep
-    xml = et.ElementTree(pool) 
-    archetype = et.Element('archetype', attrib={'name': obj.name})   
+    xml = et.ElementTree(pool)
+    archetype = et.Element('archetype', attrib={'name': obj.name})
     archetype.tail = os.linesep
     pool.append(comment)
     pool.append(archetype)
 
-    ensure_drivers_initialized(obj) 
+    ensure_drivers_initialized(obj)
     male = getShapeValue(obj,'male_80')
     for section, pids in SHAPEUI.items():
         for pid in pids:
@@ -845,24 +851,24 @@ def saveProperties(obj, filepath, normalize=False, pack=False):
                 np   = pid.split("_")
                 id   = np[-1]
                 name = np[:-1]
-            
+
                 if id == "80":
                     v = 0.0
                     if male: v += 1.0
                 else:
                     value100 = getShapeValue(obj, pid, normalize)
-                    v    = rescale(value100, 0, 100, D['value_min'], D['value_max']) 
-                
+                    v    = rescale(value100, 0, 100, D['value_min'], D['value_max'])
+
                 data = {
                 'id':id,
                 'name':'_'.join(name),
                 'value':"%.3f"%v,
                 }
-                
+
                 item = et.Element('param', attrib=data)
                 item.tail = os.linesep
                 archetype.append(item)
-                
+
     if pack:
         blockname = filepath
         if blockname in bpy.data.texts:
@@ -946,11 +952,11 @@ RESTPOSE_FEMALE={
     'eyebone_big_eyes_689' : 50.000000,
     'eye_spacing_196' : 50.000000,
     'neck_length_756' : 50.000000,
-    "butt_size_795":30,
+    'butt_size_795':30,
 }
 
 def get_restpose_values(armobj, generate=False):
-    
+
     if not generate:
         return RESTPOSE_FEMALE
 
@@ -996,6 +1002,7 @@ def reset_to_restpose(context, arm_obj):
     resetToRestpose(arm_obj, context)
     util.ensure_mode_is(omode)
 
+
 def resetToRestpose(arm_obj, context=None, preserveGender=True, init=False, force_update=False):
     if not context: context = bpy.context
     scene=context.scene
@@ -1004,7 +1011,9 @@ def resetToRestpose(arm_obj, context=None, preserveGender=True, init=False, forc
     RESTPOSE = get_restpose_values(arm_obj, generate=False)
     resetToPose(arm_obj, RESTPOSE, context, preserveGender, init, force_update)
     arm_obj['is_in_restpose'] = True
-    rig.set_appearance_editable(context, False, armobj=arm_obj)
+    preferences = util.getAddonPreferences()
+    rig.set_appearance_editable(context, not preferences.auto_lock_sl_restpose, armobj=arm_obj)
+
 
 def resetToBindpose(arm_obj, context=None, preserveGender=True, init=False, force_update=False):
     if not context: context = bpy.context
@@ -1044,7 +1053,7 @@ def resetToDefault(arm, context=None):
     reset_to_default(context)
     util.set_active_object(context, active)
 
-def reset_to_default(context):
+def reset_to_default(context, is_editable=True):
     scene=context.scene
     armobj = context.active_object
 
@@ -1059,6 +1068,7 @@ def reset_to_default(context):
     update_tail_info(context, armobj)
     util.enforce_armature_update(context, armobj)
     armobj.RigProp.restpose_mode = False
+    rig.set_appearance_editable(context, is_editable, armobj=armobj)
 
 
 def resetEyes(armobj):
@@ -1108,12 +1118,12 @@ def manage_tamagoyaki_shapes(context, armobj, ids):
     for key in ids:
         if key not in meshes.keys():
             log.warning("TODO: Need to add missing %s" % key)
-    
+
 
 
 @persistent
 def update_on_framechange(scene):
-
+    return
     if util.handler_can_run(scene, check_ticker=False):
         log.debug("handler [%s] started" % "update_on_framechange")
     else:
@@ -1139,7 +1149,7 @@ def update_on_framechange(scene):
 
 
                     animated_pids = [fcurve.data_path.split(".")[1] for fcurve in armobj.animation_data.action.fcurves if fcurve.data_path.split(".")[0]=='ShapeDrivers']
-                    
+
                     for pids in SHAPEUI.values():
                         for pid in pids:
                             if pid in animated_pids:
@@ -1185,7 +1195,7 @@ def update_on_framechange(scene):
 
 
 def loadProps(context, obj, filepath, pack=False):
-    
+
     ensure_drivers_initialized(obj)
 
     obj.ShapeDrivers.Freeze = 1
@@ -1203,7 +1213,7 @@ def loadProps(context, obj, filepath, pack=False):
 
 
 
-    for item in xml.getiterator('param'):
+    for item in xml.iter('param'):
         nid = "%s"%item.get('id')
         pname = item.get('name') # this tends to be lowercase
         value = float(item.get('value'))
@@ -1277,9 +1287,9 @@ def update_system_shapekey(armobj, bones, meshobj, MESH, hover, mesh_weights, bo
 
     keyblocks = meshobj.data.shape_keys.key_blocks
     keyblocks[0].data.foreach_set('co',dco)
-    
+
     for pid, SK in shapekey_items:
-        sk_items = SK if type(SK) == list else SK.items() 
+        sk_items = SK if type(SK) == list else SK.items()
         if len(sk_items) == 0:
             continue
 
@@ -1359,7 +1369,7 @@ def get_reference_for_mesh(name, meshobj):
     if not reference_name:
         reference_name = name
     return meshobj.ShapeDrivers.MESHSHAPES.get(reference_name)
-    
+
 
 def is_shape_unchanged(changed_bones, mesh_weights, force_all_meshes):
     if force_all_meshes:
@@ -1451,7 +1461,6 @@ def add_shapekey_updater(self, context):
                 col.prop(preferences.system,"use_scripts_auto_execute", icon=ICON_SCRIPT, text='')
 
 def shapes_from_object(meshobj, armobj, mesh_weights):
-    log.warning("bind shape keys for Mesh [%s] in Armature [%s]" % (meshobj.name, armobj.name) )
     shape_data = {}
 
     shape_keys = meshobj.data.shape_keys
@@ -1462,6 +1471,7 @@ def shapes_from_object(meshobj, armobj, mesh_weights):
     if not key_blocks:
         return shape_data
 
+    log.warning("bind shape keys for Mesh [%s] in Armature [%s]" % (meshobj.name, armobj.name) )
     for index, block in enumerate(key_blocks):
         if index == 0:
             log.warning("Get reference shape from block [%s]" % (block.name) )
@@ -1508,7 +1518,7 @@ def getMESH(mname, meshobj, armobj, use_cache=True):
     else:
         MESH = create_meshshape(mname, meshobj, armobj)
     return MESH
-    
+
 def removeMESH(mname, meshobj):
     MESH = None
     if hasattr(meshobj, 'ShapeDrivers'):
@@ -1543,7 +1553,7 @@ def bindBoneScales(co, armobj, child, mesh_weights, inverse=False):
     mask = [0]*int(len(co)/3)
     hobj = get_custom_hover(child)
     harm = get_floor_hover(armobj)
-    
+
     for bname, weights in mesh_weights.items():
         dbone = armobj.data.bones.get(bname)
         if not dbone:
@@ -1576,13 +1586,13 @@ def bindBoneScales(co, armobj, child, mesh_weights, inverse=False):
             co[ii+2] = dco[ii+2] + hover[2]
 
 def apply_shapekeys_to_custom_meshes(context, armobj, mname, meshobj):
-        
+
 
 
 
 
     start = time.time()
-    bones = util.get_modify_bones(armobj)    
+    bones = util.get_modify_bones(armobj)
 
 
     if util.object_visible_get(meshobj, context=context):
@@ -1790,13 +1800,13 @@ class ShapeSliderDetach(bpy.types.Operator):
             log.warning("Calling detachShapeSlider for %s" % (context.object))
             detachShapeSlider(context.object, reset=True)
         return {'FINISHED'}
-        
+
 def attachShapeSlider(context, arm, obj):
 
     visitlog.debug("shape.attachShapeSlider arm:%s obj:%s" % (arm.name, obj.name) )
     active = util.get_active_object(context)
     prop   = context.scene.MeshProp
-    
+
     util.tag_addon_revision(obj)
 
     createSliderShapeKeys(obj)
@@ -1822,28 +1832,17 @@ def refresh_shape(context, arm, obj, graceful=False, only_weights=False):
     active_group_index = obj.vertex_groups.active_index
     shape_filename = arm.name
 
-    if True:#shape_filename in bpy.data.texts:
-    
-        temp_filename  = "current_shape"
-   
-        original_mode  = util.ensure_mode_is("OBJECT")
-        
-        #
-        #
-        update_custom_bones(obj, arm)
-        refreshTamagoyakiShape(context, only_weights=only_weights)
-        #
-        #
-        #
-        #
+    arm_mode = arm.mode
+    obj_mode = util.ensure_mode_is("OBJECT")
 
-        util.ensure_mode_is(original_mode)
-        obj.vertex_groups.active_index = active_group_index
-        return shape_filename
-    elif graceful:
-        return None
-    else:
-        raise util.Warning(MSG_UPDATE_SHAPE)
+    update_custom_bones(obj, arm)
+    refreshTamagoyakiShape(context, only_weights=only_weights)
+
+    util.ensure_mode_is(arm_mode, object=arm)
+    util.ensure_mode_is(obj_mode, object=obj)
+    obj.vertex_groups.active_index = active_group_index
+    return shape_filename
+
 
 def get_joint_copy(joint):
     head = Vector(joint['head'])
@@ -1925,7 +1924,7 @@ def refresh_spine_joint_positions(armobj):
             mSpine2.head = mPelvisHead.copy()
             mSpine2.tail = mPelvisTail.copy()
             mSpine2.roll = util.sanitize_f(mSpine2.roll)
-        if Spine2:    
+        if Spine2:
             Spine2.head = mPelvisHead.copy()
             Spine2.tail = mPelvisTail.copy()
             Spine2.roll = util.sanitize_f(Spine2.roll)
@@ -1982,18 +1981,18 @@ def get_edit_bone_location(armobj, dbone):
 def add_offset_to_hierarchy(ebones, dbone, parent_bone, hover):
     if dbone == None or hover.magnitude==0:
         return
-    
+
     if dbone.name != 'Origin':
         dbone.head = parent_bone.tail.copy() if (parent_bone and dbone.use_connect) else (dbone.head-hover)
         dbone.tail -= hover
 
     for child in dbone.children:
         add_offset_to_hierarchy(ebones, child, dbone, hover)
-    
+
 
 def adjust_joint_positions(context, armobj, fix_hover, use_cache=False):
 
-    bone_hierarchy = rig.bones_in_hierarchical_order(armobj)
+    bone_hierarchy = rig.bone_names_in_hierarchical_order(armobj)
     skeleton_bone_names = util.getSkeletonBoneNames(bone_hierarchy)
     control_bone_names = util.getControlledBoneNames(bone_hierarchy)
     eye_states = util.disable_eye_targets(armobj)
@@ -2103,7 +2102,7 @@ def get_bone_dict(bones, bonechanges):
     return result
 
 def slider_driver(self, context, target):
-    
+
 
 
     start = time.time()
@@ -2114,7 +2113,7 @@ def slider_driver(self, context, target):
         return
 
     system_obj_map, custom_obj_map = driven_meshes(context, arm_obj)
-    
+
     log.warning("driver: slider:%s arm:%s %d system meshes %d custom meshes" % (target, arm_obj.name, len(system_obj_map), len(custom_obj_map)))
     ensure_drivers_initialized(arm_obj)
     visibility = ensure_armature_visible(context, arm_obj)
@@ -2124,7 +2123,7 @@ def slider_driver(self, context, target):
     propagate_driver_values(arm_obj, target)
     mesh_changes, bone_changes = expandDrivers(arm_obj, [target])
     log.warning("driver: found %d mesh changes, %d bone changes" % (len(mesh_changes), len(bone_changes) ))
-        
+
 
     restore_visibility(context, arm_obj, visibility)
     tic = util.logtime(start, "slider_driver total runtime", 4, 67)
@@ -2142,7 +2141,7 @@ def restore_visibility(context, arm_obj, visibility):
     arm_is_visible = visibility['visible']
     if not arm_is_visible:
         arm_layer_is_hidden = visibility['hidden']
-        arm_layers = visibility['layers'] 
+        arm_layers = visibility['layers']
         if arm_layer_is_hidden:
             util.object_hide_set(armobj, arm_layer_is_hidden)
 
@@ -2153,7 +2152,7 @@ def ensure_armature_visible(context, arm_obj):
     arm_is_visible = util.object_visible_get(arm_obj, context=context)
     arm_layers = None
     arm_layer_is_hidden = None
-    
+
     if not arm_is_visible:
         arm_layer_is_hidden = util.object_hide_get(arm_obj)
         util.object_hide_set(arm_obj, False)
@@ -2214,26 +2213,28 @@ def shape_slider_driver(self, context, slider_pid):
 
 
 def refreshTamagoyakiShape(context, refresh=True, init=False, target="", only_weights=False):
-    
+
     active_obj_mode = None
     arm_obj_mode = None
-
+    arm_obj_select = None
 
     def backup_object_modes(context, active_obj, arm_obj):
+        arm_obj_select = arm_obj.select_get()
         if active_obj == arm_obj:
             active_obj_mode = arm_obj_mode = active_obj.mode
         else:
             active_obj_mode = active_obj.mode
             util.set_active_object(context, arm_obj)
             arm_obj_mode = arm_obj.mode
-        return active_obj_mode, arm_obj_mode
+        return active_obj_mode, arm_obj_mode, arm_obj_select
 
 
-    def restore_object_modes(context, active_obj, arm_obj):
+    def restore_object_modes(context, active_obj, arm_obj, active_obj_mode, arm_obj_mode, arm_obj_select):
         if arm_obj_mode:
             util.ensure_mode_is(arm_obj_mode)
             util.set_active_object(context, active_obj)
             util.ensure_mode_is(active_obj_mode)
+            arm_obj.select_set(arm_obj_select)
 
 
     scene = context.scene
@@ -2245,7 +2246,7 @@ def refreshTamagoyakiShape(context, refresh=True, init=False, target="", only_we
     if arm_obj is None:
         return
 
-    active_obj_mode, arm_obj_mode = backup_object_modes(context, active_obj, arm_obj)
+    active_obj_mode, arm_obj_mode, arm_obj_select = backup_object_modes(context, active_obj, arm_obj)
     custom_object_map = animated_custom_objects(context, arm_obj, None)
     with_bone_check=True
 
@@ -2254,7 +2255,7 @@ def refreshTamagoyakiShape(context, refresh=True, init=False, target="", only_we
 
     inner_updateShape(context, target, scene, refresh, init, custom_object_map, with_bone_check, only_weights=only_weights)
 
-    restore_object_modes(context, active_obj, arm_obj)
+    restore_object_modes(context, active_obj, arm_obj, active_obj_mode, arm_obj_mode, arm_obj_select)
 
 
 def oldUpdateShape(self, context, target="", scene=None, refresh=False, init=False, object=None, msg="Slider", with_bone_check=True, force_update=False):
@@ -2268,7 +2269,7 @@ def oldUpdateShape(self, context, target="", scene=None, refresh=False, init=Fal
     armobj = util.get_armature(active)
     if armobj is None:
         return
- 
+
     omode = amode = None
     if active != armobj:
         amode = active.mode
@@ -2343,7 +2344,7 @@ def inner_updateShape(context, target, scene, refresh, init, custom_object_map, 
                 try:
 
                     Ds = armobj.ShapeDrivers.DRIVERS[target]
-                    recurse_call=True 
+                    recurse_call=True
                     for D in Ds:
                         pid = D['pid']
                         if pid != 'male_80':
@@ -2405,7 +2406,7 @@ def inner_updateShape(context, target, scene, refresh, init, custom_object_map, 
                     update_system_shapekeys(context, armobj, ava_objects, hover, changed_bones, force_all_meshes)
 
                 util.transform_origin_to_rootbone(context, armobj)
-                bone_hierarchy = rig.bones_in_hierarchical_order(armobj)
+                bone_hierarchy = rig.bone_names_in_hierarchical_order(armobj)
 
                 for name in bone_hierarchy:
                     dbone = armobj.data.bones.get(name,None)
@@ -2512,7 +2513,7 @@ def prepare_reference_meshes(custom_objects, arm_obj):
 def has_shape_data(meshobj):
     return meshobj.get(NEUTRAL_SHAPE, None) != None and meshobj.get(MORPH_SHAPE, None) != None
 
-    
+
 def get_shape_data(child, key):
     visitlog.debug("get shape data: child:%s key:%s" % (child.name, key) )
     skey = str(key)
@@ -2528,7 +2529,7 @@ def get_shape_data(child, key):
             dta = util.fast_get_verts(child.data.vertices)
 
             source = 'mesh'
-            
+
         visitlog.debug("get shape data: copied %d values child:%s from: %s to: %s" % (len(dta), source, child.name, key))
         child[skey] = dta
         return dta
@@ -2587,13 +2588,13 @@ def update_shape_from_weightmaps(weightmaps, weighted_verts, armobj, child, init
         co[i] += hover
 
     fco = co.copy()
-    precos = get_precos(child, co, use_cache=False) 
+    precos = get_precos(child, co, use_cache=False)
 
 
 
 
 
-    
+
 
 
 
@@ -2704,7 +2705,7 @@ def check_slider_cache_consistency(target, timeout=5):
     global last_call_time
     now = time.time()
     target_changed = target != last_call_target
-    timed_out = now - last_call_time > timeout 
+    timed_out = now - last_call_time > timeout
     return target_changed or timed_out
 
 
@@ -2829,7 +2830,7 @@ def precalc_vertex_data(child, co):
 
 
 def calculate_shape_delta(armobj, child, bname, weights, co, dco, init, precos, use_cache=True):
-    
+
 
 
 
@@ -2838,7 +2839,7 @@ def calculate_shape_delta(armobj, child, bname, weights, co, dco, init, precos, 
     BoneLoc0, BoneLoc, MScaleLocal = calculate_shape_transform(armobj, child, bname, init=init, use_binding=True, use_cache=use_cache)
     if not BoneLoc0:
         return
-    
+
     bones = util.get_modify_bones(armobj)
     dbone = bones.get(bname, None)
 
@@ -2878,7 +2879,7 @@ def get_custom_hover(child):
     binding = child.get(SHAPE_BINDING)
     if binding == None:
         return V0
-    
+
     hover = binding.get('hover')
     if hover == None:
         return V0
@@ -2889,7 +2890,7 @@ def get_custom_hover(child):
 def get_dco_index(index, coflen, child):
     dco_index = 3*index
     if dco_index+3 > coflen:
-        updatelog.error("Update custom bones: reference data too small: %s has %d entries, but needs %d to solve vector index %d" 
+        updatelog.error("Update custom bones: reference data too small: %s has %d entries, but needs %d to solve vector index %d"
                         % (child.name, coflen, dco_index+3, index) )
         return None
     return dco_index
@@ -2979,7 +2980,7 @@ def add_weighted_vert(weighted_verts, v, g, nw):
 
 
 
-def collect_weight_groups(bones, child, all_verts): 
+def collect_weight_groups(bones, child, all_verts):
     weightmaps = get_weightmaps(bones, child)
     weighted_verts = {}
     unweightedvertices = False
@@ -2988,7 +2989,7 @@ def collect_weight_groups(bones, child, all_verts):
     for v in child.data.vertices:
         if all_verts or v.select:
             totw = 0
-            vgroups = [] # will contain only valid deforming bone groups 
+            vgroups = [] # will contain only valid deforming bone groups
             for g in v.groups:
                 if g.group in weightmaps:
                     vgroups.append((g.group,g.weight))
@@ -3013,7 +3014,7 @@ def collect_weight_groups(bones, child, all_verts):
 
     if unweightedvertices:
         updatelog.warning("Bind Resolver: Found unweighted vertices in %s" % child.name)
-            
+
     return weightmaps, weighted_verts
 
 
@@ -3047,10 +3048,10 @@ def init_custom_bones(child, armobj, all_verts=True, hover=None):
 
 
 def expandDrivers(armobj, targets):
-    
+
     meshchanges = []
     bonechanges = []
-    
+
 
     try:
         use_male_shape = armobj.ShapeDrivers.male_80
@@ -3058,7 +3059,7 @@ def expandDrivers(armobj, targets):
         use_male_shape = False
 
     ensure_drivers_initialized(armobj)
-    for target in targets: 
+    for target in targets:
 
 
         try:
@@ -3067,23 +3068,23 @@ def expandDrivers(armobj, targets):
             Ds = []
 
         for D in Ds:
-        
+
             pid = D['pid']
-            
-            
+
+
             v100 = getShapeValue(armobj,pid)
             if pid == 'male_80':
                 v = v100
             else:
                 v = rescale(v100, 0, 100, D['value_min'], D['value_max'])
-            
-            
+
+
             for_gender = D['sex']
             if (for_gender == 'male' and not use_male_shape) or (for_gender == 'female' and use_male_shape):
                 v = 0
 
 
-            
+
             if D['type'] == 'mesh':
 
                 meshchanges.append((D, v, v100/100))
@@ -3114,7 +3115,7 @@ def restore_spine_fold_state(armobj):
         bpy.ops.tamagoyaki.armature_spine_unfold_upper()
     if foldstate == 'lower':
         bpy.ops.tamagoyaki.armature_spine_unfold_lower()
-        
+
 
 def adjustSupportRig(context, armobj=None):
     if not armobj:
@@ -3170,8 +3171,8 @@ def updateSystemMeshKey(obj, D, v, p, meshobjs):
     '''
     Update from driver that controls a mesh morph
     '''
-   
-    try: 
+
+    try:
         key = D.get('mesh')
         pid = D.get('pid')
         if not key or not pid:
@@ -3188,7 +3189,7 @@ def updateSystemMeshKey(obj, D, v, p, meshobjs):
         old = key_block.value
         if abs(v-old) > 0.000001:
             key_block.value = v
-    except KeyError as e:            
+    except KeyError as e:
         pass
 
 def get_shapekey_blocks(obj):
@@ -3245,7 +3246,7 @@ def expandDrivenKeys(armobj, D, v, meshchanges, bonechanges):
     Expand from driver that controls other drivers
     '''
 
-
+    #
 
 
 
@@ -3260,7 +3261,7 @@ def expandDrivenKeys(armobj, D, v, meshchanges, bonechanges):
     pid = D['pid']
 
     for DR in D['driven']:
-        drpid = DR['pid'] 
+        drpid = DR['pid']
 
         if drpid in [
                     'eyeball_size_679',
@@ -3288,7 +3289,7 @@ def expandDrivenKeys(armobj, D, v, meshchanges, bonechanges):
 
         if v < DR['min1'] or v > DR['min2']:
             vg = 0.0
-            
+
         elif v >= DR['max1'] and v <= DR['max2']:
             vg = 1.0
 
@@ -3318,18 +3319,18 @@ def expandDrivenKeys(armobj, D, v, meshchanges, bonechanges):
         for D2 in D2s:
             counter +=1
 
-            
+
 
 
             v2 = rescale(vg, 0.0, 1.0, D2['value_min'], D2['value_max'] )
 
             is_for_gender = D2['sex']
-            
+
             if (is_for_gender == 'male' and not use_male_shape) or (is_for_gender == 'female' and use_male_shape):
                 v2 = 0
-                
 
-                    
+
+
             if D2['type'] == 'mesh':
                 meshchanges.append((D2, v2, vg))
                 if len(D2['bones'])>0:

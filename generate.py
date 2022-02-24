@@ -1,8 +1,11 @@
-### Copyright 2015 Matrice Laville
+### Copyright     2021 The Machinimatrix Team
 ###
 ### This file is part of Tamagoyaki
 ###
-
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -20,12 +23,17 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # ##### END GPL LICENSE BLOCK #####
-import bpy, bgl
+
+import bpy
+import bgl
+import re
+import os
+import logging
+import gettext
+
 from bpy.props import *
 from struct import pack, unpack, calcsize
 from mathutils import Matrix, Vector, Euler
-
-import re, os, logging, gettext
 from math import *
 from .const import *
 from . import const, create, data, shape, util
@@ -87,13 +95,13 @@ REFERENCE_NAMES = {
     "mSpine3"          : "mChest",
     "mSpine4"          : "mChest"
 }
-    
+
 def format_as_vector(format, v):
     result = []
     for i in range(0,3):
         result.append( 0 if isclose(v[i], 0, rel_tol=1e-09, abs_tol=0.000001) else v[i] )
     return format % (result[0], result[1], result[2])
-        
+
 def get_reference_bone_for(dbone_name, definitions):
     reference_name = REFERENCE_NAMES.get(dbone_name, dbone_name)
     return definitions[reference_name] if reference_name in definitions else None
@@ -107,7 +115,7 @@ def prec(value, precision):
 def vprec(v,precision):
     result = [prec(el,precision) for el in v]
     return result
-    
+
 
 def get_bone_data(arm, dbone, definitions, extended_def, sl_rotated):
     dpos  = dbone.head_local
@@ -177,7 +185,7 @@ def get_bone_data(arm, dbone, definitions, extended_def, sl_rotated):
 
         if not sl_rotated:
             end0  = [-end0[1],   end0[0],  end0[2]] if end0 else None
-            
+
         if dbone_name in ["mSpine2", "mSpine4"]:
             pos0   = [-pos0[0],   -pos0[1],   -pos0[2]]
             pivot0 = [-pivot0[0], -pivot0[1], -pivot0[2]]
@@ -211,7 +219,7 @@ def get_bone_data(arm, dbone, definitions, extended_def, sl_rotated):
         if group_name[0]=='m': group_name = group_name[1:]
     else:
         group_name = None
-    
+
     return pos, pivot, scale, rot, end, connected, aliases, support, group_name
 
 def mBoneNode(arm, bone, definitions, extended_def, sl_rotated):
@@ -311,7 +319,7 @@ class ExportAvatarSkeletonOp(bpy.types.Operator, ExportHelper):
         valid_bones = get_valid_bones(arm, dbones, dbones)
         definitions = data.load_skeleton_data(data.GENERATE_SKELETON_DATA, 'BASIC', jointtype)
         extended_def= data.get_rigtype_boneset('EXTENDED', jointtype, filepath)
-        
+
         mBones = [b for b in valid_bones if b.name[0] == 'm']
         cBones = [b for b in valid_bones if b.name[0] != 'm']
 
@@ -372,7 +380,7 @@ class ImportAvatarSkeletonOp(bpy.types.Operator, ExportHelper):
                 default=False,
                 options={'HIDDEN'},
                 )
-                
+
     with_extended_drivers : BoolProperty(
                 name="With All Drivers",
                 description="Create all drivers when importing the skeleton.\nNote: When you want to edit the imported avatar-skeleton.xml\nand later export the skeleton file,\n then you must disable this option!",
@@ -383,7 +391,7 @@ class ImportAvatarSkeletonOp(bpy.types.Operator, ExportHelper):
         if context.active_object:
             return context.active_object.mode == 'OBJECT'
         return True
-        
+
     def draw(self, context):
         layout = self.layout
         col = layout.column()
@@ -409,7 +417,7 @@ class ImportAvatarSkeletonOp(bpy.types.Operator, ExportHelper):
 
 
 
-def compare(active=None, selected=None):  
+def compare(active=None, selected=None):
     if not active:
         active=bpy.context.object
     if not selected:
@@ -426,15 +434,15 @@ def compare(active=None, selected=None):
         print("%s added to comparison" % (o.name) )
     if type == 'ARMATURE':
         armature_compare(active, of_same_type)
-        
+
 def armature_compare(active, selected):
-        dbones = active.data.bones
-        print("%s has %d bones" % (active.name, len(dbones)))
-        for other in selected:
-            odbones = other.data.bones
-            print("%s bonecount %s" % (other.name, "matches" if len(dbones) == len(odbones) else len(odbones)))
-            bone_compare(active, other)
-            
+    dbones = active.data.bones
+    print("%s has %d bones" % (active.name, len(dbones)))
+    for other in selected:
+        odbones = other.data.bones
+        print("%s bonecount %s" % (other.name, "matches" if len(dbones) == len(odbones) else len(odbones)))
+        bone_compare(active, other)
+
 def bone_compare(this_armature, other_armature):
     adbones = this_armature.data.bones
     odbones = other_armature.data.bones
@@ -446,7 +454,7 @@ def bone_compare(this_armature, other_armature):
             print("Bone %s does not exist in armature %s" % (dname, other_armature.name) )
 
 MAXVAL=0.001
-            
+
 def bone_data_compare(bname, this_armature, other_armature):
     adbone = this_armature.data.bones[bname]
     odbone = other_armature.data.bones[bname]

@@ -1,9 +1,11 @@
-### Copyright 2011-2012 Magus Freston, Domino Marama, and Gaia Clary
-### Copyright 2013-2015 Gaia Clary
+### Copyright     2021 The Machinimatrix Team
 ###
-### This file is part of Tamagoyaki 1.
-### 
-
+### This file is part of Tamagoyaki
+###
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -22,8 +24,11 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy, os, logging
+import bpy
+import os
+import logging
 import  xml.etree.ElementTree as et
+
 from struct import unpack
 from math import radians
 from mathutils import Euler, Vector
@@ -43,7 +48,7 @@ WEIGHTSMAP = {
     'headMesh':[('mNeck','mHead'), ('mHead', None)],
     'eyelashMesh':[('mHead',  None)],
     'upperBodyMesh':[('mPelvis','mTorso' ), ('mTorso', 'mChest'), ('mChest', 'mNeck'), ('mNeck', None),
-                    ('mChest','mCollarLeft' ), ('mCollarLeft', 'mShoulderLeft'), ('mShoulderLeft', 'mElbowLeft'), ('mElbowLeft','mWristLeft' ), 
+                    ('mChest','mCollarLeft' ), ('mCollarLeft', 'mShoulderLeft'), ('mShoulderLeft', 'mElbowLeft'), ('mElbowLeft','mWristLeft' ),
                     ('mWristLeft',None), ('mChest','mCollarRight' ), ('mCollarRight', 'mShoulderRight'), ('mShoulderRight', 'mElbowRight'),
                     ('mElbowRight','mWristRight' ), ('mWristRight', None)],
     'lowerBodyMesh':[('mPelvis','mHipRight'), ('mHipRight', 'mKneeRight'), ('mKneeRight', 'mAnkleRight'), ('mAnkleRight',  None),
@@ -127,7 +132,7 @@ def get_volume_bones(obj=None, only_deforming=False):
     else:
         bone_set = SLVOLBONES
     return bone_set
-    
+
 def get_base_bones(obj=None, only_deforming=False):
     armobj = util.get_armature(obj) if obj else None
     if armobj and only_deforming:
@@ -136,10 +141,10 @@ def get_base_bones(obj=None, only_deforming=False):
     else:
         bone_set = SLBASEBONES
     return bone_set
-    
+
 def get_extended_bones(obj, only_deforming=False):
     armobj = util.get_armature(obj)
-    bones = util.get_modify_bones(armobj)    
+    bones = util.get_modify_bones(armobj)
     if only_deforming:
         bone_set = [bone.name for bone in bones if bone.name[0]=='m' and bone.name not in SLBASEBONES and bone.use_deform]
     else:
@@ -147,7 +152,7 @@ def get_extended_bones(obj, only_deforming=False):
     return bone_set
 
 def get_bone_sections(bone, sections):
-   return [li[0] for li in enumerate(bone.layers) if li[1] and li[0] in sections]
+    return [li[0] for li in enumerate(bone.layers) if li[1] and li[0] in sections]
 
 def get_deform_bones(obj, rig_sections, excludes, visible=None, selected=None, use_x_mirror=False):
     armobj = util.get_armature(obj)
@@ -184,9 +189,9 @@ def get_deform_bones_for_sections(armobj, rig_sections, excludes, visible=None, 
         if selected and not bone.select:
             continue
         if bone.name.startswith('mEyeAlt'):
-           if not exclude_alt_eyes:
-               bone_set.append(bone.name)
-           continue
+            if not exclude_alt_eyes:
+                bone_set.append(bone.name)
+            continue
         elif bone.name.startswith('mEye'):
             if not exclude_eyes:
                 bone_set.append(bone.name)
@@ -199,7 +204,7 @@ def get_deform_bones_for_sections(armobj, rig_sections, excludes, visible=None, 
             bone_sections = get_bone_sections(bone, rig_sections)
             if bone_sections:
                 if not get_bone_sections(bone, excludes):
-                     bone_set.append(bone.name)
+                    bone_set.append(bone.name)
 
     return bone_set
 
@@ -252,33 +257,33 @@ def loadLLM(name, filename):
 
 
     else:
-        shift = (0,0,0)    
-    
+        shift = (0,0,0)
+
 
     llm['baseCoords'] = []
     for i in range(numVertices):
-        co = unpack("<3f", stream.read(12)) 
+        co = unpack("<3f", stream.read(12))
         llm['baseCoords'].append(s2b((co[0]*scale[0]+shift[0], co[1]*scale[1]+shift[1], co[2]*scale[2]+shift[2])))
-        
+
     llm['baseNormals'] = []
     for i in range(numVertices):
         llm['baseNormals'].append( s2b(unpack( "<3f", stream.read(12) )))
-        
+
     llm['baseBinormals'] = []
     for i in range(numVertices):
         llm['baseBinormals'].append( s2b(unpack( "<3f", stream.read(12) )))
-    
+
 
     llm['texCoords'] = []
     for i in range(numVertices):
         llm['texCoords'].append( unpack( "<2f", stream.read(8) ))
-    
+
 
     if hasDetailTexCoords:
         llm['detailTexCoords'] = []
         for i in range(numVertices):
             llm['detailTexCoords'].append( unpack( "<2f", stream.read(8) ))
-    
+
 
 
     #
@@ -301,7 +306,7 @@ def loadLLM(name, filename):
             idx = int(raw)-1
             iweight = raw-int(raw)
             llm['weights'].append( (idx, iweight) )
-            
+
     if name == "eyeBallLeftMesh" or name == "eyeBallRightMesh":
         llm['weights'] = [(0,0.0)]*numVertices
 
@@ -310,14 +315,14 @@ def loadLLM(name, filename):
     llm['faces'] = []
     for i in range(numFaces):
         llm['faces'].append( unpack( "<3H", stream.read(6) ))
-    
+
 
     if hasWeights:
         numSkinJoints = unpack( "<H", stream.read(2) )[0]
         llm['skinJoints'] = []
         for i in range(numSkinJoints):
             llm['skinJoints'].append(stream.read(64).decode('utf-8').split("\x00")[0])
-        
+
     if name == "eyeBallLeftMesh":
         llm['skinJoints'] = ['mEyeLeft']
     elif name == "eyeBallRightMesh":
@@ -339,7 +344,7 @@ def loadLLM(name, filename):
             morph['vertices'].append( v )
         llm['morphsbyname'][n] = morph
         n = stream.read(64).decode('utf-8').split("\x00")[0]
-        
+
 
     numRemaps = unpack( "<l", stream.read(4) )[0]
     map = {}
@@ -407,7 +412,7 @@ def loadDrivers(max_param_id=-1):
     ladxml = et.parse(util.get_lad_file())
 
     DRIVERS = {}
-    
+
     #
 
     #
@@ -420,17 +425,17 @@ def loadDrivers(max_param_id=-1):
 
         mname = mesh.get('type')
 
-        
-        params = mesh.findall('param')       
+
+        params = mesh.findall('param')
         for p in params:
             pname = p.get('name')
             id  = int(p.get('id'))
             pid = cleanId(id, pname)
-            
 
 
 
-                
+
+
             paramd = {'pid': pid,
                       'name': pname,
                       'type': 'mesh',
@@ -443,31 +448,31 @@ def loadDrivers(max_param_id=-1):
                       'sex': p.get('sex', None),
                       'edit_group': p.get('edit_group', None),
                       'mesh': mname,
-                      } 
-           
+                      }
+
             vbones = []
 
             param_morphs = p.findall('param_morph')
             for param_morph in param_morphs:
                 volume_morphs = param_morph.findall('volume_morph')
                 for vol in volume_morphs:
-                
+
                     scale = util.float_array_from_string(vol.get('scale'))
                     pos   = util.float_array_from_string(vol.get('pos'))
                     vname = vol.get('name')
-                    
+
                     if all(v == 0 for v in scale):
                         log.info("Volume Morph %s has no scale" % (vname))
-                    
+
                     vbone = {
                         'name':vname,
                         'scale':s2bo(scale),
                         'offset':s2b(pos),
                     }
                     vbones.append(vbone)
-            
+
             paramd['bones'] = vbones
-        
+
             if max_param_id == -1 or id < max_param_id:
                 if pid in DRIVERS:
                     DRIVERS[pid].append(paramd)
@@ -484,7 +489,7 @@ def loadDrivers(max_param_id=-1):
         id    = int(p.get('id'))
         if max_param_id > -1 and id < max_param_id:
             continue
-            
+
         pid = cleanId(id, pname)
 
 
@@ -528,13 +533,13 @@ def loadDrivers(max_param_id=-1):
 
     #
 
-
+    #
     drivers = ladxml.findall('driver_parameters')[0].findall('param')
     for p in drivers:
         id    = int(p.get('id'))
         if max_param_id > -1 and id < max_param_id:
             continue
-            
+
         pname = p.get('name')
         pid = cleanId(id, pname)
 
@@ -555,7 +560,7 @@ def loadDrivers(max_param_id=-1):
         driven=p.findall('param_driver')[0].findall('driven')
         for d in driven:
 
-
+            ##
 
 
 
@@ -594,8 +599,8 @@ def loadDrivers(max_param_id=-1):
             logging.error("unexpected duplicate pid: %s", pid)
         else:
             DRIVERS[pid] = [paramd]
-                
-    
+
+
     return DRIVERS
 
 SEAM_EXCEPTIONS = {}
@@ -695,7 +700,7 @@ def get_tamagoyaki_shapekeys(ob):
         loadMeshes()
 
     return SHAPEKEYS
-    
+
 def has_tamagoyaki_shapekeys(ob):
     if not (ob and ob.data.shape_keys):
         return False
@@ -734,19 +739,19 @@ def loadMeshes():
 
         meshd = loadLLM(name, os.path.join(DATAFILESDIR,file_name))
         meshd['name'] = name
-       
+
 
 
         meshd['morphs'] = {}
 
         MESHES[name] = meshd
         if name in SEAM_EXCEPTIONS:
-           meshd['noseams']    = SEAM_EXCEPTIONS[name]
-           meshd['extraseams'] = SEAM_EXTRA[name]
-           meshd['extrapins']  = PIN_EXTRA[name]
+            meshd['noseams']    = SEAM_EXCEPTIONS[name]
+            meshd['extraseams'] = SEAM_EXTRA[name]
+            meshd['extrapins']  = PIN_EXTRA[name]
 
 
-        params = mesh.findall('param')       
+        params = mesh.findall('param')
         for p in params:
             pname = p.get('name')
 
@@ -764,7 +769,7 @@ def loadMeshes():
 
 
 
-           
+
 
 
             meshd['morphs'][pid]   = morph
@@ -787,7 +792,7 @@ skeleton_meta = {}
 def getCachedSkeletonDefinition(rigType, jointType):
     global skeleton_meta
     key = "%s_%s" % (rigType, jointType)
-    
+
     skeleton = skeleton_meta.get(key, None)
     if skeleton:
         return skeleton
@@ -799,7 +804,7 @@ def getCachedSkeletonDefinition(rigType, jointType):
 
 
 def getSkeletonDefinitionFromFile(rigType, jointType):
-    
+
     filepath = util.get_skeleton_file()
     boneset = load_skeleton_data(filepath, rigType, jointType)
 
@@ -830,7 +835,7 @@ STRUCTURE_LAYER=3
 STRUCTURE_RIGTYPE=4    # BASIC_RIG, EXTENDED_RIG
 STRUCTURE_PARENT_CONNECT=5 # UNCONNECTED, CONNECT_HEAD, CONNECT_TAIL
 STRUCTURE_CHILD_CONNECT=6 # UNCONNECTED, CONNECT_HEAD, CONNECT_TAIL
-STRUCTURE_HEAD=7       # Head 
+STRUCTURE_HEAD=7       # Head
 STRUCTURE_TAIL=8       # When Vector then tail is relative to head
 
 STRUCTURE_BONES = OrderedDict ( [
@@ -888,7 +893,7 @@ def get_hand_control_bones_for(boneset):
     lhcb  = {"C"+key[1:-5]+"Left":[key, "WristLeft", Vector((0,0,0.0)), "Hand", "CustomShape_Circle02"]   for key in boneset.keys() if key.startswith("mHand") and key.endswith("1Left")}
     rhcb  = {"C"+key[1:-6]+"Right":[key, "WristRight", Vector((0,0,0.0)), "Hand", "CustomShape_Circle02"] for key in boneset.keys() if key.startswith("mHand") and key.endswith("1Right")}
     return util.merge_dicts(lhcb, rhcb)
-    
+
 
 def load_control_bones(boneset, rigType):
 
@@ -903,18 +908,18 @@ def load_control_bones(boneset, rigType):
 
         if bone_name in boneset:
             return
-        
+
         mBone = None
         mBoneName = "m"+bone_name
         if mBoneName in boneset:
             mBone = boneset[mBoneName]
             bonegroup = mBone.bonegroup if mBone.bonegroup[0] != 'm' else mBone.bonegroup[1:]
         else:
-            log.warn("Custom bone: Set bone group for %s to %s" % (bone_name, bonegroup) )
             bonegroup = 'Custom'
-        
+            log.warn("Custom bone: Set bone group for %s to %s" % (bone_name, bonegroup) )
+
         bone = add_bone(bone_name, bonegroup, boneset)
-        
+
         if mBone:
             bone.copy(mBone)
             parentName = mBone.parent.blname
@@ -941,7 +946,7 @@ def load_control_bones(boneset, rigType):
         def get_reltail(parent, child, connect):
             if child:
                 if connect==CONNECT_TAIL:
-                    reltail = child.relhead - parent.reltail 
+                    reltail = child.relhead - parent.reltail
                 elif connect==CONNECT_HEAD:
                     reltail = child.head()-parent.head()
                 else:
@@ -961,7 +966,7 @@ def load_control_bones(boneset, rigType):
             head = boneset.get(head)
             if head == None:
                 return None
-            
+
             if tail == None:
                 return head.tail() - head.head()
 
@@ -1029,12 +1034,7 @@ def load_control_bones(boneset, rigType):
     for bone_name in STRUCTURE_BONES:
         val = STRUCTURE_BONES[bone_name]
         add_structure_bone(bone_name, boneset, val)
- 
 
-
-
-
-    #
 
 
 
@@ -1043,6 +1043,11 @@ def load_control_bones(boneset, rigType):
 
 
 
+
+    #
+
+
+    #
 
 
 
@@ -1060,7 +1065,7 @@ def load_control_bones(boneset, rigType):
     return
 
 
-    
+
 
 
 
@@ -1116,7 +1121,7 @@ def preset_bone_constants(boneset, rigType):
 
 
 
-    
+
 
     pelvishead = boneset['mPelvis'].relhead
     pelvistail = boneset['mPelvis'].reltail
@@ -1166,7 +1171,7 @@ def preset_bone_constants(boneset, rigType):
 
     elbowLeft = boneset["mElbowLeft"]
     wristLeft = boneset["mWristLeft"]
-    
+
     handThumb0Left  = boneset["HandThumb0Left"]
     handIndex0Left  = boneset["HandIndex0Left"]
     handMiddle0Left = boneset["HandMiddle0Left"]
@@ -1192,7 +1197,7 @@ def preset_bone_constants(boneset, rigType):
     add_to_boneset(boneset, "HandMiddle1Left", relhead = handMiddle0Left.reltail, connected=True, is_structure=False)
     add_to_boneset(boneset, "HandRing1Left",   relhead = handRing0Left.reltail, connected=True, is_structure=False)
     add_to_boneset(boneset, "HandPinky1Left",  relhead = handPinky0Left.reltail, connected=True, is_structure=False)
- 
+
     elbowRight = boneset["mElbowRight"]
     wristRight = boneset["mWristRight"]
     handThumb0Right  = boneset["HandThumb0Right"]
@@ -1237,7 +1242,7 @@ def preset_bone_constants(boneset, rigType):
         deform=False,
         group="Handstructure",
         shape="CustomShape_Circle02")
- 
+
 
 
 
@@ -1245,10 +1250,10 @@ class Bone:
 
     bonegroups = []
 
-    def __init__(self, blname, bvhname=None, slname=None, relhead=V0.copy(), reltail=Vector((0,0,-0.1)), parent=None, 
-                 bonelayers=[B_LAYER_TORSO], shape=None, shape_scale=None, roll = 0, connected=False, group="Rig", 
+    def __init__(self, blname, bvhname=None, slname=None, relhead=V0.copy(), reltail=Vector((0,0,-0.1)), parent=None,
+                 bonelayers=[B_LAYER_TORSO], shape=None, shape_scale=None, roll = 0, connected=False, group="Rig",
                  stiffness=[0.0,0.0,0.0], limit_rx=None, limit_ry=None, limit_rz=None, deform=False,
-                 scale0=V1.copy(), rot0=V0.copy(), skeleton='basic', bonegroup='Custom', 
+                 scale0=V1.copy(), rot0=V0.copy(), skeleton='basic', bonegroup='Custom',
                  mandatory='false', leaf=None, wire=True, pos0=V0.copy(), pivot0=V0.copy(), attrib= None,
                  end0=V0.copy(), is_structure=False):
 
@@ -1265,19 +1270,19 @@ class Bone:
         self.is_structure = False
         self.b0head       = V0.copy()
         self.b0tail       = V0.copy()
-               
+
         self.set(all=True,
             bvhname    = bvhname,
             slname     = slname,
             relhead    = relhead,
             reltail    = reltail,
-            parent     = parent, 
+            parent     = parent,
             bonelayers = bonelayers,
             shape      = shape,
             shape_scale= shape_scale,
             roll       = roll,
             connected  = connected,
-            group      = group, 
+            group      = group,
             stiffness  = stiffness,
             limit_rx   = limit_rx,
             limit_ry   = limit_ry,
@@ -1304,13 +1309,13 @@ class Bone:
                 setattr(self, key, val)
 
 
-    def set(self,all=False, bvhname=None, slname=None, 
-            relhead=None, reltail=None, parent=None, 
-            bonelayers=None, shape=None, shape_scale= None, 
-            roll = None, connected=None, group=None, 
+    def set(self,all=False, bvhname=None, slname=None,
+            relhead=None, reltail=None, parent=None,
+            bonelayers=None, shape=None, shape_scale= None,
+            roll = None, connected=None, group=None,
             stiffness=None, limit_rx=None, limit_ry=None, limit_rz=None, deform=None,
-            scale0=None, rot0=None, pos0=None, pivot0=None, 
-            skeleton=None, bonegroup=None, 
+            scale0=None, rot0=None, pos0=None, pivot0=None,
+            skeleton=None, bonegroup=None,
             mandatory=None, leaf=None, wire=None,
             attrib=None, end0=None, is_structure=None):
 
@@ -1330,8 +1335,8 @@ class Bone:
             self.parent = parent
             if not self in parent.children:
                 parent.children.append(self) # set up the children bones
-            
-        if all or bonelayers != None: self.bonelayers = bonelayers    # layers bone will be visible on 
+
+        if all or bonelayers != None: self.bonelayers = bonelayers    # layers bone will be visible on
         if all or shape      != None: self.shape      = shape     # name of custom shape if used
         if all or shape_scale!= None: self.shape_scale= shape_scale# custom shape scale
         if all or roll       != None: self.roll       = roll      # bone roll angle in radians
@@ -1347,12 +1352,12 @@ class Bone:
         if all or limit_rz   != None: self.limit_rz   = limit_rz
         if all or deform     != None: self.deform     = deform
         if all or skeleton   != None: self.skeleton   = skeleton
-        
+
         if all or bonegroup   != None:
             if not bonegroup in Bone.bonegroups:
                 Bone.bonegroups.append(bonegroup)
             self.bonegroup     = bonegroup
-            
+
         if all or mandatory  != None: self.mandatory = mandatory
         if all or leaf       != None: self.leaf      = leaf
         if all or wire       != None: self.wire      = wire
@@ -1360,35 +1365,35 @@ class Bone:
         if all or end0       != None: self.end0      = end0
         if all or is_structure != None: self.is_structure = is_structure
 
-        
+
     def get_scale(self):
         if self.is_structure and self.parent:
             return self.parent.get_scale()
         dps = Vector(self.scale)
         ps0 = Vector(self.scale0)
         return ps0, dps
-    
+
     def get_headMatrix(self):
         if self.is_structure and self.parent:
             return self.parent.get_headMatrix()
         M = self.headMatrix()
         return M
-    
+
     def headMatrix(self):
-    
+
         o = Vector(self.offset)
         h = Vector(self.relhead)
-        
+
         if hasattr(self, 'parent') and self.parent:
             M  = self.parent.get_headMatrix()
             ps0, dps = self.parent.get_scale()
             matrixScale(ps0+dps, M, replace=True)
             matrixLocation(h+o,M)
-            
+
         else:
 
             M = Matrix()
-        
+
         return M
 
     def get_parent(self):
@@ -1399,16 +1404,16 @@ class Bone:
                 return self.parent
         else:
             return None
-        
+
     def head(self, bind=True):
         '''
         Return the location of the bone head relative to Origin head
         '''
-        
 
 
 
-        
+
+
         o = Vector(self.offset)
         h = Vector(self.relhead)
         oh = o+h
@@ -1423,11 +1428,11 @@ class Bone:
 
             psoh = Vector([ps[i]*oh[i] for i in range(3)])
             ah = ph + psoh
-            
+
         else:
 
             ah = V0.copy()
-        
+
         return ah
 
     def tail(self):
@@ -1436,12 +1441,12 @@ class Bone:
         '''
 
         ah = self.head()
-        t = self.reltail if self.reltail is not None else V(0.0,0.1,0.0)        
+        t = self.reltail if self.reltail is not None else V(0.0,0.1,0.0)
         s = Vector([1 + self.scale[i] / self.scale0[i] for i in range(3)])
-        
+
         at = ah+Vector([s[i]*t[i] for i in range(3)])
         return at
-    
+
     def pprint(self):
         print("bone       ", self.blname)
         print("bone bvh   ", self.bvhname)
@@ -1539,7 +1544,7 @@ class Skeleton:
             self.slbones[B.slname] = B
         if B.bvhname is not None:
             self.bvhbones[B.bvhname] = B
-    
+
     def add_boneset(self, boneset):
         for bone in boneset.values():
             self.add_bone(bone)
@@ -1602,7 +1607,7 @@ class Skeleton:
                 return parent
         else:
             return None
- 
+
     @staticmethod
     def get_bone_info(context, dbone, bones):
         if dbone == None or bones == None:
@@ -1624,7 +1629,7 @@ class Skeleton:
            if child.use_connect:
                return True
         return False
-        
+
     @staticmethod
     def get_restposition(context, dbone, bind=True, with_joint=True, use_bind_pose=False):
         M = Matrix(([1,0,0],[0,1,0],[0,0,1]))
@@ -1707,8 +1712,8 @@ class Skeleton:
         Return the location of the bone tail relative to topmost bone head
         with default=True it ignores scaling and offsets
         if bones is set then prefer SL bones (mBones) as reference
-        Hint: the control skeleton can have a different hierarchy 
-              so the control skeleton can potentially scale different 
+        Hint: the control skeleton can have a different hierarchy
+              so the control skeleton can potentially scale different
               then the SL Skeleton. Caveat: this effectively synchronises
               the control bones to the mBones when the shape sliders are updated!
         '''
@@ -1717,7 +1722,7 @@ class Skeleton:
         dbone, bones = Skeleton.get_bone_info(context, dbone, bones)
         if not Mh:
             Mh = Skeleton.headMatrix(context, dbone, bones, bind, with_joints)
-        
+
 
 
 
@@ -1759,10 +1764,10 @@ class Skeleton:
     def head(context=None, dbone=None, bones=None, bind=True, with_joints=True, use_bind_pose=False):
         '''
         Return the location of the bone head relative to Origin head
-        with scale=False it ignores scaling and offsets  
+        with scale=False it ignores scaling and offsets
         if bones is set then prefer SL bones (mBones) as reference
-        Hint: the control skeleton can have a different hierarchy 
-              so the control skeleton can potentially sclae different 
+        Hint: the control skeleton can have a different hierarchy
+              so the control skeleton can potentially sclae different
               then the SL Skeleton. Caveat: this effectively synchronises
               the control bones to the mBones when the shape sliders are updated!
         '''
@@ -1778,7 +1783,12 @@ class Skeleton:
         if not roots:
             roots = [b for b in arm.data.bones if b.parent == None]
 
-        for root in roots:
+        for root in [b for b in roots if b.name[0] != 'm']:
+            bone_names.append(root.name)
+            if root.children:
+                Skeleton.bones_in_hierarchical_order(arm, root.children, bone_names)
+
+        for root in [b for b in roots if b.name[0] == 'm']:
             bone_names.append(root.name)
             if root.children:
                 Skeleton.bones_in_hierarchical_order(arm, root.children, bone_names)
@@ -1786,25 +1796,16 @@ class Skeleton:
         if order == 'BOTTOMUP':
             bone_names.reverse()
         return bone_names
-    
-    @staticmethod
-    def get_bone_end(dbone, scale=True):
-        be  = Vector(dbone.get(JOINT_BASE_TAIL_ID, (0,0.1,0)))
-        
-        if scaled:
-            s  = Vector(dbone.get('scale0', (1,1,1)))
-            s += Vector(dbone.get('scale',  (0,0,0)))
-            be = Vector([s[0]*be[0], s[1]*be[1], s[2]*be[2]])
-        return be
+
 
     @staticmethod
     def tail(context=None, dbone=None, bones=None, bind=True, with_joints=True, use_bind_pose=False):
         '''
         Return the location of the bone tail relative to topmost bone head
-        with scale=False it ignores scaling and offsets  
+        with scale=False it ignores scaling and offsets
         if bones is set then prefer SL bones (mBones) as reference
-        Hint: the control skeleton can have a different hierarchy 
-              so the control skeleton can potentially sclae different 
+        Hint: the control skeleton can have a different hierarchy
+              so the control skeleton can potentially sclae different
               then the SL Skeleton. Caveat: this effectively synchronises
               the control bones to the mBones when the shape sliders are updated!
         '''
@@ -1824,7 +1825,7 @@ def preset_bone_limitations(boneset):
 
 
 
-    
+
     for bone, val in DEFAULT_BONE_LIMITS.items():
         if bone in boneset:
             stiffness, limit_rx, limit_ry, limit_rz, roll = val
@@ -1894,11 +1895,11 @@ def set_bone_layers(boneset):
 
     for n in sym(['Ankle.', 'Knee.', 'Hip.']):
         boneset[n].layers=[B_LAYER_LEGS]
-        
+
 
     for n in sym(['Collar.', 'Shoulder.', 'Elbow.', 'Wrist.']):
         boneset[n].layers=[B_LAYER_ARMS]
-        
+
 
     for n in ['Tinker', 'Torso', 'Chest']:
         boneset[n].layers=[B_LAYER_TORSO]
@@ -1910,12 +1911,12 @@ def set_bone_layers(boneset):
 
     for n in sym_expand(boneset.keys(), ['*Link.', 'Pelvis']):
         boneset[n].layers=[B_LAYER_STRUCTURE]
-    
+
 
     for n in sym(['Toe.', 'Foot.', 'Skull','Eye.',
                  ]):
         if n in boneset: boneset[n].layers=[B_LAYER_EXTRA]
-        
+
     for n in sym(['EyeTarget']):
         if n in boneset: boneset[n].layers=[B_LAYER_EYE_TARGET]
 
@@ -2097,7 +2098,7 @@ def create_ik_arm_bones(boneset):
         line_location = mElbow.head() - ikWrist.head()
         target_location = line_location + ikLine
 
-        ikElbowTarget = Bone("ikElbowTarget%s"%side, 
+        ikElbowTarget = Bone("ikElbowTarget%s"%side,
                             relhead=target_location,
                             reltail=s2b(V((0, 0, 0.1))),
                             parent=ikWrist,
@@ -2142,7 +2143,7 @@ def create_ik_leg_bones(boneset, side, Heel, Ball):
         ball_relhead = Heel-Ball
         heel_relhead = Heel
 
-    
+
     ikHeel     = Bone("ikHeel"+side,      relhead=heel_relhead, reltail=s2b(V((0, 0, -0.1))),  parent=Origin,      group="IK", bonelayers=bonelayers, shape="CustomShape_Foot",      bonegroup=bonegroup)
     ikFootPivot= Bone("ikFootPivot"+side, relhead=V0,           reltail=ikHeel.reltail,  parent=ikHeel,  group="IK", bonelayers=bonelayers, shape="CustomShape_FootPivot", bonegroup=bonegroup)
     ikFootBall = Bone("ikFootBall"+side, relhead=ball_relhead,  reltail=s2b(V((0, 0, -0.02))), parent=ikHeel, bonelayers=bonelayers, group="IK", shape='CustomShape_Target', bonegroup=bonegroup)
@@ -2160,10 +2161,10 @@ def create_ik_leg_bones(boneset, side, Heel, Ball):
 
     mAnkle = boneset["mAnkle"+side]
     ankle_location = mAnkle.head() - ikFootPivot.head()
-    
+
     bonegroup  = "IK Legs"
     bonelayers = BONEGROUP_MAP[bonegroup][1]
-    
+
     ikAnkle = Bone("ikAnkle"+side, relhead=ankle_location, reltail=mAnkle.reltail, parent=ikFootPivot, bonelayers=bonelayers, group="IK", bonegroup=bonegroup)
 
     IK_BONES = [ikHeel, ikFootPivot,
@@ -2191,7 +2192,7 @@ def create_ik_limb_bones(boneset, side, Heel, Ball):
     else:
         ball_relhead = Heel-Ball
         heel_relhead = Heel
-    
+
     ikLimbHeel     = Bone("ikHindHeel"+side,      relhead=heel_relhead, reltail=s2b(V((0, 0, -0.1))),  parent=Origin,      group="IK", bonelayers=bonelayers, shape="CustomShape_Foot",      bonegroup=bonegroup)
     ikLimbFootPivot= Bone("ikHindFootPivot"+side, relhead=V0,           reltail=ikLimbHeel.reltail,  parent=ikLimbHeel,  group="IK", bonelayers=bonelayers, shape="CustomShape_FootPivot", bonegroup=bonegroup)
     ikLimbFootBall = Bone("ikHindFootBall"+side,  relhead=ball_relhead, reltail=s2b(V((0, 0, -0.02))), parent=ikLimbHeel, bonelayers=bonelayers, group="IK", shape="CustomShape_Target", bonegroup=bonegroup)
@@ -2236,7 +2237,7 @@ def load_attachment_points(boneset, rigtype):
     bonelayers=BONEGROUP_MAP[bonegroup][1]
     shape="CustomShape_Target"
     deform=False
-    
+
 
     for attach in attachments:
 
@@ -2259,23 +2260,23 @@ def load_attachment_points(boneset, rigtype):
             else:
                 relhead=s2b(V(pos))
                 parent=boneset[joint]
-                rot0=s2bo(V(rot))            
+                rot0=s2bo(V(rot))
 
             abone_name = "a"+name
 
             bone = Bone(abone_name,
                          relhead=relhead,
                          reltail=reltail,
-                         parent=parent, 
+                         parent=parent,
                          group=bonegroup,
                          bonelayers=bonelayers,
-                         shape=shape, 
+                         shape=shape,
                          deform=deform,
                          rot0=rot0,
                          pos0=V(pos),
                          pivot0=relhead,
-                         skeleton='basic', 
-                         bonegroup=bonegroup, 
+                         skeleton='basic',
+                         bonegroup=bonegroup,
                          mandatory='false')
             boneset[abone_name] = bone
 
@@ -2305,10 +2306,10 @@ def get_bone_attributes(bone_xml):
         else:
             attrib['skeleton']  = 'extended'
             attrib['mandatory'] = 'false'
-            
+
             if blname.startswith('mSpine'):
                 attrib['bonegroup'] = 'Spine'
-            else:        
+            else:
                 attrib['bonegroup'] = attrib.get('group', 'Custom')
 
     else:
@@ -2381,17 +2382,17 @@ def load_bone_hierarchy(parent_xml, parent_bone, boneset, rigType, jointtype):
 
 
 
-        
+
         if reltail == None and blname in BONE_TAIL_LOCATIONS:
             print("load_bone_hierarchy: enforce predefined bone tail for ", blname)
             reltail = s2b(Vector((BONE_TAIL_LOCATIONS[blname])))
-        
+
         leaf       = True
         bonegroup  = attrib['bonegroup']
         if 'm' + bonegroup in BONEGROUP_MAP:
             bonegroup  = 'm' + bonegroup
         bonelayers = BONEGROUP_MAP[bonegroup][1]
-        
+
         if bone_type == 'bone':
 
             if 'support' in attrib and attrib['support'] == "extended":
@@ -2411,7 +2412,7 @@ def load_bone_hierarchy(parent_xml, parent_bone, boneset, rigType, jointtype):
             shape       = "CustomShape_Volume"
             raw_rot     = s2b(Vector(float_array_from_string(attrib['rot']))) if 'rot' in attrib else V0.copy()
             rot0        = [radians(r) for r in raw_rot]
-            
+
             if reltail:
                 eul  = Euler( rot0, 'XYZ')
                 reltail = Vector(reltail)
@@ -2421,24 +2422,24 @@ def load_bone_hierarchy(parent_xml, parent_bone, boneset, rigType, jointtype):
 
         if can_add:
             log.debug("load_bone_hierarchy add bone %s", blname)
-            childbone = Bone(blname, 
-                        bvhname    = bvhname, 
-                        slname     = blname, 
+            childbone = Bone(blname,
+                        bvhname    = bvhname,
+                        slname     = blname,
                         relhead    = relhead,
                         reltail    = reltail,
-                        end0       = end0,                        
+                        end0       = end0,
                         parent     = parent_bone,
-                        bonelayers = bonelayers, 
-                        shape      = shape, 
-                        roll       = 0, 
-                        connected  = connected, 
-                        group      = group, 
-                        stiffness  = [0.0,0.0,0.0], 
-                        limit_rx   = None, 
-                        limit_ry   = None, 
-                        limit_rz   = None, 
-                        deform     = deform, 
-                        scale0     = scale0, 
+                        bonelayers = bonelayers,
+                        shape      = shape,
+                        roll       = 0,
+                        connected  = connected,
+                        group      = group,
+                        stiffness  = [0.0,0.0,0.0],
+                        limit_rx   = None,
+                        limit_ry   = None,
+                        limit_rz   = None,
+                        deform     = deform,
+                        scale0     = scale0,
                         rot0       = rot0,
                         pos0       = pos0,
                         pivot0     = pivot0,
@@ -2477,7 +2478,7 @@ def get_boneset(rigType, jointtype):
     key = "%s_%s" % (rigType,jointtype)
     boneset = bonesets.get(key)
     return boneset
-    
+
 def add_boneset(rigType, jointtype, boneset):
     global bonesets
     key = "%s_%s" % (rigType,jointtype)
@@ -2522,21 +2523,21 @@ def load_skeleton_data_from_file(filepath, rigType, jointtype):
 
     boneset = {"Origin": origin}
     load_bone_hierarchy(root, origin, boneset, rigType, jointtype)
-    
+
 
     boneset["mHipRight"].roll     = radians(-7.5)
     boneset["mHipLeft"].roll      = radians( 7.5)
 
-    
+
     if rigType != 'REFERENCE':
         create_ik_bones(boneset)
         load_control_bones(boneset, rigType)
         create_hand_rig(boneset)
         create_face_rig(boneset)
         add_eye_targets(boneset, rigType)
-        
+
     load_attachment_points(boneset, rigType)
-    
+
 
 
 
@@ -2559,15 +2560,15 @@ def load_skeleton_data_from_file(filepath, rigType, jointtype):
 def add_eye_targets(boneset, rigType):
     mEyeRight = boneset["mEyeRight"]
     mEyeLeft  = boneset["mEyeLeft"]
-    
+
     loc = 0.5*(mEyeRight.relhead+mEyeLeft.relhead)
-    EyeTarget = Bone("EyeTarget", relhead=V((loc.x, loc.y-2.0, loc.z)), reltail=V((0,0,0.1)), 
+    EyeTarget = Bone("EyeTarget", relhead=V((loc.x, loc.y-2.0, loc.z)), reltail=V((0,0,0.1)),
                         bonelayers=[B_LAYER_EYE_TARGET], parent=boneset["Head"], shape="CustomShape_EyeTarget",
                         skeleton='basic', bonegroup='Eye Target', mandatory='false')
     boneset["EyeTarget"] = EyeTarget
 
     if util.get_rig_type(rigType) == 'EXTENDED':
-        FaceEyeTarget = Bone("FaceEyeAltTarget", relhead=V((loc.x, loc.y-2.0, loc.z)), reltail=V((0,0,0.1)), 
+        FaceEyeTarget = Bone("FaceEyeAltTarget", relhead=V((loc.x, loc.y-2.0, loc.z)), reltail=V((0,0,0.1)),
                             bonelayers=[B_LAYER_EYE_ALT_TARGET], parent=boneset["Head"], shape="CustomShape_EyeTarget",
                             skeleton='basic', bonegroup='Eye Alt Target', mandatory='false')
         boneset["FaceEyeAltTarget"] = FaceEyeTarget
@@ -2579,16 +2580,16 @@ class LoadSkeleton(bpy.types.Operator):
     bl_description = "Load the Tamagoyaki Skeleton from file"
 
     def execute(self, context):
+        armobj = util.get_armature_from_context(context)
         omode = util.ensure_mode_is("OBJECT", context=context)
-        
         filepath = util.get_skeleton_file()
-        effectiveRigType   = arm.RigProp.RigType if rigtype == None else rigtype
-        effectiveJointType = arm.RigProp.JointType if jointtype == None else jointtype
+        effectiveRigType   = armobj.RigProp.RigType
+        effectiveJointType = armobj.RigProp.JointType
 
         boneset   = get_rigtype_boneset(effectiveRigType, effectiveJointType, filepath)
         util.ensure_mode_is(omode, context=context)
         return {'FINISHED'}
-        
+
 
 if __name__ == '__main__':
 
@@ -2601,21 +2602,12 @@ if __name__ == '__main__':
 
 
 
-    
 
 
 
 
 
-    
-### Copyright 2011-2012 Magus Freston, Domino Marama, and Gaia Clary
-### Copyright 2013-2015 Gaia Clary
-###
-### This file is part of Tamagoyaki 1.
-### 
-### Tamagoyaki is distributed under an End User License Agreement and you
-### should have received a copy of the license together with Tamagoyaki.
-### The license can also be obtained from http://www.machinimatrix.org/
+
 
 classes = (
     LoadSkeleton,

@@ -1,10 +1,11 @@
-### Copyright 2011, 2012 Magus Freston, Domino Marama, and Gaia Clary
-### Modifications 2014-2015 Gaia Clary
-### Modification  2015      Matrice Laville
+### Copyright     2021 The Machinimatrix Team
 ###
-### This file is part of Tamagoyaki 1.
-### 
-
+### This file is part of Tamagoyaki
+###
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -34,7 +35,6 @@ from bpy.props import *
 from struct import pack, unpack, calcsize
 from mathutils import Matrix, Vector, Euler, Quaternion
 
-
 from math import *
 from .const import *
 from . import create, data, messages, rig, shape, util, context_util
@@ -59,39 +59,6 @@ LOC_CHANNELS = " Xposition Yposition Zposition"
 
 BVH_CHANNELS_TEMPLATE = "CHANNELS %d%s%s"  #usage: BVH_CHANNELS_TEMPLATE % (6, LOC_CHANNELS, ROT_CHANNELS)
 
-msg_too_many_bones = 'Max Bonecount(32) exceeded|'\
-                +  'DETAIL:\n'\
-                +  'This animation uses %d bones, while in SL the maximum number\n'\
-                +  'of bones per animation sequence is limitted to 32.\n'\
-                +  'You possibly run into this problem when you first \n'\
-                +  'select all bones and then add a keyframe.\n\n'\
-                +  'YOUR ACTION:\n'\
-                +  'Remove unnecessary bones from the animation (use the Dopesheet)\n'\
-                +  'or split the animation into 2 or more separate animations\n'\
-                +  'and run the animations in parallel in the target system.|'
-
-g_reference_frame = IntProperty(name='Reference Frame', 
-                  min=0, 
-                  default=0, 
-                  description= "In the reference frame the poses of the source and the target match best to each other.\n"
-                             + "We need this match pose to find the correct translations\n"
-                             + "between the source animation and the target animation"
-                  )
-
-g_use_restpose = BoolProperty(name="Use Restpose", 
-               default=True, 
-               description = "Assume the restpose of the source armature\n"
-                           + "matches best to the current pose of the target armature.\n"
-                           + "Hint:Enable this option when you import animations\n"
-                           + "which have been made for SL"
-               )
-
-g_keep_reference_frame = BoolProperty(
-                   name="Keep Reference frame",
-                   default=False,
-                   description="Often the first frame of a BVH Animation is only a control frame.\n"\
-                              +"However You may want to keep this frame for debugging purposes"
-                   )
 
 def get_target_bone_info(mocap, with_translation=True):
     '''
@@ -166,16 +133,16 @@ def find_best_match(source, target):
     slcount = len ([bone for bone in SLBONES if bone in source.pose.bones])
     if slcount > 18:
         return "SL/OpenSim, etc.", SLBONES
-    
+
     CMBONES = data.get_mcm_bones(target)
     cmcount = len ([bone for bone in CMBONES if bone in source.pose.bones])
     if cmcount > 18:
         return "Carnegie Mellon", CMBONES
-        
+
     return "", data.get_mt_bones(target)
-    
-    
-    
+
+
+
 
 def clamp(inputval, lower, upper):
     '''
@@ -264,7 +231,7 @@ def dot(v1,v2):
     '''
     return the dot product between v1 and v2
     '''
-   
+
     ans=0
     for a in map(lambda x,y:x*y, v1,v2):
         ans+=a
@@ -281,8 +248,8 @@ def distanceToLine(P,A,B):
     A = tuple(A)
     B = tuple(B)
 
-    AP = [v for v in map(lambda x,y:x-y, A,P)] 
-    AB = [v for v in map(lambda x,y:x-y, A,B)] 
+    AP = [v for v in map(lambda x,y:x-y, A,P)]
+    AB = [v for v in map(lambda x,y:x-y, A,B)]
 
     ABAP = dot(AB,AP)
     ABAB = dot(AB,AB)
@@ -333,12 +300,12 @@ class JointOffsetProp(bpy.types.PropertyGroup):
                 description = "has Tail",
                 default = False,
     )
-    
+
     head : FloatVectorProperty(
                 name = "Head",
                 description = "Head",
     )
-    
+
     tail : FloatVectorProperty(
                 name = "Tail",
                 description = "Tail",
@@ -385,12 +352,12 @@ class AVASTAR_UL_JointOffsetPropVarList(bpy.types.UIList):
 
         if factor < 1:
 
-           spl = layout.split(factor=factor)
-           row1= spl.row()
-           row2= spl.row()
+            spl = layout.split(factor=factor)
+            row1= spl.row()
+            row2= spl.row()
         else:
-           row1 = layout.row(align=True)
-           row2 = row1
+            row1 = layout.row(align=True)
+            row2 = row1
 
         row1.alignment='LEFT'
         icon_value = get_icon_value(key)
@@ -432,7 +399,7 @@ def get_dependecies(master, key):
 
 
 def add_dependency(arm, bone, constraint, drivers, drivenby):
- 
+
 
 
 
@@ -458,7 +425,7 @@ def add_dependency(arm, bone, constraint, drivers, drivenby):
 
 
     bone_drivers = get_dependecies(drivers, slave)
-    
+
     try:
         tbone = arm.pose.bones[subtarget]
         bone_drivers[slave] = tbone
@@ -471,11 +438,11 @@ def add_dependency(arm, bone, constraint, drivers, drivenby):
             log.debug("Found IK bone animation from %s" % subtarget)
         else:
             log.warning("Can not assign subtarget %s" % subtarget)
-        
 
-    driven_bones = get_dependecies(drivenby, master)    
+
+    driven_bones = get_dependecies(drivenby, master)
     driven_bones[master] = bone
-            
+
 def init_dependencies(arm):
     dependencies = {}
     drivers      = {}
@@ -496,7 +463,7 @@ def get_slaves(dependencies, master):
 def get_masters(dependencies, slave):
     drivers = dependencies['drivers']
     return drivers.get(slave, None)
-    
+
 def is_driven_by(dependencies, master, slave):
     drivenby = dependencies['drivenby']
     bone_drivers = drivenby[master.name]
@@ -510,11 +477,11 @@ def drives_other(dependencies, master, slave):
 def get_props_from_action(armobj, action):
     props  = action.AnimProp if action else armobj.AnimProp
     return props
-    
+
 def get_props_from_arm(armobj):
     action = armobj.animation_data.action
     return get_props_from_action(armobj, action)
-    
+
 def get_props_from_obj(obj):
     arm    = util.get_armature(obj)
     return get_props_from_arm(arm)
@@ -585,18 +552,18 @@ def exportAnimation(context, action, filepath, mode):
 
         try:
 
-           if meshes["headMesh"].data.shape_keys.key_blocks[key].value !=0:
-               emote = name if name != "" else "closed mouth"
-               print("Setting emote to %s" % emote )
-               ANIM["emote_name"] = name;
-               break;
-        except (KeyError, AttributeError): pass    
+            if meshes["headMesh"].data.shape_keys.key_blocks[key].value !=0:
+                emote = name if name != "" else "closed mouth"
+                print("Setting emote to %s" % emote )
+                ANIM["emote_name"] = name;
+                break;
+        except (KeyError, AttributeError): pass
 
     ANIM["hand_posture"] = int(arm.RigProp.Hand_Posture)
     ANIM["priority"] = props.Priority
 
     if props.Loop:
-        ANIM["loop"] = 1 
+        ANIM["loop"] = 1
         ANIM["loop_in_frame"] = props.Loop_In
         ANIM["loop_out_frame"] = props.Loop_Out
     else:
@@ -617,7 +584,7 @@ def exportAnimation(context, action, filepath, mode):
     if scn.MeshProp.apply_armature_scale:
         ANIM["apply_scale"] = True
         Marm = obj.matrix_world
-        tl,tr,ts = Marm.decompose() 
+        tl,tr,ts = Marm.decompose()
         ANIM["armature_scale"] = ts
     else:
         ANIM["apply_scale"] = False
@@ -638,19 +605,19 @@ def exportAnimation(context, action, filepath, mode):
 
         if props.Simplify_Factor:
 
-        log.info("Simplify animation for armature %s..." % (arm.name))
+            log.info("Simplify animation for armature %s..." % (arm.name))
             simplify_amount = 0.05 * props.Simplify_Factor
             FRAMED = simplifyCollectedTransforms(arm, FRAMED, ROTS, LOCS, tol=simplify_amount)
 
         ANIM['FRAMED'] = FRAMED
-        ANIM['BONES'], ANIM['CBONES'] = collectBoneInfo(obj, context, ROTS, LOCS) 
+        ANIM['BONES'], ANIM['CBONES'] = collectBoneInfo(obj, context, ROTS, LOCS)
         log.info("Export to ANIM")
         exportAnim(arm, filepath, ANIM)
 
     else:
 
         ANIM['FRAMED'] = FRAMED
-        ANIM['BONES'], ANIM['CBONES'] = collectBoneInfo(obj, context, ROTS, LOCS)         
+        ANIM['BONES'], ANIM['CBONES'] = collectBoneInfo(obj, context, ROTS, LOCS)
         log.info("Export to BVH")
         exportBVH(context, arm, filepath, ANIM)
 
@@ -761,7 +728,7 @@ def collectBones(obj, context, with_translation):
 
                 logging.debug("    grabbing animated bones from NLA track '%s', strip '%s'", track.name, strip.name)
 
-    if action is not None and not solo: 
+    if action is not None and not solo:
         logging.debug("    grabbing animated bones from Action '%s'", action.name)
         R, L = collectActionBones(obj, action, with_translation)
         ROTS = ROTS.union(R)
@@ -812,7 +779,7 @@ def collectActionBones(obj, action, with_translation):
             return arm.data.bones.get('WristLeft')
         else:
            return rig.get_parent_bone(bone)
-    
+
     def hierarchy_changed(arm, bonename):
 
 
@@ -865,7 +832,7 @@ def collectActionBones(obj, action, with_translation):
 
         bonename = mo.group(1)
         keytype = mo.group(2)
-        
+
         if bonename in ['Origin']:
             continue
         elif bonename in ['COG']:
@@ -933,7 +900,7 @@ def collectVisualTransforms(obj, context, ROTS, LOCS):
     FRAMED = {}
 
     BONES = set().union(ROTS).union(LOCS)
-   
+
     scn   = context.scene
     arm   = util.get_armature(obj)
     props = get_props_from_arm(arm)
@@ -1022,7 +989,7 @@ def simplifyCollectedTransforms(arm, FRAMED, ROTS, LOCS, tol=0.02):
     for marker in bpy.context.scene.timeline_markers:
         if marker.name == 'fix' and marker.frame in allframes:
             logging.debug("Keeping fixed frame %d", marker.frame)
-            sframes.add(marker.frame) 
+            sframes.add(marker.frame)
 
 
     Ni=len(curve)
@@ -1048,7 +1015,7 @@ def collectBoneInfo(armobj, context, ROTS, LOCS):
 
     BONES = {}
     CBONES = {}
-    
+
     for bname in set().union(ROTS).union(LOCS):
         if bname.startswith("a") or bname.startswith("m") or 'm'+bname in pbones or bname in SLVOLBONES:
             BONES[bname] = {}
@@ -1073,12 +1040,12 @@ def collectBoneInfo(armobj, context, ROTS, LOCS):
         B["name"] = bname
 
 
-        try:        
+        try:
             slpriority = clamp(pbones[bname]['priority'], NULL_BONE_PRIORITY, MAX_PRIORITY)
         except KeyError:
             slpriority = NULL_BONE_PRIORITY
 
-        try:        
+        try:
             if bname == 'mPelvis':
                 pelvispriority = clamp(pbones['Pelvis']['priority'], NULL_BONE_PRIORITY, MAX_PRIORITY)
                 tinkerpriority = clamp(pbones['Tinker']['priority'], NULL_BONE_PRIORITY, MAX_PRIORITY)
@@ -1098,13 +1065,13 @@ def collectBoneInfo(armobj, context, ROTS, LOCS):
 
         if slpriority > NULL_BONE_PRIORITY:
 
-            priority = slpriority 
+            priority = slpriority
         elif rigpriority > NULL_BONE_PRIORITY:
 
             priority = rigpriority
         else:
 
-            priority = props.Priority 
+            priority = props.Priority
 
         B["priority"] = priority
 
@@ -1230,7 +1197,7 @@ def exportAnim(armobj, animationfile, ANIM):
 
 
                 #
-                
+
                 matrix = BDATA[f].get('visual')
 
 
@@ -1348,7 +1315,7 @@ def exportAnim(armobj, animationfile, ANIM):
 
     #
 
-    
+
 
     data = pack("i",0)
     buff.write(data)
@@ -1382,7 +1349,7 @@ def get_export_bone_set(arm, animated_bone_names):
             keys.add(db.name)
             db = db.parent
     return keys
-    
+
 def exportBVH(context, armobj, animationfile, ANIM):
     export_bone_set = get_export_bone_set(armobj, ANIM["BONES"].keys())
     log.warning("+-----------------------------------------------------------------")
@@ -1390,7 +1357,7 @@ def exportBVH(context, armobj, animationfile, ANIM):
     log.warning("+-----------------------------------------------------------------")
 
     dbones = armobj.data.bones
-    hierarchy = ['mPelvis'] 
+    hierarchy = ['mPelvis']
     mPelvis = dbones['mPelvis']
     offset = get_bvh_offset(armobj) if ANIM["with_pelvis_offset"] else Vector((0.00, 0.00, 0.00))
 
@@ -1402,7 +1369,7 @@ def exportBVH(context, armobj, animationfile, ANIM):
     buff.write("ROOT hip\n{\n")
     buff.write("\tOFFSET %f %f %f\n" % (offset[0], offset[2], offset[1]))
     buff.write("\t" + ALL_CHANNELS + "\n")
-  
+
     LOCS = ANIM['LOCS']
     for child in mPelvis.children:
         if get_bvh_name(child):
@@ -1453,7 +1420,7 @@ def exportBVH(context, armobj, animationfile, ANIM):
         buff.write("%s\n" % line)
 
     context.scene.frame_set(frame_original)
-    buff.close()    
+    buff.close()
 
     for bname in summary:
         logging.debug(bname)
@@ -1461,10 +1428,10 @@ def exportBVH(context, armobj, animationfile, ANIM):
             logging.debug(line)
     logging.debug("-"*50)
     logging.info("Wrote animation to %s"%animationfile)
-    
+
     export_bones = ANIM["BONES"].keys()
     other_bones = ANIM["CBONES"].keys()
-    
+
     log.info("+-----------------------------------------------------------------")
     log.info("| Export Summary for %s" % animationfile)
     log.info("+-----------------------------------------------------------------")
@@ -1695,7 +1662,7 @@ def bvh_create_frame(armobj, hierarchy, export_bone_set, ANIM, frame, is_referen
         rot = get_bvh_rotation(armobj, export_name, ANIM, frame)
         if not rot:
             rot = Vector((0,0,0))
-        
+
         if is_reference:
             if export_name in FBONES:
                 mrot, is_restpose = mark_as_reference(rot)
@@ -1711,37 +1678,36 @@ def bvh_create_frame(armobj, hierarchy, export_bone_set, ANIM, frame, is_referen
         log.info("    [%25s] offset:[%26s] rot:[%26s]" % (export_name, offset, rotate))
     log.info("    ==============================================================================")
     return line
-    
+
 
 def getCenterBoneDistance(context, source, target, frame=None, target_root_bone_name='COG'):
     mocap = context.scene.MocapProp
-    
 
 
-    
+
+
     if frame != None:
         context.scene.frame_set(frame)
-  
-    
+
     mapped_bname = mocap.get(target_root_bone_name)
     if not mapped_bname:
         return None
-    
+
     spbone = source.pose.bones.get(mapped_bname)
     tpbone = target.pose.bones.get(target_root_bone_name)
-    
+
     if not (spbone and tpbone):
         return None
-    
+
     MWS = source.matrix_world
     MWT = target.matrix_world
     spb = spbone.matrix if frame != None else spbone.bone.matrix_local
     tpb = tpbone.matrix if frame != None else tpbone.bone.matrix_local
     l1 = mulmat(MWS, spb).to_translation()
     l2 = mulmat(MWT, tpb).to_translation()
-    
+
     mat_offset = MWT.inverted() @ Matrix.Translation(l2-l1)
-    
+
     log.warning("get CenterBone Distance: begin ============")
     log.warning("get CenterBone Distance: source bone: %s" % spbone.name)
     log.warning("get CenterBone Distance: target bone: %s" % tpbone.name)
@@ -1750,15 +1716,24 @@ def getCenterBoneDistance(context, source, target, frame=None, target_root_bone_
     log.warning("get CenterBone Distance: l2-l1        %s" % (l2-l1) )
     log.warning("get CenterBone Distance: offset: \n%s" % root_offset)
     log.warning("get CenterBone Distance: end ==============")
-    
+
+
+
     vec_offset = mat_offset.translation
     return vec_offset if vec_offset.magnitude > CLOSE else None
 
 def setReference(context, src_armobj, tgt_armobj, target_bone_info, frame=None, target_root_bone_name='COG'):
 
+
+
+
     if frame != None:
         context.scene.frame_set(frame)
-        log.warning("setReferenceFrame to %d" % (frame) )
+        log.warning("set Reference Frame to %d" % (frame) )
+
+
+
+
 
     sbones = src_armobj.pose.bones
     tbones = tgt_armobj.pose.bones
@@ -1785,7 +1760,15 @@ def setReference(context, src_armobj, tgt_armobj, target_bone_info, frame=None, 
         spbm = spb.matrix if frame != None else spb.bone.matrix_local
         tpbm = tpb.matrix if frame != None else tpb.bone.matrix_local
 
+
+
+
         channel.offset   = mulmat(mulmat(MWT, tpbm).inverted(), mulmat(MWS, spbm))
+
+
+
+
+
 
 def group_fcurves(source, transforms):
     pbones = source.pose.bones
@@ -1805,10 +1788,13 @@ def group_fcurves(source, transforms):
                 log.info("Found bone %s without transform" % bname)
                 continue
 
+
+
             if '.rotation' in path:
                 transform.rots.append(fcurve)
             elif '.location' in path:
                 transform.locs.append(fcurve)
+
 
 
 def collectMotionData(context, source, target_bone_info, reference_frame, start_frame, end_frame):
@@ -1833,8 +1819,8 @@ def collectMotionData(context, source, target_bone_info, reference_frame, start_
 
             spbm = spb.matrix
             m2 = mulmat(MWS, spbm)
-                m = m2.normalized()
-                loc, quat, scale_unused = m.decompose()
+            m = m2.normalized()
+            loc, quat, scale_unused = m.decompose()
 
             channel.frames[frame] = [loc, quat]
 
@@ -1848,13 +1834,17 @@ def simplifyMotionData(translation, reference_frame, start_frame, end_frame, moc
         for channel in translation.values():
             curve = []
 
+
+
+
             for frame in channel.frames:
                 point = [frame]
                 if channel.target=='COG':
                     point.extend(channel.frames[frame][0])
-                
+
                 point.extend(channel.frames[frame][1])
                 curve.append(point)
+
 
             channel.sframes = simplifyLowes(curve, 0, len(curve)-1, set(),tol=mocap.lowesLocalTol)
 
@@ -1909,7 +1899,7 @@ def transferActionData(context, source, target, target_bone_info, reference_fram
     old_settings = rig.set_bone_rotation_limit_state(target, False, all=True)
     if reference_frame == None:
         log.warning("transfer Motion Data: Use Rig Restposes as reference frames")
-        source_ref_pose=None 
+        source_ref_pose=None
         target_ref_pose=None
     else:
         log.warning("transfer Motion Data: Use animation frame %d as reference frame (makes sense only for motion transfer between rigs)" % reference_frame)
@@ -1938,7 +1928,7 @@ def transferActionData(context, source, target, target_bone_info, reference_fram
     context.view_layer.update()
     counter = 0
     for frame in range(start_frame, end_frame+1):
-                
+
         if frame == reference_frame:
             continue
 
@@ -2018,14 +2008,14 @@ def transferAction(context, source, target, target_bone_info, reference_frame, s
     util.progress_update(progress)
     seamlessRotFrames = int(mocap.seamlessRotFrames) if mocap.seamlessRotFrames else 0
     seamlessLocFrames = int(mocap.seamlessLocFrames) if mocap.seamlessLocFrames else 0
-    
+
     log.warning("transfer Motion:seamlessRotFrames %d" % seamlessRotFrames)
     log.warning("transfer Motion:seamlessLocFrames %d" % seamlessLocFrames)
-    
+
     if seamlessRotFrames>0 or seamlessLocFrames>0:
         log.warning("transfer Motion:: adjusting motion at end to make seamless")
         for channel in target_bone_info.values():
-            makeSeamless(channel, seamlessLocFrames, seamlessRotFrames)    
+            makeSeamless(channel, seamlessLocFrames, seamlessRotFrames)
 
     #
 
@@ -2040,17 +2030,17 @@ def transferAction(context, source, target, target_bone_info, reference_frame, s
     log.warning("transfer Motion:: Transfer Action range [%d - %d]" % (start_frame, end_frame) )
 
     transferActionData(context, source, target, target_bone_info, reference_frame, start_frame, end_frame, keep_reference_frame, target_root_bone_name, progress)
-        
+
     context.scene.frame_set(start_frame)
     util.progress_end()
 
 
 class TargetBoneInfo:
-    
+
     def __init__(self, **keys):
-        
+
         for key,value in keys.items():
-            setattr(self,key,value) 
+            setattr(self,key,value)
 
 
 
@@ -2063,14 +2053,14 @@ def simplifyLowes(curve, i,f, simplified, tol=.1):
 
 
 
- 
+
     pl1 = curve[i]
     pl2 = curve[f]
-    
+
 
     simplified.add(pl1[0])
     simplified.add(pl2[0])
-    
+
     maxd = 0
     maxi = 0
 
@@ -2080,9 +2070,9 @@ def simplifyLowes(curve, i,f, simplified, tol=.1):
         if d > maxd:
             maxd = d
             maxi = ii
-            
+
     if maxd > tol:
-        
+
         if maxi==f-1:
             simplified.add(curve[maxi][0])
         else:
@@ -2105,22 +2095,22 @@ def makeSeamless(channel, loc_frames, rot_frames):
 
     if loc_frames>0:
         for ii in range(len(channel.frames[F[0]][0])):
-        
+
             p0 = channel.frames[F[0]][0][ii]
             p1 = channel.frames[F[-1]][0][ii]
-      
+
             channel.frames[F[-1]][0][ii]=p0
-    
+
             for f in range(loc_frames):
                 channel.frames[F[-(f+2)]][0][ii]+=(loc_frames-f)*(p0-p1)/float(loc_frames+1)
-                
+
     if rot_frames>0:
         for ii in range(len(channel.frames[F[0]][1])):
             p0 = channel.frames[F[0]][1][ii]
             p1 = channel.frames[F[-1]][1][ii]
-      
+
             channel.frames[F[-1]][1][ii]=p0
-    
+
             for f in range(rot_frames):
                 channel.frames[F[-(f+2)]][1][ii]+=(rot_frames-f)*(p0-p1)/float(rot_frames+1)
 
@@ -2144,7 +2134,7 @@ def find_animated_bones(arm):
                         break
     except:
         pass
-        
+
     return bones
 
 class AvatarAnimationTrimOp(bpy.types.Operator):
@@ -2258,7 +2248,7 @@ class ImportAvatarAnimationOp(bpy.types.Operator, ImportHelper):
         prop.source = source.name
         prop.target = target.name
         set_best_match(prop, source, target)
-        
+
         log.warning("BVH Retarget source:%s to target:%s" % (source.name,target.name))
         source_action = ImportAvatarAnimationOp.exec_trans(
             context,
@@ -2284,8 +2274,8 @@ class ImportAvatarAnimationOp(bpy.types.Operator, ImportHelper):
                 remove_counter +=1
                 action.fcurves.remove(fcurve)
         log.warning("removed %d unneeded fcurves" % remove_counter)
-    
-        
+
+
     @staticmethod
     def exec_trans(
         context,
@@ -2298,7 +2288,7 @@ class ImportAvatarAnimationOp(bpy.types.Operator, ImportHelper):
         keep_source=False,
         with_sanitize=True,
         keep_reference_frame=False):
-    
+
         def set_restpose(target):
             ll = [l for l in target.data.layers]
             target.data.layers=[True]*32
@@ -2376,13 +2366,13 @@ class ImportAvatarAnimationOp(bpy.types.Operator, ImportHelper):
                 ImportAvatarAnimationOp.sanitize_action(target.animation_data.action)
 
             util.set_mesh_select_mode(oselect_modes)
-            bpy.ops.avastar.bone_preset_animate()
+            bpy.ops.tamagoyaki.bone_preset_animate()
             util.ensure_mode_is(omode)
 
         finally:
             rig.sync_timeline_enabled=True
         return source_action
-        
+
     def execute(self, context):
 
         mocap = context.scene.MocapProp
@@ -2398,7 +2388,7 @@ class ImportAvatarAnimationOp(bpy.types.Operator, ImportHelper):
             armobj = util.get_armature(obj)
         else:
             omode = None
-        
+
         if not armobj:
             armobj = create.createAvatar(context, rigType=mocap.rigtype, no_mesh=True)
             util.set_active_object(context, armobj)
@@ -2463,13 +2453,14 @@ This operator is disabled when:
     bl_options = {'REGISTER', 'UNDO'}
 
     keep_reference_frame : g_keep_reference_frame
-    
+
     @classmethod
     def poll(cls, context):
         scn = context.scene
         mocap = scn.MocapProp
         hip_name = mocap.get('COG')
         return hip_name is not None
+
 
     @staticmethod
     def prepare_target_for_animation_transfer(context, target):
@@ -2542,7 +2533,7 @@ This operator is disabled when:
             return{'CANCELLED'}
         finally:
             util.set_disable_handlers(context.scene, osupp)
-        
+
         return{'FINISHED'}
 
 
@@ -2553,7 +2544,7 @@ This operator is disabled when:
         reference_frame = None if mocap.use_restpose else mocap.reference_frame
         source = bpy.data.objects[mocap.source]
         target = bpy.data.objects[mocap.target]
-      
+
         omode = context.object.mode
         oobj = util.set_active_object(context, target)
         lomode = util.set_object_mode('OBJECT')
@@ -2572,7 +2563,7 @@ This operator is disabled when:
 
 
 class ButtonTransferePose(bpy.types.Operator):
-    bl_idname = "avastar.transfer_pose"
+    bl_idname = "tamagoyaki.transfer_pose"
     bl_label ="Transfer Pose"
     bl_description ="Transfer pose on current frame for selected bones using reference frame as guide"
     bl_options = {'REGISTER', 'UNDO'}
@@ -2608,6 +2599,7 @@ class ButtonTransferePose(bpy.types.Operator):
         util.set_object_mode(omode)
 
     def execute(self, context):
+
         try:
             scn = context.scene
             mocap = scn.MocapProp
@@ -2687,8 +2679,7 @@ class ButtonCleanupTarget(bpy.types.Operator):
         util.select_single_object(target)
         util.ensure_mode_is('POSE')
 
-    
-            bpy.ops.pose.select_all(action='SELECT')
+        bpy.ops.pose.select_all(action='SELECT')
         for frame in range(start_frame, end_frame+1):
             if frame == reference_frame:
                 continue
@@ -2711,7 +2702,7 @@ class ButtonCleanupTarget(bpy.types.Operator):
         if start_frame > end_frame:
             self.report({'WARNING'},("Animation range not in scene action range"))
             return {'CANCELLED'}
-
+        
         try:
             util.select_single_object(target)
             util.set_active_object(context, target)
@@ -2725,10 +2716,10 @@ class ButtonCleanupTarget(bpy.types.Operator):
 
 
 class KeyPoseChanges(bpy.types.Operator):
-    bl_idname = "avastar.key_pose_changes"
+    bl_idname = "tamagoyaki.key_pose_changes"
     bl_label ="Key Pose changes"
     bl_description ="Enter keyframes for all pose bones\nwhich have been changed since last keyframe"
-    bl_options = {'REGISTER', 'UNDO'} 
+    bl_options = {'REGISTER', 'UNDO'}
 
     selector : EnumProperty(
         items=(
@@ -2763,9 +2754,9 @@ class KeyPoseChanges(bpy.types.Operator):
         col.label(text=msg)
 
         if self.added_bones_count > 0:
-            msg = "Added new Bone Keys for %d bones in this frame" % self.added_bones_count      
+            msg = "Added new Bone Keys for %d bones in this frame" % self.added_bones_count
         else:
-            msg = "No new Bone keys to add this time"      
+            msg = "No new Bone keys to add this time"
         col.label(text=msg)
 
         col = layout.column(align=True)
@@ -2821,7 +2812,7 @@ class KeyPoseChanges(bpy.types.Operator):
 
                     continue
 
-                index = fcurve.array_index      
+                index = fcurve.array_index
                 data = None
                 try:
                     data = arm.path_resolve(fcurve.data_path)[index]
@@ -2940,14 +2931,14 @@ class ButtonCopyTimelineRange(bpy.types.Operator):
             description="Cleanup target range before copy (removes keyframes)")
     copy_pose_x_mirror : BoolProperty(default=False, name="x-mirror",
             description="Does an x-mirror copy (for walk cycles)")
-    
+
     pbones   = []
     armature = None
-    
+
     @classmethod
     def poll(self, context):
         return context.object and context.object.type == 'ARMATURE'
-        
+
 
     def copy_timeframe(self, context, src_frame, bones, tgt_frame, flipped):
         context.scene.frame_set(src_frame)
@@ -2997,7 +2988,7 @@ class ButtonCopyTimelineRange(bpy.types.Operator):
         timeframes     = {}
         keyed_bones    = []
         fcurves_todel  = []
-        
+
         prop = self
 
 
@@ -3008,13 +2999,13 @@ class ButtonCopyTimelineRange(bpy.types.Operator):
             bone_name = fcurve.group.name
             is_in_source_range = False
             is_in_target_range = False
-            
+
             for point in fcurve.keyframe_points:
                 timeframe_id = point.co[0]
-                
+
                 if prop.copy_pose_to <= timeframe_id <= prop.copy_pose_to + prop.copy_pose_end - prop.copy_pose_begin:
                     is_in_target_range = True
-                
+
                 if prop.copy_pose_begin <= timeframe_id <= prop.copy_pose_end:
                     is_in_source_range = True
                     if timeframe_id in timeframes:
@@ -3025,10 +3016,10 @@ class ButtonCopyTimelineRange(bpy.types.Operator):
 
                     if not bone_name in timeframe:
                         timeframe.append(bone_name)
-  
+
             if is_in_source_range and not bone_name in keyed_bones:
                 keyed_bones.append(bone_name)
-                
+
             if is_in_target_range:
                 fcurves_todel.append(fcurve)
 
@@ -3044,11 +3035,11 @@ class ButtonCopyTimelineRange(bpy.types.Operator):
                     fcurve.keyframe_points.remove(point)
                 except:
                     print("failed to remove from timeframe %d of %d: %s" % (point.co[0], len(todel), point) )
-                    
+
         current_timeframe = bpy.context.scene.frame_current
         use_keyframe_insert_auto = bpy.context.scene.tool_settings.use_keyframe_insert_auto
         bpy.context.scene.tool_settings.use_keyframe_insert_auto = True
-        
+
         for key, bones in timeframes.items():
             to      = key - prop.copy_pose_begin + prop.copy_pose_to
             self.copy_timeframe(context, key, bones, to, prop.copy_pose_x_mirror)
@@ -3058,7 +3049,7 @@ class ButtonCopyTimelineRange(bpy.types.Operator):
             to = prop.copy_pose_begin
             print("Open the loop at frame %d" % (to) )
             self.copy_timeframe(context, prop.copy_pose_begin, bones, to, False)
-            
+
         if prop.copy_pose_loop_at_end:
             bones=keyed_bones
             to    = prop.copy_pose_to + prop.copy_pose_end - prop.copy_pose_begin
@@ -3071,7 +3062,7 @@ class ButtonCopyTimelineRange(bpy.types.Operator):
         self.cleanup_fcurves(context, bonecurves)
         context.preferences.edit.use_visual_keying = visual_keying_enabled
         return {"FINISHED"}
-        
+
 
 def tag_redraw(type='ALL'):
     context = bpy.context

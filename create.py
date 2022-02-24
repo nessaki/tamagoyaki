@@ -1,9 +1,11 @@
-### Copyright 2011, Magus Freston, Domino Marama, and Gaia Clary
-### Modifications 2014-2015 Gaia Clary
+### Copyright     2021 The Machinimatrix Team
 ###
-### This file is part of Tamagoyaki 1.
-### 
-
+### This file is part of Tamagoyaki
+###
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -22,17 +24,19 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 import bpy
-import os, logging, gettext, time
-from math import pi, sin, cos, radians
+import os
+import logging
+import gettext
+import time
 
+from math import pi, sin, cos, radians
 from bpy.props import *
 from mathutils import Vector, Matrix
 from . import armature_util, const, rig, data, propgroups, mesh, shape, weights, util, bl_info
 from .const  import *
 from .init import *
-
 from .data import Skeleton
- 
+
 LOCALE_DIR = os.path.join(os.path.dirname(__file__), 'locale')
 translator = gettext.translation('tamagoyaki', LOCALE_DIR, fallback=True)
 
@@ -43,7 +47,7 @@ registerlog = logging.getLogger("tamagoyaki.register")
 
 def add_container(context, arm_obj, name, hide=True):
     scn=context.scene
-    container = bpy.data.objects.new(name,None)    
+    container = bpy.data.objects.new(name,None)
     util.link_object(context, container)
     container.location    = arm_obj.location
     container.parent      = arm_obj
@@ -81,7 +85,7 @@ def add_eye_constraints(obj, context, bname, arm_obj):
     c.target_space = 'LOCAL'
     util.set_con_axis(c, 0, False)
     util.set_con_axis(c, 2, False)
-    
+
     c = obj.constraints.new("COPY_SCALE")
     c.name = COPY_SCALE_NAME
     c.target       = arm_obj
@@ -121,8 +125,8 @@ def smart_bone_connector(armobj, rigType, jointType):
             parent_bone.tail = dbone.head
             dbone.use_connect = True
 
-        tail = (DBONE.b0tail - DBONE.b0head) @ Rz90
-        dbone.tail = dbone.head + tail
+
+
 
     util.ensure_mode_is('OBJECT')
     unknown_bone_count = len(unknown_bones)
@@ -131,8 +135,9 @@ def smart_bone_connector(armobj, rigType, jointType):
 
     return
 
-def createAvatar(context, name="Avatar", quads=False, use_restpose=False, no_mesh=False, rigType='EXTENDED', jointType='PIVOT', max_param_id=-1, use_welding=True, mesh_ids=None):
+def createAvatar(context, name="Avatar", quads=False, use_restpose=False, no_mesh=False, rigType='EXTENDED', jointType='PIVOT', skeletonType='AVASTAR', max_param_id=-1, use_welding=True, mesh_ids=None):
     from . import propgroups
+    use_restpose = use_restpose or skeletonType == 'ANIMESH'
     with_meshes = not no_mesh
     util.progress_begin(0,10000)
     progress = 10
@@ -140,7 +145,7 @@ def createAvatar(context, name="Avatar", quads=False, use_restpose=False, no_mes
     if with_meshes:
 
         repo = util.ensure_tamagoyaki_repository_is_loaded()
-    
+
     createCustomShapes()
     util.progress_update(progress, False)
 
@@ -152,23 +157,26 @@ def createAvatar(context, name="Avatar", quads=False, use_restpose=False, no_mes
     scn = context.scene
     oactive = util.get_active_object(context)
     ousermode = util.set_operate_in_user_mode(False)
-    
+
     rigType   = util.get_rig_type(rigType)
     jointType = util.get_joint_type(jointType)
+    skeletonType = util.get_skeleton_type(skeletonType)
 
     log.info("Create Avatar Name         : %s" % name)
     log.info("Create Avatar Polygon type : %s" % ( 'without mesh' if no_mesh else 'QUADS' if quads else 'TRIS') )
-    log.info("Create Avatar Pose         : %s" % ( "SL Neutral Shape" if use_restpose else "SL Default Shape") )
+    log.info("Create Avatar Pose         : %s" % ( "SL Neutral Shape" if (use_restpose) else "SL Default Shape") )
     log.info("Create Avatar Rig Type     : %s" % rigType)
     log.info("Create Avatar Joint Type   : %s" % jointType)
+    log.info("Create Avatar Skeleton Type: %s" % skeletonType)
 
     arm_obj = create_empty_armature(context, name, display_type='STICK')
- 
+
 
     arm_obj['tamagoyaki'] = AVASTAR_RIG_ID
     arm_obj['version'] = bl_info['version']
     arm_obj.RigProp.RigType   = rigType
     arm_obj.RigProp.JointType = jointType
+    arm_obj.RigProp.SkeletonType = skeletonType
     createArmature(context, arm_obj, SKELETON)
 
     arm_obj.IKSwitchesProp.Enable_Hands = 'FK'
@@ -225,13 +233,16 @@ def createAvatar(context, name="Avatar", quads=False, use_restpose=False, no_mes
             add_welding(parts, 'lowerBodyMesh', 'upperBodyMesh')
         util.set_active_object(context, arm_obj)
 
+    if skeletonType=='ANIMESH':
+        bpy.ops.tamagoyaki.unset_rotation_limits(all=True)
+
     if not use_restpose:
         log.debug("Set rig to Default pose")
         shape.reset_to_default(context)
 
     if arm_obj.RigProp.RigType != 'BASIC':
         rig.armatureSpineFold(arm_obj)
-    
+
     arm_obj.RigProp.eye_setup='BASIC'
     util.set_operate_in_user_mode(ousermode)
 
@@ -245,7 +256,7 @@ def generate_system_meshes(context, arm_obj, armname, rigType, mesh_ids, progres
     util.progress_update(progress, False)
 
     arm_obj.RigProp.Hand_Posture = HAND_POSTURE_DEFAULT
-    
+
     generated = {}
     AVASTAR_MESHES = {}
     meshes = add_container(context, arm_obj, armname+"_meshes")
@@ -346,7 +357,7 @@ def createMesh(context, name, llm_mesh):
     for f in faces:
         fv = [data.getVertexIndex(llm_mesh, v) for v in f]
         meshFaces.append(fv)
-    
+
 
     bpy.ops.object.select_all(action="DESELECT")
 
@@ -440,12 +451,12 @@ def createMesh(context, name, llm_mesh):
         for j in range(3):
             loop = polygons[i].loop_indices[j]
             uvloops[loop].uv = vt[face[j]]
-                    
+
 
     obj.shape_key_add(name="Basis")
     obj.data.update()
     obj.active_shape_key_index = 0
-    
+
     obj.use_shape_key_edit_mode = True
     util.tag_addon_revision(obj)
     return obj
@@ -453,12 +464,12 @@ def createMesh(context, name, llm_mesh):
 
 def createShapekey(obj, pid, morph, mesh):
     key = obj.shape_key_add(name=pid)
-    
+
 
     key.slider_min = morph['value_min']
     key.slider_max = morph['value_max']
     key.value      = morph['value_default']
-    
+
 
     for v in morph['vertices']:
 
@@ -505,27 +516,94 @@ def add_initial_rotation(pbone, delta):
     pbone.rotation_mode = "QUATERNION"
     pbone.rotation_quaternion.z += delta
     pbone.rotation_mode = original_mode
-    
+
 def add_bone_group(arm, name, color_set):
-    bpy.ops.pose.group_add()
-    bg = arm.pose.bone_groups.active 
-    bg.name = name
+    bg = arm.pose.bone_groups.new(name=name)
     bg.color_set = color_set
 
 def add_bone_groups(arm):
     for group, val in BONEGROUP_MAP.items():
-        colorset   = val[0]       
+        colorset   = val[0]
         add_bone_group(arm, group, colorset)
 
+
+def get_bone_group(rig, group_name, theme='THEME13'):
+    group = rig.pose.bone_groups.get(group_name)
+    if group == None:
+        group = add_bone_group(rig, group_name, theme)
+    return group
+
+def mark_visual_retarget_bone_group(target, map, bone, reset=False, clean=False):
+
+    prop = bpy.context.scene.MocapProp
+    if prop.source and prop.target:
+        source = bpy.data.objects.get(prop.source)
+    
+    link = None if reset else map.get(bone.name)
+    if clean:
+        bone.bone_group = get_bone_group(target, "unmapped")
+        if link:
+            bone = source.pose.bones.get(link)
+            if bone:
+                bone.bone_group = get_bone_group(source, "unmapped")
+    elif reset or link:
+        original_bone_group_name = bone.get('original_bone_group_name')
+        if original_bone_group_name:
+            group = get_bone_group(target, original_bone_group_name)
+            bone.bone_group = group
+            if link:
+                bone = source.pose.bones.get(link)
+                if bone:
+                    bone.bone_group = get_bone_group(source, original_bone_group_name)
+    else:
+        if not bone.get('original_bone_group_name'):
+            bone['original_bone_group_name'] = bone.bone_group.name if bone.bone_group else None
+        bone.bone_group = get_bone_group(target, "unmapped")
+
+def update_interactive_retarget(self, context):
+    adjust_retarget_bone_groups(context, self, clean=False)
+
+def adjust_retarget_bone_groups(context, prop, clean=False):
+    target = bpy.data.objects.get(prop.target)
+    if not target:
+        return
+
+    reset = not prop.interactive_auto
+    oactive = context.active_object
+    omode = oactive.mode
+    util.set_active_object(context, target)
+    util.ensure_mode_is('POSE')
+    for bone in target.pose.bones:
+        mark_visual_retarget_bone_group(target, prop, bone, reset=reset, clean=clean)
+
+    if clean or reset:
+        source = bpy.data.objects.get(prop.source)
+        util.set_active_object(context, source)
+        util.ensure_mode_is('POSE')
+
+        UNMAPPED_GROUP = get_bone_group(source, "unmapped")
+        for bone in source.pose.bones:
+            if reset:
+                original_group_name = bone.get('original_bone_group_name')
+                if original_group_name:
+                    bone.bone_group = source.pose.bone_groups.get(original_group_name)
+                else:
+                    bone.bone_group = None
+            else:
+                bone.bone_group = UNMAPPED_GROUP
+
+    util.set_active_object(context, oactive)
+    util.ensure_mode_is(omode)
+    return
 
 
 def createArmature(context, arm_obj, SKELETON):
     IR = 0.001
-    scn = context.scene    
+    scn = context.scene
     rigType = arm_obj.RigProp.RigType
 
-    util.set_active_object(context, arm_obj)
     util.object_select_set(arm_obj, True)
+    util.set_active_object(context, arm_obj)
 
     util.set_object_mode('EDIT')
 
@@ -555,14 +633,14 @@ def createArmature(context, arm_obj, SKELETON):
 
     util.mode_set(mode='OBJECT')
     Skeleton.get_toe_hover_z(arm_obj, reset=True)
-    
+
 
 
 
     for pbone in arm_obj.pose.bones:
 
 
-        pbone.lock_scale = [True, True, True] 
+        pbone.lock_scale = [True, True, True]
 
         BONE = SKELETON[pbone.name]
         if BONE == None:
@@ -576,12 +654,12 @@ def createArmature(context, arm_obj, SKELETON):
 
         if BONE.limit_rx is not None \
            or BONE.limit_ry is not None \
-           or BONE.limit_rz is not None: 
+           or BONE.limit_rz is not None:
 
 
             con = pbone.constraints.new("LIMIT_ROTATION")
             con.name = LIMIT_ROTATION_NAME
-            con.owner_space = 'LOCAL' 
+            con.owner_space = 'LOCAL'
 
 
             if BONE.limit_rx is not None:
@@ -615,8 +693,8 @@ def createArmature(context, arm_obj, SKELETON):
 
 
 
-        if "Link" in pbone.name or pbone.name == "Pelvis" or "Line" in pbone.name:
-            pbone.lock_rotation = [True, True, True] 
+        if "Link" in pbone.name or pbone.name in ["Groin", "Pelvis"] or "Line" in pbone.name:
+            pbone.lock_rotation = [True, True, True]
             pbone.lock_rotation_w = True
             pbone.lock_location = [True, True, True]
             pbone.lock_ik_x = True
@@ -626,7 +704,7 @@ def createArmature(context, arm_obj, SKELETON):
         B = SKELETON[pbone.name]
         if B.bonegroup in arm_obj.pose.bone_groups:
             pbone.bone_group = arm_obj.pose.bone_groups[B.bonegroup]
-        else:            
+        else:
             print("Bone group [%s : %s] does not exist" % (pbone.name, B.bonegroup) )
 
         if pbone.name == "ElbowRight":
@@ -701,7 +779,7 @@ def createBoneRecursive(BONE, parent, arm_obj, rigType=None):
         blbone = add_bone_to_armature(BONE, arm_obj, parent)
 
     if len(BONE.children) > 0:
-        keys = [child.blname for child in BONE.children] 
+        keys = [child.blname for child in BONE.children]
 
         for CHILD in BONE.children:
             if blbone:
@@ -754,12 +832,12 @@ def setCustomShapesRecursive(bone, arm_ob):
                 print("WARN: This version of Blender does not support scaling of Custom shapes")
                 print("      Ignoring Custom Shape Scale for bone [%s]" % (bone.blname))
 
-    for child in bone.children: 
+    for child in bone.children:
         setCustomShapesRecursive(child, arm_ob)
 
 def add_bone_constraint(type, pbone, name=None, space='LOCAL', influence=1.0, target=None, subtarget=None, mute=False):
     con = pbone.constraints.new(type)
-    
+
     if target:
         con.target=target
     if subtarget:
@@ -770,7 +848,7 @@ def add_bone_constraint(type, pbone, name=None, space='LOCAL', influence=1.0, ta
         con.target_space = space
     except:
         pass
-    
+
     con.influence = influence
     con.show_expanded = False
     con.mute = mute
@@ -784,11 +862,11 @@ def set_constraint_limit(con, states, values):
         con.use_limit_x = states[0]
         con.min_x       = values[0][0]
         con.max_x       = values[0][1]
-        
+
         con.use_limit_y = states[1]
         con.min_y       = values[1][0]
         con.max_y       = values[1][1]
-        
+
         con.use_limit_z = states[2]
         con.min_z       = values[2][0]
         con.max_z       = values[2][1]
@@ -798,12 +876,12 @@ def set_constraint_limit(con, states, values):
         con.use_max_x = states[0]
         con.min_x       = values[0][0]
         con.max_x       = values[0][1]
-        
+
         con.use_min_y = states[0]
         con.use_max_y = states[0]
         con.min_y       = values[1][0]
         con.max_y       = values[1][1]
-        
+
         con.use_min_z = states[0]
         con.use_max_z = states[0]
         con.min_z       = values[2][0]
@@ -832,10 +910,10 @@ def set_source_range(con, source, values):
         con.from_max_y_scale = values[1][1]
         con.from_min_z_scale = values[2][0]
         con.from_max_z_scale = values[2][1]
-    
+
 def set_destination (con, dest,   values):
     con.map_to = dest
-    
+
     if dest == 'LOCATION':
         con.to_min_x = values[0][0]
         con.to_max_x = values[0][1]
@@ -857,12 +935,12 @@ def set_destination (con, dest,   values):
         con.to_max_y_scale = values[1][1]
         con.to_min_z_scale = values[2][0]
         con.to_max_z_scale = values[2][1]
-    
+
 def set_mapping(con, x, y, z):
     con.map_to_x_from=x
     con.map_to_y_from=y
     con.map_to_z_from=z
-    
+
 
 class FaceController:
 
@@ -908,7 +986,7 @@ class FaceController:
             if pbone:
                 for item in bone_influences.items():
                     constraint_name = item[0]
-                    influence = item[1] 
+                    influence = item[1]
                     con = pbone.constraints.get(constraint_name)
                     if con:
                         con.influence = influence*factor
@@ -1014,18 +1092,18 @@ def create_face_controllers(arm, group):
     con = add_bone_constraint('LIMIT_LOCATION', lipmaster)
     face_controller.add_influence(pbone, con)
     set_constraint_limit(con, [True, True, True],  [[-0.02, 0.02], [-0.02, 0.02], [0, 0.1]])
-    
+
     con = add_bone_constraint('TRANSFORM', lipshape, name="AVA Scale",    target=arm, subtarget = lipmaster.name)
     face_controller.add_influence(pbone, con)
     set_source_range(con, 'LOCATION', [[-0.02, 0.02],[-0.02, 0.02],[ 0, 0.1]])
     set_destination (con, 'SCALE',    [[0.5,1.5],    [0.5,1.5],    [1.0,1.5]]    )
     set_mapping(con, 'Y', 'Y', 'Z')
-    
 
 
 
 
-    
+
+
     try:
         pbone = pbones['FaceLipUpperCenter']
         con = add_bone_constraint('TRANSFORM', pbone, name="AVA Location", space='POSE', target=arm, subtarget = lipshape.name, influence=0.75)
@@ -1072,6 +1150,7 @@ def create_face_controllers(arm, group):
     set_mapping(con, 'X', 'Y', 'Z')
 
     arm[FaceController.ID] = face_controller.get_face_influences()
+    rig.ButtonEnableIK.set_face_controller_influence(arm, arm.IKSwitchesProp.face_ik_value)
     return
 
 
@@ -1266,7 +1345,7 @@ def createConstraints(context, armobj, SKELETON):
     #
 
     #
-    pbone = pbones['ElbowLeft'] 
+    pbone = pbones['ElbowLeft']
     pbone.lock_ik_y = True
     pbone.lock_ik_x = True
     con = pbone.constraints.new("IK")
@@ -1276,12 +1355,12 @@ def createConstraints(context, armobj, SKELETON):
     con.target = armobj
     con.subtarget = "ikWristLeft"
     con.pole_target = armobj
-    con.pole_subtarget = "ikElbowTargetLeft"   
+    con.pole_subtarget = "ikElbowTargetLeft"
     con.chain_count = 2
     con.pole_angle = pi # different from right, go figure.
     con.influence = 0
 
-    pbone = pbones['ElbowRight'] 
+    pbone = pbones['ElbowRight']
     pbone.lock_ik_y = True
     pbone.lock_ik_x = True
     con = pbone.constraints.new("IK")
@@ -1291,12 +1370,12 @@ def createConstraints(context, armobj, SKELETON):
     con.target = armobj
     con.subtarget = "ikWristRight"
     con.pole_target = armobj
-    con.pole_subtarget = "ikElbowTargetRight"   
+    con.pole_subtarget = "ikElbowTargetRight"
     con.chain_count = 2
     con.pole_angle = 0
     con.influence = 0
 
-    pbone = pbones['KneeLeft'] 
+    pbone = pbones['KneeLeft']
 
     pbone.lock_ik_z = True
     con = pbone.constraints.new("IK")
@@ -1306,12 +1385,12 @@ def createConstraints(context, armobj, SKELETON):
     con.target = armobj
     con.subtarget = "ikAnkleLeft"
     con.pole_target = armobj
-    con.pole_subtarget = "ikKneeTargetLeft"   
+    con.pole_subtarget = "ikKneeTargetLeft"
     con.chain_count = 2
     con.pole_angle = radians(-90)
     con.influence = 0
 
-    pbone = pbones['KneeRight'] 
+    pbone = pbones['KneeRight']
 
     pbone.lock_ik_z = True
     con = pbone.constraints.new("IK")
@@ -1321,7 +1400,7 @@ def createConstraints(context, armobj, SKELETON):
     con.target = armobj
     con.subtarget = "ikAnkleRight"
     con.pole_target = armobj
-    con.pole_subtarget = "ikKneeTargetRight"   
+    con.pole_subtarget = "ikKneeTargetRight"
     con.chain_count = 2
     con.pole_angle = radians(-90)
     con.influence = 0
@@ -1337,7 +1416,7 @@ def createConstraints(context, armobj, SKELETON):
         con.target = armobj
         con.subtarget = "ikHindLimb3Right"
         con.pole_target = armobj
-        con.pole_subtarget = "ikHindLimb2TargetRight"   
+        con.pole_subtarget = "ikHindLimb2TargetRight"
         con.chain_count = 2
         con.pole_angle = radians(-90)
         con.influence = 0
@@ -1353,7 +1432,7 @@ def createConstraints(context, armobj, SKELETON):
         con.target = armobj
         con.subtarget = "ikHindLimb3Left"
         con.pole_target = armobj
-        con.pole_subtarget = "ikHindLimb2TargetLeft"   
+        con.pole_subtarget = "ikHindLimb2TargetLeft"
         con.chain_count = 2
         con.pole_angle = radians(-90)
         con.influence = 0
@@ -1528,6 +1607,8 @@ def createConstraints(context, armobj, SKELETON):
                     con.subtarget = Wrist.name
                     con.influence = 1
 
+    mesh.armature_lock_loc(context, op=None, constraintSet='ALL')
+
 
 def create_targetless_ik(armobj, SKELETON):
     pbones = armobj.pose.bones
@@ -1593,7 +1674,7 @@ def create_ik_targetless_cons(bone):
 def remove_ik_targetless_cons(bone):
     con =  bone.constraints.get(TARGETLESS_NAME)
     if con:
-         bone.constraints.remove(con)
+        bone.constraints.remove(con)
 
 
 def create_ik_linebone_cons(armobj, bname, side):
@@ -1634,8 +1715,140 @@ def reset_rig(armobj):
         if BONE:
             init_meta_data(b, BONE)
         else:
-            log.warning("No Metadata for bone %s" % b.name)        
-    
+            log.warning("No Metadata for bone %s" % b.name)
+
+
+class ArmatureToMesh(bpy.types.Operator):
+    bl_idname = "tamagoyaki.armature_to_mesh"
+    bl_label = "Armature to Mesh"
+
+    @classmethod
+    def poll(self, context):
+        armobj = context.active_object
+        if not armobj:
+            return False
+        return armobj.type=='ARMATURE'
+
+    def meshFromArmature(self, armobj ):
+        name = armobj.name + "_mesh"
+        meshData = bpy.data.meshes.new( name + "Data" )
+        meshObj = bpy.data.objects.new( name, meshData )
+        meshObj.matrix_world = armobj.matrix_world.copy()
+        return meshObj
+
+
+    def boneGeometry(self,  l1, l2, x, z, baseSize, l1Size, l2Size, base ):
+        x1 = x * baseSize * l1Size 
+        z1 = z * baseSize * l1Size
+
+
+
+        
+        x2 = Vector( (0, 0, 0) )
+        z2 = Vector( (0, 0, 0) )
+
+        verts = [
+            l1 - x1 + z1,
+            l1 + x1 + z1,
+            l1 - x1 - z1,
+            l1 + x1 - z1,
+            l2 - x2 + z2,
+            l2 + x2 + z2,
+            l2 - x2 - z2,
+            l2 + x2 - z2
+            ] 
+
+        faces = [
+            (base+3, base+1, base+0, base+2),
+            (base+6, base+4, base+5, base+7),
+            (base+4, base+0, base+1, base+5),
+            (base+7, base+3, base+2, base+6),
+            (base+5, base+1, base+3, base+7),
+            (base+6, base+2, base+0, base+4)
+            ]
+
+        return verts, faces
+
+
+    def processArmature(self, context, armobj):
+
+
+        shape.ensure_drivers_initialized(armobj)
+        meshObj = self.meshFromArmature( armobj )
+        context.collection.objects.link( meshObj )
+
+        verts = []
+        edges = []
+        faces = []
+        vertexGroups = {}
+
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        try:
+
+            deform_bones = util.get_deform_bones(armobj, visible=True)
+            for editBone in deform_bones:
+                boneName = editBone.name
+                print( boneName )
+                poseBone = armobj.pose.bones[boneName]
+
+
+                editBoneHead = editBone.head
+                editBoneTail = editBone.tail
+                editBoneVector = editBoneTail - editBoneHead
+                editBoneSize = editBoneVector.dot( editBoneVector )
+                editBoneRoll = editBone.roll
+                editBoneX = editBone.x_axis
+                editBoneZ = editBone.z_axis
+                editBoneHeadRadius = editBone.head_radius
+                editBoneTailRadius = editBone.tail_radius
+
+
+                baseIndex = len(verts)
+                baseSize = sqrt( editBoneSize )
+                newVerts, newFaces = self.boneGeometry( editBoneHead, editBoneTail, editBoneX, editBoneZ, baseSize, editBoneHeadRadius, editBoneTailRadius, baseIndex )
+
+                verts.extend( newVerts )
+                faces.extend( newFaces )
+
+
+                vertexGroups[boneName] = [(x, 1.0) for x in range(baseIndex, len(verts))]
+
+
+            meshObj.data.from_pydata(verts, edges, faces)
+
+        except:
+            pass
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+
+        for name, vertexGroup in vertexGroups.items():
+            groupObject = meshObj.vertex_groups.new(name=name)
+            for (index, weight) in vertexGroup:
+                groupObject.add([index], weight, 'REPLACE')
+
+
+        modifier = meshObj.modifiers.new('ArmatureMod', 'ARMATURE')
+        modifier.object = armobj
+        modifier.use_bone_envelopes = False
+        modifier.use_vertex_groups = True
+        meshObj.parent = armobj
+        meshObj.data.update()
+
+        return meshObj
+
+
+    def create_mesh_object(self, context):
+        armobj = context.active_object
+        self.processArmature( context, armobj )
+
+    def execute(self, context):
+        self.create_mesh_object(context)        
+        return {'FINISHED'}
+
+
+
+
 
 if __name__ == '__main__':
 
@@ -1643,7 +1856,7 @@ if __name__ == '__main__':
 
 
 classes = (
-
+ArmatureToMesh,
 )
 
 def register():

@@ -1,9 +1,11 @@
-### Copyright 2018, Machinimatrix
-### Modifications 2018 None
+### Copyright     2021 The Machinimatrix Team
 ###
-### This file is part of Tamagoyaki 2.
-### 
-
+### This file is part of Tamagoyaki
+###
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -24,6 +26,7 @@
 
 import logging
 import bpy
+
 from mathutils import Vector, Matrix
 from . import bl_info, const, util, data
 from .const import *
@@ -44,8 +47,8 @@ class Skeleton:
         bones = Skeleton.get_bone_hierarchy(arm)
         binding = {}
         for b in bones:
-           binding[b.name] = b.matrix_local.copy()
-        
+            binding[b.name] = b.matrix_local.copy()
+
         if not hasattr(arm.ShapeDrivers, 'DRIVERS'):
             Skeleton.load_drivers(arm)
 
@@ -82,7 +85,7 @@ class Skeleton:
 
     @staticmethod
     def createShapeDrivers(DRIVERS):
-        
+
         log.info("Create Shape UI...")
 
         sectionitems = []
@@ -90,17 +93,17 @@ class Skeleton:
             sectionitems.append((section, section, section))
         for section in SHAPE_FILTER.keys():
             sectionitems.append((section, section, section))
-            
+
         sectionitems.reverse()
-        ShapeDrivers.Sections = EnumProperty( items=sectionitems, name='Sections', default='Body' )    
-        
+        ShapeDrivers.Sections = EnumProperty( items=sectionitems, name='Sections', default='Body' )
+
 
         ShapeDrivers.DRIVERS = DRIVERS
-        
-        
+
+
         target = ShapeDrivers
         values = ShapeValues
-        
+
         for pids in SHAPEUI.values():
             for pid in pids:
                 P = DRIVERS.get(pid,None)
@@ -110,19 +113,19 @@ class Skeleton:
 
                 if pid=="male_80":
 
-                    setattr(target, pid,  
-                            BoolProperty(name = D['label'], 
+                    setattr(target, pid,
+                            BoolProperty(name = D['label'],
 
                                         update=eval("lambda a,b:updateShape(a,b,'%s')"%pid),
                                         description = "Gender switch\ndisabled:Female\nenabled:Male",
                                         default = False))
-                    
+
                 else:
 
                     default = rescale(D['value_default'], D['value_min'], D['value_max'], 0, 100)
                     description = "%s - %s"%(D['label_min'], D['label_max'])
-                    setattr(target, pid,  
-                            IntProperty(name = D['label'], 
+                    setattr(target, pid,
+                            IntProperty(name = D['label'],
 
                                         update=eval("lambda a,b:updateShape(a,b,'%s')"%pid),
                                         description = description,
@@ -132,8 +135,8 @@ class Skeleton:
 
                                         default = int(round(default))))
 
-                    setattr(values, pid,  
-                            FloatProperty(name = D['label'], 
+                    setattr(values, pid,
+                            FloatProperty(name = D['label'],
                                         min      = 0, max      = 100,
                                         soft_min = 0, soft_max = 100,
                                         default = default))

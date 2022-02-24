@@ -3,9 +3,13 @@
 ### Modification  2015 Matrice Laville
 ### Modifications 2022 Nessaki
 ### Contains code from Machinimatrix
+###
 ### This file is part of Tamagoyaki
 ###
-
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -37,7 +41,6 @@ from mathutils import Vector, Matrix
 from collections import OrderedDict
 from bpy.props import *
 
-
 log=logging.getLogger("tamagoyaki.const")
 registerlog = logging.getLogger("tamagoyaki.register")
 
@@ -50,7 +53,7 @@ def get_blender_revision():
         test = bpy.app.build_hash # check if we are in git
         n = bpy.app.version[0] * 100000 +\
             bpy.app.version[1] * 1000   +\
-            bpy.app.version[2] * 100    
+            bpy.app.version[2] * 100
     except:
         try:
             n = bpy.app.build_revision.decode().split(':')[-1].rstrip('M')
@@ -75,17 +78,40 @@ def get_blender_revision():
     SVN = n
     return SVN
 
+
+
+
 INDEX_COLLECTION_OBJECT=0
 INDEX_COLLECTION_HIDE=1
 
 AVASTAR_CUSTOM_SHAPES = 'tamagoyaki_custom_shapes'
+
+
+
+
 MAX_PRIORITY = 6
 MIN_PRIORITY = -1
 NULL_BONE_PRIORITY = -2
+
+
 LL_MAX_PELVIS_OFFSET = 5.0
+
+
+
+
+
 CONTROL_BONE_RIG = 'CONTROL_BONE_RIG'
 DEFORM_BONE_RIG  = 'DEFORM_BONE_RIG'
+
+
+
+
+
 GP_NAME = 'tamagoyaki_grease_pencil'
+
+
+
+
 
 UI_LOCATION = 'UI'
 
@@ -211,6 +237,10 @@ ICON_XRAY = 'XRAY'
 ICON_ZOOM_IN = 'ZOOM_IN'
 ICON_ZOOM_OUT = 'ZOOM_OUT'
 
+
+
+
+
 NEUTRAL_SHAPE = 'neutral_shape'
 REFERENCE_SHAPE = 'reference_shape'
 MORPH_SHAPE = 'bone_morph'
@@ -248,6 +278,7 @@ STATS_NWC_DISCARDED = 'nwc_discarded'
 STATS_UNASSIGNED_POLYS = 'unassigned_polys'
 STATS_UNASSIGNED_SLOTS = 'unassigned_slots'
 STATS_UNASSIGNED_MATS = 'unassigned_mats'
+
 
 JOINT_BASE_HEAD_ID = 'relhead'
 JOINT_BASE_TAIL_ID = 'reltail'
@@ -291,11 +322,12 @@ REFERENCE_GUIDES     = DOCUMENTATION + "/help/"
 
 AVASTAR_RIG_IMPORT   = DOCUMENTATION + "/help/rig-transfer-tool/"
 AVASTAR_SHAPE_IO     = DOCUMENTATION + "/help/properties/object/shape/io/"
-HELP_PAGE            = MACHINIMATRIX + "/help/"
-AVASTAR_URL          = MACHINIMATRIX + "/tamagoyaki"
-AVASTAR_REGISTER     = MACHINIMATRIX + "/register-download-page/"
-AVASTAR_DOWNLOAD     = MACHINIMATRIX + "/my-account/products/"
-XMLRPC_SERVICE       = MACHINIMATRIX + "/xmlrpc.php"
+HELP_PAGE            = AVALAB + "/help/"
+AVASTAR_URL          = AVALAB + "/tamagoyaki"
+AVASTAR_REGISTER     = AVALAB + "/register-download-page/"
+AVASTAR_DOWNLOAD     = AVALAB + "/my-account/products/"
+XMLRPC_SERVICE       = AVALAB + "/xmlrpc.php"
+FIRST_STEPS          = DOCUMENTATION + "/reference/usermanual/first-steps/"
 
 CHECKSUM = "ava_checksum"
 WORKSPACE_SL_ANIMATION='SL Animation'
@@ -359,7 +391,7 @@ def init_operator_manual_map(MANUAL_MAPPING):
                     val[0] = operator_regex
                 else:
                     val = [operator_regex, None]
-
+                
                 MANUAL_MAPPING[key] = val
 
 
@@ -371,7 +403,8 @@ def get_manual_map(force_reload=False):
         init_url_manual_map(MANUAL_MAPPING)
         init_operator_manual_map(MANUAL_MAPPING)
     return MANUAL_MAPPING
-   
+
+
 def get_help_page(section):
     map = get_manual_map()
     entry = map.get(section)
@@ -460,7 +493,7 @@ VERY_CLOSE = 0.000001
 CLOSE = 0.00001
 MIN_BONE_LENGTH          = 0.0001
 MIN_JOINT_OFFSET         = 0.0001
-MIN_JOINT_OFFSET_RELAXED = 0.001
+MIN_JOINT_OFFSET_RELAXED = 0.0001
 MIN_JOINT_OFFSET_STRICT  = VERY_CLOSE
 
 LArmBones = set(['ShoulderLeft','ElbowLeft','WristLeft','ikWristLeft','ikElbowTargetLeft'])
@@ -1202,7 +1235,7 @@ B_LAYER_HAND,
 B_LAYER_EXTRA
 ]
 
-B_VISIBLE_LAYERS_Tamagoyaki =  B_DEFAULT_POSE_LAYERS
+B_VISIBLE_LAYERS_AVASTAR =  B_DEFAULT_POSE_LAYERS
 
 B_SIMPLE_POSE_LAYERS = [ \
 B_LAYER_ORIGIN,
@@ -1485,6 +1518,7 @@ BONEGROUP_MAP = {
     'mLimb'       : ['THEME11', [B_LAYER_DEFORM_LIMB,  B_LAYER_EXTENDED, B_LAYER_DEFORM] ],
     'mSpine'      : ['THEME11', [B_LAYER_DEFORM_SPINE, B_LAYER_EXTENDED, B_LAYER_DEFORM] ]
 }
+
 
 GENERATE_SKELETON_DATA = os.path.join(DATAFILESDIR, "avatar_skeleton.xml")
 
@@ -1790,7 +1824,7 @@ def visIcon(armobj, layer, type=None):
     closed_eye = bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items[ICON_HIDE_ON].value
     if type == None or not armobj.data.layers[layer]:
         return closed_eye
-    
+
     key = eye_icons.get(type)
     val = get_cust_icon(key)
     return val if val else closed_eye
@@ -1921,7 +1955,7 @@ Note: Most SL Rigs are created based on the female Skeleton.
 However most custom male bodies still use the Male Sliders In SL.
 
 Tip: For Male custom meshes you will probably ENABLE this option.
-However for male models you probably also need to 
+However for male models you probably also need to
 disable 'Use Male Skeleton' (see below) '''
 )
 
@@ -1933,9 +1967,9 @@ g_use_male_skeleton = BoolProperty(
 '''Use the Male skeleton for binding.
 Note: Most SL Rigs are created based on the female Skeleton.
 
-Tip: For the majority of custom meshes (male or female) 
-you probably need to keep this option DISABLED. 
-However for Male models you probably want to 
+Tip: For the majority of custom meshes (male or female)
+you probably need to keep this option DISABLED.
+However for Male models you probably want to
 enable 'Use Male Sliders' (see above) '''
 )
 
@@ -1990,15 +2024,6 @@ g_bindSourceSelection = EnumProperty(
     description="From where to get the weight data",
     default='COPY')
 
-g_weight_mapping_items=[
-            ('TOPOLOGY',            'Topology', 'Copy from identical topology meshes\ngood for mesh clones'),
-            ('NEAREST',             'Nearest Vertex', 'Copy from closest vertex\nworks best when both meshes have similar vertex count'),
-            ('EDGE_NEAREST',        'Neartest Edge Vertex', 'Copy from closest vertex of closest edge\nworks best when both meshes have similar edge loops'),
-            ('EDGEINTERP_NEAREST',  'Nearest Edge Interpolated', 'Copy from interpolated values of vertices from closest point of closest edge'),
-            ('POLY_NEAREST',        'Nearest Face Vertex', 'Copy from closest vertex of closest face'),
-            ('POLYINTERP_NEAREST',  'Nearest Face Interpolated', 'Copy from interpolated values of vertices from closest point of closest face\nworks best for meshes with loosely comparable shape'),
-            ('POLYINTERP_VNORPROJ', 'Projected Face interpolated', 'Copy from interpolated values of vertices from point on closest face hit by normal projection\nworks best for mreshes with tight fitting meshes with comparable shape')
-            ]
 
 g_apply_as_bindshape = BoolProperty(name="Apply Bindshape",
     description = \
@@ -2010,33 +2035,11 @@ The original bindshape will be permanently
 replaced by the current bindshape''',
     default=False)
 
-def g_weight_mapping_callback(self, context):
-    items = g_weight_mapping_items.copy()
-    user_preferences = bpy.context.preferences
-    preferences = user_preferences.addons[__package__].preferences
-    ui_level = int(preferences.ui_complexity)
-    if ui_level > UI_ADVANCED:
-        items.append(
-            ('POLYINTERP_AVASTAR', 'Smart Face interpolated', 'Smart combination of interpolation methods\nNeed user feedback!')          
-        )
-    return items
-
-if get_blender_revision() < 290000:
-    g_weight_mapping = EnumProperty(
-        items=g_weight_mapping_callback,
-        name="Mapping",
-        description="how to copy weights from sources to destination")
-else:
-    g_weight_mapping = EnumProperty(
-        items=g_weight_mapping_callback,
-        name="Mapping",
-        description="how to copy weights from sources to destination",
-        default=6)
 
 g_weightBoneSelection = EnumProperty(
     items=(
         ('SELECTED',
-            'Selected enabled Deform Bones', 
+            'Selected enabled Deform Bones',
             'Create weights for all Selected Deform Bones'),
         ('VISIBLE',
             'Visible enabled Deform Bones',

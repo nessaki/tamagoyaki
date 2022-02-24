@@ -1,9 +1,11 @@
-### Copyright 2016, Matrice Laville
-### Modifications: None
+### Copyright     2021 The Machinimatrix Team
 ###
-### This file is part of Tamagoyaki 2.
-### 
-
+### This file is part of Tamagoyaki
+###
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -22,7 +24,13 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy, bmesh, sys, logging, os, mathutils
+import bpy
+import bmesh
+import sys
+import logging
+import os
+import mathutils
+
 from bpy.props import *
 from bpy.types import Menu, Operator
 from bl_operators.presets import AddPresetBase

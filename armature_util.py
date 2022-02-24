@@ -1,9 +1,11 @@
-### Copyright 2019 Machinimatrix
-### Modifications 2022 Nessaki
-### This file contains code from Machinimatrix
-### This file is part of Tamagoyaki.
+### Copyright     2021 The Machinimatrix Team
 ###
-
+### This file is part of Tamagoyaki
+###
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or

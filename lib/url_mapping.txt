@@ -1,0 +1,193 @@
+SET_ROTATION_LIMITS, help/n-panel/rigging/bone-rotation-limits
+ADD_AVATAR, reference/get-started/first-steps/create
+
+# workflows panel
+
+BASIC_PRESET, help/n-panel/tamagoyaki/workflows/presets
+EXPERT_PRESET, help/n-panel/tamagoyaki/workflows/presets
+ALL_PRESET, help/n-panel/tamagoyaki/workflows/presets
+BONE_PRESET, help/n-panel/tamagoyaki/workflows/presets
+LOAD_ANIMATION_WORKSPACE, help/n-panel/tamagoyaki/workflows/presets
+PREF_SHOW, help/n-panel/tamagoyaki/workflows/addon-settings
+
+# Avatar shape panel
+
+LOAD_SHAPE_UI, help/n-panel/tamagoyaki/shape-editor
+RESET_TO_DEFAULT, help/n-panel/tamagoyaki/shape-editor
+RESET_TO_RESTPOSE, help/n-panel/tamagoyaki/shape-editor
+BAKE_SHAPE, help/n-panel/tamagoyaki/shape-editor
+SHAPE_COPY, help/n-panel/tamagoyaki/shape-editor
+SHAPE_PASTE, help/n-panel/tamagoyaki/shape-editor
+SHAPE_PRESETS_ADD, help/n-panel/tamagoyaki/shape-editor
+SHAPE_PRESETS_REMOVE, help/n-panel/tamagoyaki/shape-editor
+SHAPE_PRESETS_UPDATE, help/n-panel/tamagoyaki/shape-editor
+SHAPE_TYPE_BONE_HINT, help/n-panel/tamagoyaki/shape-editor
+RESET_SHAPE_SECTION, help/n-panel/tamagoyaki/shape-editor
+IMPORT_SHAPE, help/n-panel/tamagoyaki/shape-editor
+
+# Tamagoyaki Shape IO Panel
+
+SAVE_PROPS, help/properties/object/shape/io
+REFRESH_CHARACTER_SHAPE, help/properties/object/shape/io
+LOAD_PROPS, help/properties/object/shape/io
+
+# Rig Display Panel
+
+IK_APPLY, help/n-panel/tamagoyaki/rig-display
+
+# Rig Config Panel
+
+ARMATURE_DEFORM_DISABLE, help/n-panel/tamagoyaki/rig-config
+ARMATURE_DEFORM_ENABLE, help/n-panel/tamagoyaki/rig-config
+ARMATURE_ALLOW_STRUCTURE_SELECT, help/n-panel/tamagoyaki/rig-config
+ARMATURE_RESTRICT_STRUCTURE_SELECT, help/n-panel/tamagoyaki/rig-config
+RESET_SPINE_BONES, help/n-panel/tamagoyaki/rig-config
+FIND_UNDEFORMABLE, help/n-panel/tamagoyaki/rig-config
+
+# Avatar Materials
+
+AVASTAR_MATERIAL_BAKE, help/n-panel/tamagoyaki/material-presets
+AVASTAR_MATERIAL_BAKE_CLEANUP, help/n-panel/tamagoyaki/material-presets
+
+# Skinning Panel
+
+UNPARENT_ARMATURE, help/n-panel/tamagoyaki/skinning/unbind
+REBIND_ARMATURE, help/n-panel/tamagoyaki/skinning/unbind
+FREEZE_SHAPE, help/n-panel/tamagoyaki/skinning/freeze-shape
+PARENT_ARMATURE, help/n-panel/tamagoyaki/skinning/binding
+APPLY_SHAPE_SLIDERS, help/n-panel/tamagoyaki/skinning/binding
+
+# Weight Copy Panel
+
+GENERATE_WEIGHTS, help/n-panel/tamagoyaki/weight-copy
+
+# Posing Panel
+
+ARMATURE_*LOCK_*, help/n-panel/tamagoyaki/posing
+ARMATURE_APPLY_RESTPOSE, help/n-panel/tamagoyaki/posing
+ARMATURE_RESET_POSE_LSL, help/n-panel/tamagoyaki/posing
+ARMATURE_ADJUST_BASE2RIG, help/n-panel/tamagoyaki/posing/edit-mode
+ARMATURE_BAKE, help/n-panel/tamagoyaki/posing
+ARMATURE_JOINTPOS_REMOVE, help/n-panel/tamagoyaki/posing/edit-mode
+ARMATURE_JOINTPOS_STORE, help/n-panel/tamagoyaki/posing/edit-mode
+
+# Developer Kits panel
+
+DEVKIT_EXECUTE, help/n-panel/tamagoyaki/devkit_manager
+
+# Tool Box Panel
+
+MANAGE_ALL_SHAPES, help/n-panel/tamagoyaki/tool-box/armature/delete-system-meshes
+COPY_TIMELINE, help/n-panel/tamagoyaki/tool-box/armature/walkcycle-generator
+REBAKE_UV, help/n-panel/tamagoyaki/tool-box/mesh/uv-tools/rebake-uv
+FIND_DOUBLES, help/n-panel/tamagoyaki/tool-box/mesh/vertex-tools/doubles
+FIND_ASYMMETRIES, help/n-panel/tamagoyaki/tool-box/mesh/vertex-tools/asymmetries
+SNAP_TO_MESH, help/n-panel/tamagoyaki/tool-box/mesh/vertex-tools/snap-to-mesh
+CLEAR_BONE_WEIGHT_GROUPS, help/n-panel/tamagoyaki/tool-box/mesh/weight-tools/clean-weightmaps
+FIND_TOOMANYWEIGHTS, help/n-panel/tamagoyaki/tool-box/mesh/weight-tools/weight-limit
+SHOW_WEIGHTS_PER_VERT, help/n-panel/tamagoyaki/tool-box/mesh/weight-tools/weight-count-on-mesh
+FIND_UNWEIGHTED, help/n-panel/tamagoyaki/tool-box/mesh/weight-tools/unweighted
+FIND_ZEROWEIGHTS, help/n-panel/tamagoyaki/tool-box/mesh/weight-tools/zero-weights
+CHECK_HIERARCHY, help/n-panel/tamagoyaki/tool-box/mesh/weight-tools
+CLEAR_BONE_WEIGTHS, help/n-panel/tamagoyaki/tool-box/mesh/weight-tools
+COPY_BONE_WEIGHTS, help/n-panel/tamagoyaki/tool-box/mesh/weight-tools
+COPY_WEIGHTS_FROM_RIGGED, help/n-panel/tamagoyaki/tool-box/mesh/weight-tools
+COPY_WEIGHTS_FROM_SELECTED, help/n-panel/tamagoyaki/tool-box/mesh/weight-tools
+ENSURE_MIRRORED_GROUPS, help/n-panel/tamagoyaki/tool-box/mesh/weight-tools
+WELD_WEIGHTS_FROM_RIGGED, help/n-panel/tamagoyaki/tool-box/mesh/weight-tools
+
+# Fitting Panel
+
+FITTING_PRESETS_ADD, help/n-panel/tamagoyaki/the-fitting-panel
+FITTING_GENERATE_PHYSICS, help/n-panel/tamagoyaki/the-fitting-panel
+FITTING_ENABLE_PHYSICS, help/n-panel/tamagoyaki/the-fitting-panel
+FITTING_ENABLE_PHYSICS, help/n-panel/tamagoyaki/the-fitting-panel
+FITTING_ADJUST_VIEWPORT, help/n-panel/tamagoyaki/the-fitting-panel
+FITTING_SMOOTH_WEIGHTS, help/n-panel/tamagoyaki/the-fitting-panel
+FITTING_BONE_DELETE_PGROUP, help/n-panel/tamagoyaki/the-fitting-panel/sliders
+FITTING_BONE_SELECTED_HINT, help/n-panel/tamagoyaki/the-fitting-panel/sliders
+
+# Mesh Inspector
+
+MESH_INSPECTOR_UPDATE_STATS, help/n-panel/tamagoyaki/mesh-inspector
+CHECK_MESH, help/n-panel/tamagoyaki/mesh-inspector
+
+# Rig Inspector
+
+COPY_RIG, help/n-panel/tamagoyaki/rig-inspector
+RIG_MIGRATE, help/n-panel/tamagoyaki/rig-inspector/rig-update-tool/update
+ OBJECT_SELECT_OPERATOR, help/n-panel/tamagoyaki/rig-inspector
+
+# Maintenance Panel
+
+MAINTENANCE_COPY_SUPPORT_INFO, help/n-panel/tamagoyaki/maintenance
+CHECK_FOR_UPDATES, help/n-panel/tamagoyaki/maintenance
+
+# IK Controls
+
+IK_MATCH_ALL, help/n-panel/rigging/ik-controls
+IK_ORIENT, help/n-panel/rigging/ik-controls
+CHAIN, help/n-panel/rigging/ik-controls
+IK_ENABLE, help/n-panel/rigging/ik-controls
+IK_ARMS_ENABLE, help/n-panel/rigging/ik-controls
+IK_LEGS_ENABLE, help/n-panel/rigging/ik-controls
+IK_LIMBS_ENABLE, help/n-panel/rigging/ik-controls
+
+# Rig Controls
+
+BREATHE, help/n-panel/rigging/bone-rotation-limits
+ROTATION_LIMITS, help/n-panel/rigging/bone-rotation-limits
+
+# Retarget panel
+
+TRANSFER_POSE, help/n-panel/retarget/motion-transfer
+TRANSFER_MOTION, help/n-panel/retarget/motion-transfer
+GUESS_BONE_MAP, help/n-panel/retarget/motion-transfer
+MATCH_SCALES, help/n-panel/retarget/motion-transfer
+CLEAR_BONE_MAP, help/n-panel/retarget/motion-transfer
+COPY_OTHER_SIDE, help/n-panel/retarget/motion-transfer
+SET_SOURCE_BONE, help/n-panel/retarget/motion-transfer
+DELETE_MOTION, help/n-panel/retarget/motion-transfer
+
+# Import Animation
+
+IMPORT_AVATAR_ANIMATION, help/io/import-sl-animation-bvh
+
+# Export Animation
+
+ACTION_TRIM, help/io/animation-exporter
+EXPORT_BULK_ANIM, help/io/animation-exporter
+EXPORT_SINGLE_ANIM, help/io/animation-exporter
+MIRROR_BONE_WEIGHTS, help/io/animation-exporter
+
+# Export Collada
+
+AVASTAR_EXPORT_TROUBLE, help/io/collada-tamagoyaki
+EXPORT_SL_COLLADA, help/io/collada-tamagoyaki
+EXPORT_WARN_M001, help/io/collada-tamagoyaki/m001
+EXPORT_WARN_M002, help/io/collada-tamagoyaki/m002
+EXPORT_WARN_M003, help/io/collada-tamagoyaki/m003
+EXPORT_WARN_M004, help/io/collada-tamagoyaki/m004
+EXPORT_WARN_M005, help/io/collada-tamagoyaki/m005
+EXPORT_WARN_M006, help/io/collada-tamagoyaki/m006
+EXPORT_WARN_M007, help/io/collada-tamagoyaki/m007
+EXPORT_WARN_M008, help/io/collada-tamagoyaki/m008
+EXPORT_WARN_M009, help/io/collada-tamagoyaki/m009
+EXPORT_WARN_M010, help/io/collada-tamagoyaki/m010
+EXPORT_WARN_M011, help/io/collada-tamagoyaki/m011
+EXPORT_WARN_M012, help/io/collada-tamagoyaki/m012
+EXPORT_WARN_M013, help/io/collada-tamagoyaki/m013
+EXPORT_WARN_M014, help/io/collada-tamagoyaki/m014
+
+UPDATE, reference/tool-setup/update
+INTRO, reference
+GETTING_HELP, reference/get-started/getting-help
+FIRST_STEPS, reference/get-started/first-steps
+POSE_CHARACTER, reference/usermanual/pose-a-character
+ATTACHMENTS, reference/usermanual/attachments
+FIRST_ANIMATION, reference/usermanual/my-first-animation
+SL_SHAPES, reference/usermanual/use-sl-shapes
+
+SKINNING_BASICS, knowledge/skinning-basics
+AVASTAR_BONES, knowledge/tamagoyaki-bones
+NUTS_AND_BOLTS, knowledge/nutsbolts-of-fitted-mesh

@@ -7,6 +7,10 @@
 ### This file is part of Tamagoaki.
 ###
 
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -28,12 +32,14 @@
 bl_info = {
     "name": "Tamagoyaki",
     "author": "Nessaki",
-    "version": (2, 92, 0),
+    "version": (2, 93, 10),
     "blender": (2, 81, 0),
     "api": 36147,
     "location": "Add Menu, 3D View Properties, Property sections and Tools",
-    "description": "Character creation & animation for SL and OpenSim",
+    "description": "Tamagoyaki (卵焼き or 玉子焼き, literally 'grilled egg') is a type of Japanese omelette which is made by rolling together several layers of fried beaten eggs",
     "show_expanded": True,
+    "wiki_url":  "https://github.com/nessaki/tamagoyaki/wiki",
+    "tracker_url": "https://github.com/nessaki/tamagoyaki/issues",
     "category": "Object"}
 
 if "bpy" in locals():
@@ -134,11 +140,8 @@ from bpy.utils import previews
 from bl_operators.presets import AddPresetBase
 from bpy.app.handlers import persistent
 from bpy_extras.io_utils import ExportHelper
-
 from mathutils import Quaternion, Matrix, Vector
 from math import sin, asin
-import logging, importlib
-
 from .pannels import PanelTamagoyakiTool
 from .data   import Skeleton
 from .const  import *
@@ -260,12 +263,6 @@ class AVASTAR_UL_LoggerPropVarList(bpy.types.UIList):
         row.label(text=item.name)
 
 
-class WeightsPropGroup(bpy.types.PropertyGroup):
-    pass
-
-class StringListProp(bpy.types.PropertyGroup):
-    name : StringProperty()
-
 
 
 
@@ -283,22 +280,30 @@ class StringListProp(bpy.types.PropertyGroup):
 
 
 #
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def installedAddonsCallback(scene, context):
     items=[]
     if addon_utils.check("tamagoyaki")[0]:
         items.append(('Tamagoyaki',   'Tamagoyaki', "Tamagoyaki Addon for Blender"))
-        
+
     if addon_utils.check("sparkles")[0]:
         items.append(('Sparkles',   'Sparkles', "Sparkles Addon for Blender"))
 
-    if addon_utils.check("avastar")[0]:
-        items.append(('Avastar',   'Avastar', "Avastar Addon for Blender"))
-
-    if addon_utils.check("onigiri")[0]:
-        items.append(('Onigiri',   'Onigiri', "Onigiri Addon for Blender"))
-            
     if addon_utils.check("primstar")[0]:
         items.append(('Primstar',   'Primstar', "Primstar Addon for Blender"))
     return items
@@ -318,9 +323,6 @@ def selectedAddonCallback(self, context):
     elif preferences.productName == 'Sparkles':
         import sparkles
         info = sparkles.bl_info['version']
-    elif preferences.productName == 'Avastar':
-        import avastar
-        info = avastar.bl_info['version']
     elif preferences.productName == 'Primstar':
         import primstar
         info = primstar.bl_info['version']
@@ -344,6 +346,7 @@ class Tamagoyaki(AddonPreferences):
         name="Format",
         description="Image File type",
         default='PNG')
+
 
     import configparser
     config_file = os.path.join(CONFIG_DIR,"credentials.conf")
@@ -369,21 +372,21 @@ class Tamagoyaki(AddonPreferences):
         description="Log Level Settings",
         default='WARNING',
         update = configure_log_level)
-        
+
     _username = config.get("credentials","user", fallback="")
     _password = config.get("credentials","pwd",  fallback="")
 
     username       : StringProperty(
         name       = 'User',
-        description="Your Username on the Machinimatrix Website\n\nImportant: This is not your Secondlife User!\nWe recommend that your Machinimatrix account name\nis different from your Avatar name in Secondlife!",
+        description="Your Username on the Avalab Website\n\nImportant: This is not your Secondlife User!\nWe recommend that your Avalab account name\nis different from your Avatar name in Secondlife!",
         default    =_username)
 
     password       : StringProperty(
         name       = 'Pwd',
         subtype='PASSWORD',
-        description="Your Password on the Machinimatrix Website\n\nImportant: This is not your Secondlife Password!\nWe recommend that your Machinimatrix account password\nis different from your Password in Secondlife!\nAlso note that the Machinimatrix team will never(!) ask you for any password!",
+        description="Your Password on the Avalab Website\n\nImportant: This is not your Secondlife Password!\nWe recommend that your Avalab account password\nis different from your Password in Secondlife!\nAlso note that the Avalab team will never(!) ask you for any password!",
         default    =_password)
-        
+
     keep_cred       : BoolProperty(
         name        = "Keep Credentials",
         description = "Keep login Credentials on local file for reuse on next start of Blender",
@@ -403,9 +406,9 @@ class Tamagoyaki(AddonPreferences):
 
     update_status  : EnumProperty(
         items=(
-            ('BROKEN', 'Broken', 'We could not setup the Remote caller on your system.\nPlease visit the Machinimatrix website and\ncheck manually for new updates.'),
-            ('UNKNOWN', 'Unknown', 'You need to Login at Machinimatrix\nor at least Check for Updates to see your update status'),
-            ('UPTODATE', 'Up to date', 'You seem to have already installed the newest product version'),
+            ('BROKEN', 'Broken', 'We could not setup the Remote caller on your system.\nPlease visit the Avalab website and\ncheck manually for new updates.'),
+            ('UNKNOWN', '', 'You need to Login at Avalab\nor at least Check for Updates to see your update status'),
+            ('UPTODATE', 'No new Update available', 'You have already installed the newest product version'),
             ('ONLINE', 'Up to date', 'You have already installed the newest product version'),
             ('CANUPDATE', 'Can Update', 'A newer product version is available (Please login to get the download)'),
             ('UPDATE', 'Update available', 'A newer product version is available for Download'),
@@ -434,7 +437,7 @@ class Tamagoyaki(AddonPreferences):
             name="Initial Rig Mode",
         description="Initial Rig Interaction Mode after creating a new Tamagoyaki Rig",
         default='POSE')
-        
+
     update_path : StringProperty(
         description="Path to updated Addon zip file")
 
@@ -660,15 +663,15 @@ do not accidentally confuse this panel with the Appearance panel'''
             print("user:", cp.get("credentials","user", fallback="none"))
             cp.write(configfile)
             print("Done")
-            
-            
+
+
     def draw_create_panel(self, context, box):
-    
+
         sceneProps = context.scene.SceneProp
-        last_select = bpy.types.TAMAGOYAKI_MT_rig_presets_menu.bl_label
+        last_select = bpy.types.AVASTAR_MT_rig_presets_menu.bl_label
         row = box.row(align=True)
 
-        row.menu("TAMAGOYAKI_MT_rig_presets_menu", text=last_select )
+        row.menu("AVASTAR_MT_rig_presets_menu", text=last_select )
         row.operator("tamagoyaki.rig_presets_add", text="", icon=ICON_ADD)
         if last_select not in ["Rig Presets", "Presets"]:
             row.operator("tamagoyaki.rig_presets_update", text="", icon=ICON_FILE_REFRESH)
@@ -686,6 +689,10 @@ do not accidentally confuse this panel with the Appearance panel'''
         row = col.row(align=True)
         row.label(text='tamagoyakiJointType')#text=propgroups.ScenePropGroup.tamagoyakiJointType[1]['name'])
         row.prop(sceneProps, "tamagoyakiJointType",   text='')
+
+        row = col.row(align=True)
+        row.label(text='tamagoyakiSkeletonType')#text=propgroups.ScenePropGroup.tamagoyakiSkeletonType[1]['name'])
+        row.prop(sceneProps, "tamagoyakiSkeletonType",   text='')
 
     def draw(self, context):
         layout = self.layout
@@ -849,7 +856,7 @@ do not accidentally confuse this panel with the Appearance panel'''
         def draw_credentials_section(box):
             irow = box.row(align=False)
             irow.alignment='RIGHT'
-            irow.operator("wm.url_open", text="My Machinimatrix Account",icon=ICON_BLANK1,emboss=False).url=AVASTAR_DOWNLOAD
+            irow.operator("wm.url_open", text="My Avalab Account",icon=ICON_BLANK1,emboss=False).url=AVASTAR_DOWNLOAD
             irow.operator("wm.url_open", text='',icon=ICON_INFO).url=AVASTAR_DOWNLOAD
 
             col = box.column(align=True)
@@ -861,9 +868,12 @@ do not accidentally confuse this panel with the Appearance panel'''
         def draw_panel_visibility_section(box):
             col = box.column()
             col.prop(self, "show_panel_collada", text="Show the Collada Panel")
+            col.prop(self, "show_panel_fitting", text="Show the Fitting Panel")
             row = col.row(align=True)
-            row.label(text="Avatar Shape")
+            row.label(text="Appearance Editor")
             row.prop(self, "show_panel_shape_editor", text="")
+
+
             row = col.row(align=True)
             row.label(text="UI Complexity")
             row.prop(self, "ui_complexity", text='')
@@ -1148,7 +1158,7 @@ class DownloadReset(bpy.types.Operator):
 class DownloadUpdate(bpy.types.Operator):
     bl_idname = "tamagoyaki.download_update"
     bl_label  = "Download Update"
-    bl_description = "Download Tamagoyaki Update from GitHub (Freezes Blender for ~1 minute, depending on your internet)"
+    bl_description = "Download Tamagoyaki Update from Avalab (Freezes Blender for ~1 minute, depending on your internet)"
 
     reset : BoolProperty(default=False, name="Reset",
         description="Reset to not logged in")
@@ -1214,11 +1224,11 @@ product_id_map = {
     "Primstar": 760,
     "Sparkles": 763
 }
-        
+
 class CreateReport(bpy.types.Operator):
     bl_idname = "tamagoyaki.send_report"
     bl_label  = "Create Report"
-    bl_description = "Create a Report and send the issue to the github"
+    bl_description = "Create a Report and send the data to the Avalab website"
 
     def execute(self, context):
         import webbrowser
@@ -1243,11 +1253,11 @@ class CreateReport(bpy.types.Operator):
               + "&wpas_mama_operating_system=%s"\
               + "&wpas_mama_avatar_name=%s"
 
- 
+
         page = ptmpl % (
-               product_name, 
+               product_name,
                addon_version,
-               blender_version, 
+               blender_version,
                ticket_type,
                operating_system,
                avatar_name,
@@ -1255,7 +1265,7 @@ class CreateReport(bpy.types.Operator):
         )
         page = urllib.parse.quote_plus('page:%s'%page)
 
-        url = ("https://support.machinimatrix.org/wp-login.php?log=%s&pwd=%s&%s" % (user, pwd, page)).replace("page%3A","page=")
+        url = ("https://www.avalab.org/wp-login.php?log=%s&pwd=%s&%s" % (user, pwd, page)).replace("page%3A","page=")
         new = 2
 
         print("Open page [%s]" % url )
@@ -1265,7 +1275,7 @@ class CreateReport(bpy.types.Operator):
 class CheckForUpdates(bpy.types.Operator):
     bl_idname = "tamagoyaki.check_for_updates"
     bl_label  = "Check for Updates"
-    bl_description = "Check GitHub for Tamagoyaki Update s\n\nNote: The Update Tool does not work for\nDevelopment Releases and Release Candidates"
+    bl_description = "Check the Avalab Website for Tamagoyaki Update s\n\nNote: The Update Tool does not work for\nDevelopment Releases and Release Candidates"
 
     def execute(self, context):
         addonProps = util.getAddonPreferences()
@@ -1273,12 +1283,12 @@ class CheckForUpdates(bpy.types.Operator):
             import xml
             import xmlrpc.client
         except:
-            print("xmlrpc: i can not configure the remote call to the bento box.")
+            print("xmlrpc: i can not configure the remote call to Avalab.")
             print("Sorry, we can not provide this feature on your computer")
             addonProps.update_status = 'BROKEN'
             return {'CANCELLED'}
 
-        ssl_context = www.install_certificates()
+        ssl_context = www.get_ssl_context()
         service = xmlrpc.client.ServerProxy(
                       XMLRPC_SERVICE,
                       context= ssl_context,
@@ -1308,7 +1318,7 @@ class CheckForUpdates(bpy.types.Operator):
                 addonProps.user          = dld[3]
                 addonProps.purchase      = dld[4]
                 addonProps.version       = dld[5]
-                
+
                 addonProps.store_credentials()
 
             else:
@@ -1328,7 +1338,7 @@ class CheckForUpdates(bpy.types.Operator):
             log.error("Error code: %d" % err.errcode)
             log.error("Error message: %s" % err.errmsg)
             dld = None
-    
+
         if dld:
             if dld[0] in ['UNKNOWN','UPTODATE','CANUPDATE', 'UPDATE', 'ONLINE']:
                 addonProps.update_status = dld[0]
@@ -1339,7 +1349,7 @@ class CheckForUpdates(bpy.types.Operator):
                 log.error("CheckForUpdates: unknown status [",dld[0],"]")
                 return {'CANCELLED'}
         else:
-            log.info("check for Updates cancelled")
+            log.info("heck for Updates cancelled")
             return {'CANCELLED'}
 
 
@@ -1349,7 +1359,7 @@ class CheckForUpdates(bpy.types.Operator):
     bl_category    = "Tamagoyaki"
 
     bl_label = "Tamagoyaki %s.%s.%s" % (bl_info['version'])
-    bl_idname = "TAMAGOYAKI_PT_custom_info"
+    bl_idname = "AVASTAR_PT_custom_info"
     bl_options      = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -1378,14 +1388,15 @@ def add_rig_preset(context, filepath):
     "\n"
     "sceneProps  = bpy.context.scene.SceneProp\n"
     )
-    
+
     file_preset.write("sceneProps.tamagoyakiMeshType   = '%s'\n" % sceneProps.tamagoyakiMeshType)
     file_preset.write("sceneProps.tamagoyakiRigType    = '%s'\n" % sceneProps.tamagoyakiRigType)
     file_preset.write("sceneProps.tamagoyakiJointType  = '%s'\n" % sceneProps.tamagoyakiJointType)
+    file_preset.write("sceneProps.tamagoyakiSkeletonType  = '%s'\n" % sceneProps.tamagoyakiSkeletonType)
     file_preset.close()
 
 
-class TAMAGOYAKI_MT_rig_presets_menu(Menu):
+class AVASTAR_MT_rig_presets_menu(Menu):
     bl_label  = "Rig Presets"
     bl_description = "Rig Presets for the Tamagoyaki Rig\nHere you define configurations for creating Tamagoyaki Rigs.\nYou call your configurations from the the Footer of the 3DView\nNavigate to: Add -> Tamagoyaki -> ..."
     preset_subdir = os.path.join("tamagoyaki","rigs")
@@ -1396,7 +1407,7 @@ class TamagoyakiAddPresetRig(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.rig_presets_add"
     bl_label = "Add Rig Preset"
     bl_description = "Create new Preset from current Panel settings"
-    preset_menu = "TAMAGOYAKI_MT_rig_presets_menu"
+    preset_menu = "AVASTAR_MT_rig_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","rigs")
 
@@ -1411,11 +1422,11 @@ class TamagoyakiUpdatePresetRig(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.rig_presets_update"
     bl_label = "Update Rig Preset"
     bl_description = "Update active Preset from current Panel settings"
-    preset_menu = "TAMAGOYAKI_MT_rig_presets_menu"
+    preset_menu = "AVASTAR_MT_rig_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","rigs")
 
     def invoke(self, context, event):
-        self.name = bpy.types.TAMAGOYAKI_MT_rig_presets_menu.bl_label
+        self.name = bpy.types.AVASTAR_MT_rig_presets_menu.bl_label
         print("Updating Preset", self.name)
         return self.execute(context)
 
@@ -1426,7 +1437,7 @@ class TamagoyakiRemovePresetRig(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.rig_presets_remove"
     bl_label = "Remove Rig Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "TAMAGOYAKI_MT_rig_presets_menu"
+    preset_menu = "AVASTAR_MT_rig_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","rigs")
 
 
@@ -1439,12 +1450,12 @@ class ObjectSelectOperator(bpy.types.Operator):
 
     def execute(self, context):
         if self.name:
-           ob = bpy.data.objects[self.name]
-           if ob:
-               util.object_select_set(bpy.context.object, False)
-               util.set_active_object(context, ob)
-               util.object_select_set(ob, True)
-               util.object_hide_set(ob, False)
+            ob = bpy.data.objects[self.name]
+            if ob:
+                util.object_select_set(bpy.context.object, False)
+                util.set_active_object(context, ob)
+                util.object_select_set(ob, True)
+                util.object_hide_set(ob, False)
 
         return{'FINISHED'}
 
@@ -1453,7 +1464,7 @@ class DisplayTamagoyakiVersionOperator(bpy.types.Operator):
     bl_idname      = "tamagoyaki.display_version_operator"
     bl_label       = "Tamagoyaki"
     bl_description = '''Tamagoyaki version used to create this Rig
-    
+
 read as Tamagoyaki - Version.Minor.Update(Rig ID)
 
 Notes
@@ -1489,7 +1500,7 @@ class DisplayTamagoyakiRigVersionOperator(bpy.types.Operator):
     bl_idname      = "tamagoyaki.display_rigversion_operator"
     bl_label       = "Tamagoyaki"
     bl_description = '''Rig Version Information
-    
+
 Read as: Version.Minor.Update(Rig ID)
 
 Notes
@@ -1629,7 +1640,7 @@ class FittingBoneDeletePgroup(bpy.types.Operator):
     bl_idname      = "tamagoyaki.fitting_bone_delete_pgroup"
     bl_label       = "Cleanup PGroup"
     bl_description = "Delete Edited Weight distribution"
-    
+
     bname  : StringProperty()
 
     def execute(self, context):
@@ -1646,7 +1657,7 @@ class FittingBoneDeletePgroup(bpy.types.Operator):
         pgroup = weights.get_pgroup(obj, self.bname)
         if pgroup:
             pgroup.clear()
-        
+
         percent = getattr(obj.FittingValues, self.bname)
         only_selected = False
         weights.set_fitted_strength(context, obj, self.bname, percent, only_selected, omode)
@@ -1735,7 +1746,7 @@ class FittingBoneSelectedHint(bpy.types.Operator):
 class SynchronizeShapekeyData(bpy.types.Operator):
     bl_idname = "tamagoyaki.sync_shapekeys"
     bl_label = "Sync dirty Shapekeys"
-    bl_description = '''Manually sync Shape keys with Avatar shape. 
+    bl_description = '''Manually sync Shape keys with Avatar shape.
 Use when you:
    - changed Avatar shape while editing a shape key
    - renamed your shape keys or modified their order
@@ -1879,7 +1890,7 @@ class ButtonSaveProps(bpy.types.Operator):
 
     check_existing : BoolProperty(name="Check Existing", description="Check and warn on overwriting existing files", default=True)
 
-    destination : g_save_shape_selection 
+    destination : g_save_shape_selection
 
     filter_glob : StringProperty(
                 default="*.xml",
@@ -1934,7 +1945,7 @@ class ButtonLoadProps(bpy.types.Operator):
 
     filepath : StringProperty(name="File Path", description="File path used for importing shape from xml", maxlen=1024, default= "")
 
-    source : g_save_shape_selection 
+    source : g_save_shape_selection
 
     def invoke(self, context, event):
 
@@ -1956,7 +1967,7 @@ class ButtonLoadProps(bpy.types.Operator):
             if self.source=='FILE':
                 shape.loadProps(context, armobj, self.filepath)
             else:
-                blockname = "Shape for: '%s'"%armobj.name 
+                blockname = "Shape for: '%s'"%armobj.name
                 shape.loadProps(context, armobj, blockname, pack=True)
 
             util.enforce_armature_update(context, armobj)
@@ -1976,7 +1987,7 @@ class ButtonResetToSLRestPose(bpy.types.Operator):
     bl_description=\
 '''Reset Sliders to the SL Neutral Shape
 
-Notes: 
+Notes:
 - Please use this option when you create Animesh objects
 - This mode is often needed for importing a foreign Devkit'''
 
@@ -1986,13 +1997,9 @@ Notes:
             context_obj  = context.active_object
             arm = util.get_armature(context.active_object)
             arm.RigProp.Hand_Posture = HAND_POSTURE_DEFAULT
-            
+
             preferences = util.getAddonPreferences()
-            auto_lock_sl_restpose = preferences.auto_lock_sl_restpose
-
-            if auto_lock_sl_restpose:
-                rig.set_appearance_editable(context, False)
-
+            rig.set_appearance_editable(context, not preferences.auto_lock_sl_restpose)
 
             shape.resetToRestpose(arm, context)
 
@@ -2049,7 +2056,7 @@ class ButtonResetToBindshape(bpy.types.Operator):
     bl_description = \
 '''Reset Mesh to its Bind Shape
 
-The Bindshape is the slider setting that was 
+The Bindshape is the slider setting that was
 used when you bound your mesh to the armature.
 
 Note: Each mesh has its own bind shape.
@@ -2069,7 +2076,7 @@ for all bound meshes'''
         col.separator()
         col.prop(self, "revert_to_bindshape")
 
-    
+
     def execute(self, context):
         return bind.reset_to_bindshape(context, self.revert_to_bindshape)
 
@@ -2183,7 +2190,7 @@ class ButtonRefreshShape(bpy.types.Operator):
     bl_description ="Recalculate Shape of active mesh after modifying weights for Collision Volume Bones"
     bl_options = {'REGISTER', 'UNDO'}
 
-    def execute(self, context):    
+    def execute(self, context):
 
         arms, objs = util.getSelectedArmsAndObjs(context)
 
@@ -2196,7 +2203,7 @@ class ButtonRefreshShape(bpy.types.Operator):
                 shape.refresh_shape(context, arm, obj, graceful=True, only_weights=True)
 
         util.set_disable_update_slider_selector(oselect)
-        
+
         return{'FINISHED'}
 
 
@@ -2258,7 +2265,7 @@ class PanelIKUI(bpy.types.Panel):
     bl_category    = "Rigging"
 
     bl_label       ="IK Controls"
-    bl_idname      = "TAMAGOYAKI_PT_ik_ui"
+    bl_idname      = "AVASTAR_PT_ik_ui"
 
     @classmethod
     def poll(self, context):
@@ -2275,7 +2282,7 @@ class PanelIKUI(bpy.types.Panel):
         layout = self.layout
         col = layout.column()
         active = context.active_object
-        arm    = util.get_armature(active) 
+        arm    = util.get_armature(active)
         col.prop(active.IKSwitchesProp, "Show_All")
 
         bones = set([b.name for b in bpy.context.object.pose.bones if b.bone.select or b.sync_influence])
@@ -2369,7 +2376,7 @@ class PanelIKUI(bpy.types.Panel):
 
                     col.prop(active.pose.bones['ikThumbSolverLeft'],"pinch_influence", text = 'Left Pinch', slider=True)
                 except KeyError: pass
-            
+
             if active.IKSwitchesProp.Show_All or not bones.isdisjoint(GrabBones):
                 for symmetry in ["Right", "Left"]:
                     col.separator()
@@ -2391,7 +2398,7 @@ class PanelIKUI(bpy.types.Panel):
                                 synced += 1
                             else:
                                 lock_icon = ICON_UNLOCKED
-            
+
                             row.prop(con, "influence", text = txt, slider=True)
                             row.prop(bbone, "sync_influence", text = '', icon = lock_icon, slider=True)
                             counter += 1
@@ -2399,8 +2406,8 @@ class PanelIKUI(bpy.types.Panel):
                             raise
                             pass
                     if counter > 1 or synced > 1:
-                       row=col.row(align=True)
-                       row.prop(arm.RigProp,"IKHandInfluence%s" % symmetry, text="Combined", slider=True)
+                        row=col.row(align=True)
+                        row.prop(arm.RigProp,"IKHandInfluence%s" % symmetry, text="Combined", slider=True)
 
             row = col.row()
             row.label(text="FK")
@@ -2606,7 +2613,7 @@ class PanelRigUI(bpy.types.Panel):
     bl_category    = "Rigging"
 
     bl_label ="Rig Controls"
-    bl_idname = "TAMAGOYAKI_PT_rig_ui"
+    bl_idname = "AVASTAR_PT_rig_ui"
 
     @classmethod
     def poll(self, context):
@@ -2631,7 +2638,7 @@ class PanelRigUI(bpy.types.Panel):
         split.label(text='Rotation Limits:')
         split.prop(meshProp, "allBoneConstraints", text='All bones', toggle=False)
 
-        current_state, set_state = SLBoneLockRotationLimitStates(armobj, context)
+        current_state, set_state = rig.SLBoneLockRotationLimitStates(armobj, context)
         if current_state != '':
             row = box.row(align=True)
 
@@ -2683,7 +2690,7 @@ class PanelRigUI(bpy.types.Panel):
 
 
         PanelRigUI.add_rotation_limits_section(context, layout, active)
-        
+
         if "Chest" in active.data.bones and "Torso" in active.data.bones:
             box = layout.box()
             box.label(text="Breathing:", icon=ICON_BOIDS)
@@ -2971,7 +2978,7 @@ class ButtonChainLess(bpy.types.Operator):
             chain_len = con.chain_count - idx - 1
             return activebone, parent, chain_len
         return activebone, None, 0
-        
+
 
     @classmethod
     def description(cls, context, properties):
@@ -3198,39 +3205,6 @@ class ButtonChainClamped(bpy.types.Operator):
             return{'FINISHED'}
 
 
-def SLBoneLockRotationLimitStates(armobj, context):
-    all = context.scene.MeshProp.allBoneConstraints
-    if all:
-        bones = armobj.pose.bones
-    else:
-        bones = context.selected_pose_bones
-    try:
-        limit_count = 0
-        free_count  = 0
-        part_count  = 0
-
-        if len(bones) == 0:
-            return '',''
-
-        for b in bones:
-            for c in b.constraints:
-                if c.type =='LIMIT_ROTATION':
-                    if c.influence == 1:
-                        limit_count += 1
-                    elif c.influence == 0:
-                        free_count += 1
-                    else:
-                        part_count +=1
-
-        if free_count==0 and part_count == 0:
-            return 'All limits', 'Disable rotation limits'
-        if limit_count == 0 and part_count == 0:
-            return 'No limits', 'Enable rotation limits'
-        return 'Some limits', ''
-    except:
-        pass
-    return '',''
-
 
 
 class ButtonSetRotationLimits(bpy.types.Operator):
@@ -3256,7 +3230,7 @@ class ButtonUnsetRotationLimits(bpy.types.Operator):
     bl_label ="Unset"
     bl_description ="Unset rotation limits on selected joints (if defined)"
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     all : BoolProperty(default=False)
 
     def execute(self, context):
@@ -3331,7 +3305,7 @@ class PanelExpressions(bpy.types.Panel):
     bl_category    = "Rigging"
 
     bl_label ="Expressions"
-    bl_idname = "TAMAGOYAKI_PT_expressions"
+    bl_idname = "AVASTAR_PT_expressions"
     bl_context = 'object'
     bl_options = {'DEFAULT_CLOSED'}
 
@@ -3443,7 +3417,7 @@ class PanelAnimationExport(bpy.types.Panel):
     bl_category    = "Retarget"
 
     bl_label ="Animation Export"
-    bl_idname = "TAMAGOYAKI_PT_animation_export"
+    bl_idname = "AVASTAR_PT_animation_export"
     bl_context = 'render'
 
     @classmethod
@@ -3458,7 +3432,7 @@ class PanelAnimationExport(bpy.types.Panel):
             return arm and arm.type=='ARMATURE' and "tamagoyaki" in arm
         except (TypeError, AttributeError):
             return False
-    
+
         return False
 
     def draw(self, context):
@@ -3500,7 +3474,7 @@ class PanelAnimationExport(bpy.types.Panel):
             props = active_action.AnimProp
             startprop = props
             endprop = props
-            fpsprop = props    
+            fpsprop = props
 
         layout.prop(props, "Mode")
         export_type = 'NLA' if is_nla_export else 'Bulk' if is_bulk_export else 'Action'
@@ -3517,8 +3491,7 @@ class PanelAnimationExport(bpy.types.Panel):
         row.prop(startprop,"frame_start")
         if active_action:
             row.operator("tamagoyaki.action_trim",text='', icon=ICON_AUTO)
-        row.prop(endprop,"frame_end")
-        col = layout.column(align=True)
+        row.prop(endprop,"frame_end")       
         col.prop(scn.SceneProp,"loc_timeline")
         col.enabled = active_action != None
 
@@ -3592,7 +3565,7 @@ class PanelAnimationExport(bpy.types.Panel):
                 anim_exporter = "tamagoyaki.export_bulk_anim"
                 text = "Bulk Export (%d/%d Actions)" % (len(exporting), ac)
         else:
-            dirname, name = ExportAnimOperator.get_export_name(armobj)        
+            dirname, name = ExportAnimOperator.get_export_name(armobj)
             anim_exporter = "tamagoyaki.export_single_anim"
             text = "Export: %s" % name
             if no_keyframes:
@@ -3614,7 +3587,7 @@ class PanelAnimationExport(bpy.types.Panel):
             col=layout.column(align=True)
             col.alert=True
             col.label(text=warn)
- 
+
         if props.Mode == 'bvh':
 
             if props.with_reference_frame:
@@ -3720,7 +3693,7 @@ Note: The .anim format is the SL internal format'''
 
         name = string.Template(basename).safe_substitute(sub)
         name = util.clean_name(name)
-        
+
         return dirname, name
 
 
@@ -3773,7 +3746,8 @@ Note: The .anim format is the SL internal format'''
         active = context.active_object
         amode = active.mode
         armobj = util.get_armature(active)
-
+        export_counter = 0
+        export_type = ""
         try:
             active_action = get_active_action(armobj)
             animProps = armobj.animation_data.action.AnimProp if active_action else armobj.AnimProp
@@ -3800,7 +3774,7 @@ Note: The .anim format is the SL internal format'''
                         log.debug("Marked single action [%s] for export" % (action.name) )
 
             if active_action or armobj.AnimProp.selected_actions:
-
+                export_type = "Animation"
                 def get_frinfo(action, bulk, scn):
                     if bulk:
 
@@ -3812,7 +3786,7 @@ Note: The .anim format is the SL internal format'''
                         end = action.AnimProp.frame_end
 
                     fps = action.AnimProp.fps
-                    
+
 
                     if fps == -2:
                         fps = scn.render.fps
@@ -3849,10 +3823,11 @@ Note: The .anim format is the SL internal format'''
 
             if active_action:
                 armobj.animation_data.action = active_action
-            
+
             util.ensure_mode_is(omode)
             util.set_active_object(context, active)
             util.ensure_mode_is(amode)
+            self.report({'INFO'},"Exported %d %s"% (export_counter, util.pluralize(export_type, export_counter)))
             return{'FINISHED'}
         except Exception as e:
             util.ErrorDialog.exception(e, context)
@@ -3868,14 +3843,14 @@ class ButtonExportAnim(ExportAnimOperator):
 '''Export Single Animation (as .anim or .bvh)
 
 - Exports only if Keyframes found in Timeline
-- Please mute Origin Bone animation when exists (see dope sheet) 
+- Please mute Origin Bone animation when exists (see dope sheet)
 
 Note: The .anim format is the SL internal format'''
 
     filename_ext = ""
     filepath : bpy.props.StringProperty(
                description="Animation File Name",
-               subtype="FILE_PATH", 
+               subtype="FILE_PATH",
                default="*.bvh;*.anim")
 
     filter_glob : StringProperty(
@@ -3901,7 +3876,7 @@ Note: The .anim format is the SL internal format'''
 
     directory : bpy.props.StringProperty(
                description="Animation export folder name",
-               subtype="DIR_PATH", 
+               subtype="DIR_PATH",
                default="")
 
     filter_glob : StringProperty(
@@ -3930,7 +3905,7 @@ def fix_bone_layers_on_load(dummy):
         bind.fix_bone_layers(bpy.context, scene, lazy=False)
 
 @persistent
-def fix_avastar_data_on_load(dummy):
+def fix_tamagoyaki_data_on_load(dummy):
 
     props = util.getAddonPreferences()
     if props.fix_data_on_upload:
@@ -3978,7 +3953,7 @@ def fix_avastar_data_on_load(dummy):
                     screen = window.screen
                     for area in screen.areas:
                         if area.type == 'VIEW_3D':
-                            ctx = util.get_context_copy(context)
+                            ctx = {}
                             ctx['window']        = window
                             ctx['screen']        = screen
                             ctx['area']          = area
@@ -4033,8 +4008,8 @@ def fix_avastar_data_on_load(dummy):
                 if key == 'Loop':
                     continue
                 try:
-                val = old_props.get(key)
-                setattr(action.AnimProp,key,val)
+                    val = old_props.get(key)
+                    setattr(action.AnimProp,key,val)
                 except:
                     log.warn("Can not assign val:[%s] to key:[%s]" % (val, key))
     context = bpy.context
@@ -4048,10 +4023,10 @@ def fix_avastar_data_on_load(dummy):
     scene.MeshProp.enable_unsupported    = props.enable_unsupported
 
     init_log_level(context)
-
     arms = [obj for obj in context.view_layer.objects if obj.type=="ARMATURE" and 'tamagoyaki' in obj]
     if len(arms) > 0:
         log.info("Fixing %d Tamagoyaki RigData %s after loading from .blend" % (len(arms), util.pluralize("structure", len(arms))) )
+
 
     oldstate = util.set_disable_handlers(scene, True)
     try:
@@ -4080,7 +4055,7 @@ def fix_avastar_data_on_load(dummy):
         if context_ob:
             util.set_active_object(context, context_ob)
             if initial_mode != context_ob.mode:
-            util.ensure_mode_is(initial_mode)
+                util.ensure_mode_is(initial_mode)
 
 
         props.update_status='UNKNOWN'
@@ -4098,7 +4073,7 @@ def check_for_system_mesh_edit(scene):
         log.debug("handler [%s] started" % "check_for_system_mesh_edit")
     else:
         return
-    
+
     context = bpy.context
     ob = getattr(context,'object', None)
     if ob is None: return True
@@ -4140,7 +4115,7 @@ def check_for_system_mesh_edit(scene):
     if ctx:
         log.warning("Warn user about editing the System Mesh %s" % (ob.name))
         bpy.ops.tamagoyaki.generic_info_operator(
-            msg=messages.msg_edit_system_mesh % ob.name, 
+            msg=messages.msg_edit_system_mesh % ob.name,
             type=SEVERITY_STRONG_WARNING
         )
 
@@ -4187,7 +4162,7 @@ class PanelRetargetInfo(bpy.types.Panel):
     bl_category    = "Retarget"
 
     bl_label ="Retarget"
-    bl_idname = "TAMAGOYAKI_PT_animation_retarget_info"
+    bl_idname = "AVASTAR_PT_animation_retarget_info"
 
     @classmethod
     def poll(self, context):
@@ -4220,7 +4195,6 @@ class PanelRetargetInfo(bpy.types.Panel):
         col.label(text='* Read the Tamagoyaki docs')
         col.separator()
         col.operator("wm.url_open", text='Tamagoyaki Documentation').url=DOCUMENTATION+'/reference/usermanual/'
-       
 
 
 def get_retarget_map_counter(mocap, target, exact_count=True):
@@ -4241,7 +4215,7 @@ class PanelPoseTransfer(bpy.types.Panel):
     bl_category    = "Retarget"
 
     bl_label ="Retarget Transfer"
-    bl_idname = "TAMAGOYAKI_PT_animation_pose_settings"
+    bl_idname = "AVASTAR_PT_animation_pose_settings"
 
     @classmethod
     def poll(self, context):
@@ -4287,9 +4261,9 @@ class PanelPoseTransfer(bpy.types.Panel):
             col.alert = map_counter == 0 or not prop.get('COG')
             row = col.row(align=True)
             row.alert = col.alert
-            row.operator("avastar.transfer_motion", text='Transfer Motion', icon=ICON_POSE_DATA)
+            row.operator("tamagoyaki.transfer_motion", text='Transfer Motion', icon=ICON_POSE_DATA)
             row.alert = False
-            row.operator("avastar.delete_motion", text='', icon=ICON_X)
+            row.operator("tamagoyaki.delete_motion", text='', icon=ICON_X)
             
             col = box.column()
             col.prop(prop, "use_scene_action_range")
@@ -4308,7 +4282,7 @@ class PanelPoseTransfer(bpy.types.Panel):
             elif prop.simplificationMethod == 'lowesglobal':
                 col.prop(prop, "lowesGlobalTol")
 
-            
+
             pannels.PanelPosing.add_pose_bone_constraints_section(layout, target)
 
 
@@ -4319,7 +4293,7 @@ selected_source_bones = []
 block_retarget_bone_group_processing = False
 
 class AcceptRetargetMapping(bpy.types.Operator):
-    bl_idname = "avastar.accept_retarget_mapping"
+    bl_idname = "tamagoyaki.accept_retarget_mapping"
     bl_label  = "Accept Mapping"
     bl_description = \
 '''Map all selected bones in the Target rig to the 
@@ -4349,7 +4323,7 @@ class PanelMotionTransfer(bpy.types.Panel):
     bl_category    = "Retarget"
 
     bl_label ="Retarget Mapping"
-    bl_idname = "TAMAGOYAKI_PT_animation_action_transfer"
+    bl_idname = "AVASTAR_PT_animation_action_transfer"
 
     def show_interactive_mapper(self, context, box, target, selected_source_bones, selected_target_bones):
         row = box.row()
@@ -4383,7 +4357,7 @@ class PanelMotionTransfer(bpy.types.Panel):
         row=col.row(align=True)
         icol = row.column()
         icol.enabled=can_match
-        icol.operator('avastar.accept_retarget_mapping')
+        icol.operator('tamagoyaki.accept_retarget_mapping')
         row.prop(context.scene.MocapProp, 'interactive_auto', text="", icon=ICON_AUTO)
 
     @classmethod
@@ -4409,6 +4383,7 @@ class PanelMotionTransfer(bpy.types.Panel):
 
         if prop.target in  mocap_targets and prop.source in  mocap_sources:
 
+
             if prop.show_bone_mapping:
                 mapping_icon = ICON_DISCLOSURE_TRI_DOWN
             else:
@@ -4422,12 +4397,12 @@ class PanelMotionTransfer(bpy.types.Panel):
             mcol = layout.column()
             mrow = mcol.row(align=True)
 
-            last_select = bpy.types.TAMAGOYAKI_MT_retarget_presets_menu.bl_label
-            mrow.menu("TAMAGOYAKI_MT_retarget_presets_menu", text=last_select )
-            mrow.operator("avastar.retarget_presets_add", text="", icon=ICON_ADD)
+            last_select = bpy.types.AVASTAR_MT_retarget_presets_menu.bl_label
+            mrow.menu("AVASTAR_MT_retarget_presets_menu", text=last_select )
+            mrow.operator("tamagoyaki.retarget_presets_add", text="", icon=ICON_ADD)
             if last_select not in ["Retarget Presets", "Presets"]:
-                mrow.operator("avastar.retarget_presets_update", text="", icon=ICON_FILE_REFRESH)
-                mrow.operator("avastar.retarget_presets_remove", text="", icon=ICON_REMOVE).remove_active = True
+                mrow.operator("tamagoyaki.retarget_presets_update", text="", icon=ICON_FILE_REFRESH)
+                mrow.operator("tamagoyaki.retarget_presets_remove", text="", icon=ICON_REMOVE).remove_active = True
 
 
             mcol = layout.column()
@@ -4446,7 +4421,7 @@ class PanelMotionTransfer(bpy.types.Panel):
                 else:
                     marked_bone_name = None
 
-                box = layout.box()
+                box=layout.box()
                 ui_level = util.get_ui_level()
                 mesh.displayBoneDetails(context, box, target, ui_level, for_retarget=True)
 
@@ -4472,7 +4447,7 @@ class PanelMotionTransfer(bpy.types.Panel):
                         col=bbox.column(align=True)
                         col.label(text='visual retarget is only available when')
                         col.label(text='[%s] and [%s] both are in POSE mode' % (source.name, target.name))
-                        col.operator("avastar.enable_retarget", text='Enable visual mapping')
+                        col.operator("tamagoyaki.enable_retarget", text='Enable visual mapping')
                     self.show_interactive_mapper(context, bbox, target, selected_source_bones, selected_target_bones)
                 else:
                     col = box.column(align=True)
@@ -4498,7 +4473,7 @@ class PanelMotionTransfer(bpy.types.Panel):
                 if prop.flavor == "":
                     src_label =  "Source Rig"
                 else:
-                    src_label = "%s" % prop.flavor 
+                    src_label = "%s" % prop.flavor
                 sourcecol.label(text=src_label)
                 selectcol.label(text=" ")
                 markercol.label(icon=ICON_BLANK1)
@@ -4507,9 +4482,9 @@ class PanelMotionTransfer(bpy.types.Panel):
                 for bone in data.get_mtui_bones(target):
                     if bone in MTUI_SEPARATORS:
                         if reset_counter > 0:
-                        targetcol.separator()
-                        sourcecol.separator()
-                        selectcol.separator()
+                            targetcol.separator()
+                            sourcecol.separator()
+                            selectcol.separator()
                             markercol.separator()
                         reset_counter = 0
 
@@ -4534,9 +4509,9 @@ class PanelMotionTransfer(bpy.types.Panel):
                     row.enabled=active_pose_bone != None
 
                 if map_counter > 0:
-                targetcol.separator()
-                sourcecol.separator()
-                selectcol.separator()
+                    targetcol.separator()
+                    sourcecol.separator()
+                    selectcol.separator()
                     markercol.separator()
                     if display_counter == 0:
                         col = box.column()
@@ -4547,7 +4522,6 @@ class PanelMotionTransfer(bpy.types.Panel):
                     col.alert=True
                     col.label(text="No mapped bones found")
 
-              
             else:
                 for bone in data.get_mtui_bones(target):
                     link = prop.get(bone)
@@ -4620,7 +4594,6 @@ def adjust_retarget_mapping(prop):
     update_target_rig(source, target, selected_target_bones)
     update_source_rig(source, target, selected_source_bones)
 
-          
 
 @persistent
 def check_active_bone_changed(scene, depsgraph, forced_check=False):
@@ -4759,10 +4732,9 @@ example:
             prop = scn.MocapProp
             sbone = context.active_pose_bone
             if sbone:
-            source = bpy.data.objects[prop.source]
-
-            if sbone.name in source.data.bones:
-                setattr(prop, self.target_bone, sbone.name)
+                source = bpy.data.objects[prop.source]
+                if sbone.name in source.data.bones:
+                    setattr(prop, self.target_bone, sbone.name)
 
             return{'FINISHED'}
         except Exception as e:
@@ -4795,7 +4767,7 @@ class ButtonMappingDisplayDetails(bpy.types.Operator):
 '''The mapping table contains all bone relations between
 
 - Source (eg. imported BVH)
-- Target (Avastar rig)
+- Target (Tamagoyaki rig)
 
 Furthermore you find advanced functions here
 for an efficient retargeting. The button is
@@ -4958,7 +4930,7 @@ class AddAvatar(bpy.types.Operator):
                 default=False,
 
                 )
-                
+
     no_mesh : BoolProperty(
                 name="only Armature",
                 description="create only the Tamagoyaki Rig (no Tamagoyaki meshes, good for creating custom avatars)",
@@ -4969,6 +4941,22 @@ class AddAvatar(bpy.types.Operator):
     file          : StringProperty()
     rigType       : StringProperty()
     jointType     : StringProperty()
+    skeletonType  : StringProperty()
+
+    @classmethod
+    def description(self, context, properties):
+        path, filename = properties.file.lower().rsplit('\\',1)
+        if filename == '1_-_basic.py':
+            return "Create a legacy Avatar with the Basic SL Bones"
+        elif filename == '2_-_complete.py':
+            return "Create a Bento Avatar with all SL Bones"
+        elif filename == '3_-_skeleton.py':
+            return "Create an armature without Avatar meshes"
+        elif filename == '4_-_animesh.py':
+            return "Create an Armature for Animesh characters without Avatar meshes"
+        else:
+            label = filename.rsplit('.', 1)[0]
+            return "Create new %s Character" % label
 
     @classmethod
     def poll(self, context):
@@ -4979,7 +4967,7 @@ class AddAvatar(bpy.types.Operator):
     def get_preset(self, context, file):
 
         sceneProps    = context.scene.SceneProp
-        
+
         b_meshType      = sceneProps.tamagoyakiMeshType
         b_rigType       = sceneProps.tamagoyakiRigType
         b_jointType     = sceneProps.tamagoyakiJointType
@@ -4991,11 +4979,13 @@ class AddAvatar(bpy.types.Operator):
         self.no_mesh    = sceneProps.tamagoyakiMeshType == 'NONE'
         self.rigType    = sceneProps.tamagoyakiRigType
         self.jointType  = sceneProps.tamagoyakiJointType
+        self.skeletonType = sceneProps.tamagoyakiSkeletonType
 
         sceneProps.tamagoyakiMeshType  = b_meshType
         sceneProps.tamagoyakiRigType   = b_rigType
         sceneProps.tamagoyakiJointType = b_jointType
-        self.skeletonType = sceneProps.tamagoyakiSkeletonType
+        sceneProps.tamagoyakiSkeletonType = b_skeletonType
+
     def execute(self, context):
         oselect_modes = util.set_mesh_select_mode((False,True,False))
         osuppress_handlers = util.set_disable_handlers(context.scene, True)
@@ -5007,8 +4997,8 @@ class AddAvatar(bpy.types.Operator):
 
             arm_obj = create.createAvatar(
                 context,
-                quads                = self.quads, 
-                no_mesh              = self.no_mesh, 
+                quads                = self.quads,
+                no_mesh              = self.no_mesh,
                 rigType              = self.rigType,
                 jointType            = self.jointType,
                 skeletonType         = self.skeletonType
@@ -5021,7 +5011,7 @@ class AddAvatar(bpy.types.Operator):
 
             util.set_active_object(context, arm_obj)
             util.set_armature_layers(arm_obj, B_DEFAULT_POSE_LAYERS)
-            
+
             preferences = util.getAddonPreferences()
             initial_mode = preferences.initial_rig_mode
 
@@ -5043,8 +5033,8 @@ class AddAvatar(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class TAMAGOYAKI_MT_AddMenu(bpy.types.Menu):
-    bl_idname = "TAMAGOYAKI_MT_AddMenu"
+class AVASTAR_MT_AddMenu(bpy.types.Menu):
+    bl_idname = "AVASTAR_MT_AddMenu"
     bl_label = "Tamagoyaki..."
 
     def draw(self, context):
@@ -5057,13 +5047,13 @@ class TAMAGOYAKI_MT_AddMenu(bpy.types.Menu):
             props.file = file
 
 
-class TAMAGOYAKI_MT_AddMenu2(bpy.types.Menu):
-    bl_idname="TAMAGOYAKI_MT_AddMenu2"
+class AVASTAR_MT_AddMenu2(bpy.types.Menu):
+    bl_idname="AVASTAR_MT_AddMenu2"
     bl_label = "Tamagoyaki..."
 
     def draw(self, context):
         layout = self.layout
-        
+
         props = layout.operator("tamagoyaki.add_avatar", text="with Triangles", icon=ICON_OUTLINER_OB_ARMATURE)
         props.quads   = False
         props.no_mesh = False
@@ -5075,9 +5065,8 @@ class TAMAGOYAKI_MT_AddMenu2(bpy.types.Menu):
         props.rigtype = util.getAddonPreferences().target_system
 
 
-
-class TAMAGOYAKI_MT_DevkitMenu(bpy.types.Menu):
-    bl_idname="TAMAGOYAKI_MT_DevkitMenu"
+class AVASTAR_MT_DevkitMenu(bpy.types.Menu):
+    bl_idname="AVASTAR_MT_DevkitMenu"
     bl_label = "Devkit..."
 
     def draw(self, context):
@@ -5086,8 +5075,8 @@ class TAMAGOYAKI_MT_DevkitMenu(bpy.types.Menu):
         layout.operator("tamagoyaki.import_collada_devkit", text="Maitreya", icon=ICON_OUTLINER_OB_ARMATURE).devkit_type='MAITREYA'
         layout.operator("tamagoyaki.import_collada_devkit", text="TMP",      icon=ICON_OUTLINER_OB_ARMATURE).devkit_type='TMP'
 
-class TAMAGOYAKI_MT_TemplatesMenu(bpy.types.Menu):
-    bl_idname = "TAMAGOYAKI_MT_TemplatesMenu"
+class AVASTAR_MT_TemplatesMenu(bpy.types.Menu):
+    bl_idname = "AVASTAR_MT_TemplatesMenu"
     bl_label = "Open Template..."
 
     def draw(self, context):
@@ -5120,12 +5109,12 @@ class TAMAGOYAKI_MT_TemplatesMenu(bpy.types.Menu):
 
 
 def menu_import_tamagoyaki_devkits(self, context):
-    self.layout.menu(TAMAGOYAKI_MT_DevkitMenu.bl_idname, text="Devkit", icon=ICON_OUTLINER_OB_ARMATURE)
+    self.layout.menu(AVASTAR_MT_DevkitMenu.bl_idname, text="Devkit", icon=ICON_OUTLINER_OB_ARMATURE)
 
 
 def menu_add_tamagoyaki(self, context):
 
-    self.layout.menu(TAMAGOYAKI_MT_AddMenu.bl_idname, text="Tamagoyaki", icon=ICON_URL)
+    self.layout.menu(AVASTAR_MT_AddMenu.bl_idname, text="Tamagoyaki", icon=ICON_URL)
 
 def menu_export_collada(self, context):
 
@@ -5148,7 +5137,7 @@ def menu_add_templates(self, context):
 
     if user_templates == 'local':
         if True: #TODO: uncomment this -> get_blender_revision() < 278400:
-            self.layout.menu(TAMAGOYAKI_MT_TemplatesMenu.bl_idname, icon=ICON_OUTLINER_OB_ARMATURE)
+            self.layout.menu(AVASTAR_MT_TemplatesMenu.bl_idname, icon=ICON_OUTLINER_OB_ARMATURE)
 
 
 
@@ -5156,40 +5145,9 @@ def menu_add_templates(self, context):
 class RetargetPropGroup(bpy.types.PropertyGroup):
     pass
 
-class MocapPropGroup(bpy.types.PropertyGroup):
-    flavor : StringProperty()
-    source : StringProperty()
-    target : StringProperty()
-    object_count : IntProperty(default=0, min=0)
-    referenceFrame : IntProperty()
-
-    use_restpose : animation.g_use_restpose
-    show_bone_mapping : BoolProperty(name="Show bone mapping", default = False)
-
-    simplificationitems = [
-        ('none', 'None', 'None'),
-        ('loweslocal', 'Lowes Local', 'Lowes Local'),
-        ('lowesglobal', 'Lowes Global', 'Lowes Global'),
-        ]
-    simplificationMethod : EnumProperty(items=simplificationitems, name='Method', default='none')
-    lowesLocalTol : FloatProperty(default=0.02, name="Tol")
-    lowesGlobalTol : FloatProperty(default=0.1, name="Tol")
-
-    seamlessRotFrames : IntProperty(name="Rot frames",
-        min=0, 
-        default=0,
-        description="Blend range to make seamles rotation")
-
-    seamlessLocFrames : IntProperty(name="Loc frames",
-        min=0,
-        default=0,
-        description="Blend range to make seamles translation")
-        
-    with_translation : BoolProperty(name="with Translation", default=False, description = "Prepare the Rig to allow translation animation")
-
 
 def update_sync_influence(pbone, context):
-    
+
     synced = pbone.sync_influence
     if synced and 'Grab' in pbone.constraints:
         print("update_sync_influence for", pbone.name)
@@ -5245,7 +5203,6 @@ def BLinitialisation():
 
 
     bpy.types.Scene.RetargetProp = PointerProperty(type = RetargetPropGroup)
-    bpy.types.Scene.MocapProp = PointerProperty(type = MocapPropGroup)
 
     bpy.types.WindowManager.LoggerIndexProp = PointerProperty(type=LoggerIndexPropGroup)
     bpy.types.WindowManager.LoggerPropList = CollectionProperty(type=LoggerPropListGroup)
@@ -5262,7 +5219,7 @@ def BLinitialisation():
     init_log_level(bpy.context)
     register_handlers()
 
-    bpy.context.active_object.data.shape_keys.prepend(shape.add_shapekey_updater)
+    bpy.types.DATA_PT_shape_keys.prepend(shape.add_shapekey_updater)
 
 
 def vgroup_items(self, context):
@@ -5273,7 +5230,7 @@ def vgroup_items(self, context):
 
 
 def tamagoyaki_docs():
-    return DOCUMENTATION+'/', URL_MANUAL_MAPPING.values()
+    return DOCUMENTATION+'/', get_manual_map().values()
 
 class FactoryPresets(bpy.types.Operator):
     bl_idname = "tamagoyaki.rig_presets_reset"
@@ -5323,13 +5280,15 @@ def sl_animation_func_import(self, context):
     self.layout.operator("tamagoyaki.import_avatar_animation")
 
 
+
+
 def factory_reset(category):
     import shutil, tempfile
     tamagoyaki_init    = __file__
     tamagoyaki_home    = os.path.dirname(tamagoyaki_init)
     tamagoyaki_presets = os.path.join(tamagoyaki_home, "presets")
     srcdir          = os.path.join(tamagoyaki_presets,category)
-    blender_scripts = bpy.utils.user_resource('SCRIPTS', path=="presets")
+    blender_scripts = bpy.utils.user_resource('SCRIPTS', path="presets")
     destdir         = os.path.join(blender_scripts, __name__, category)
 
     if os.path.exists(destdir) and os.path.isdir(destdir):
@@ -5365,7 +5324,7 @@ classes = (
     DownloadUpdate,
     CreateReport,
     CheckForUpdates,
-    TAMAGOYAKI_MT_rig_presets_menu,
+    AVASTAR_MT_rig_presets_menu,
     TamagoyakiAddPresetRig,
     TamagoyakiUpdatePresetRig,
     TamagoyakiRemovePresetRig,
@@ -5440,12 +5399,11 @@ classes = (
     ButtonGuessMapping,
     ButtonCopyOtherSide,
     AddAvatar,
-    TAMAGOYAKI_MT_AddMenu,
-    TAMAGOYAKI_MT_AddMenu2,
-    TAMAGOYAKI_MT_DevkitMenu,
-    TAMAGOYAKI_MT_TemplatesMenu,
+    AVASTAR_MT_AddMenu,
+    AVASTAR_MT_AddMenu2,
+    AVASTAR_MT_DevkitMenu,
+    AVASTAR_MT_TemplatesMenu,
     RetargetPropGroup,
-    MocapPropGroup,
     FactoryPresets,
     DevkitConfigurationEditor,
     PoseCopy,
@@ -5482,7 +5440,6 @@ modules =  (
 )
 
 
-
 def register():
     from bpy.utils import register_class
     const.register_icons()
@@ -5490,7 +5447,6 @@ def register():
     for cls in classes:
         registerlog.info("Register class %s" % cls)
         register_class(cls)
-
 
     bpy.types.TOPBAR_MT_file.prepend(menu_add_templates)
     bpy.types.VIEW3D_MT_add.append(menu_add_tamagoyaki)
@@ -5554,7 +5510,7 @@ def register():
             create=True,
         )
         util.copydir(tamagoyaki_apptemplates, path_app_templates, overwrite=True)
-        
+
         if os.path.exists(destdir):
             os.rename(destdir, destdir+'_old')
 
@@ -5596,7 +5552,7 @@ def unregister_handlers():
     print("Tamagoyaki Handlers unregistered")
 
 def unregister():
-    from bpy.utils import unregister_class   
+    from bpy.utils import unregister_class
     try:
 
         bpy.types.DATA_PT_shape_keys.remove(shape.add_shapekey_updater)
@@ -5605,7 +5561,7 @@ def unregister():
         bpy.types.TOPBAR_MT_file_export.remove(sl_skeleton_func_export)
         bpy.types.TOPBAR_MT_file_import.remove(sl_skeleton_func_import)
         bpy.types.TOPBAR_MT_file_import.remove(sl_animation_func_import)
-        bpy.types.VIEW3D_MT_add.remove(menu_add_avastar)
+        bpy.types.VIEW3D_MT_add.remove(menu_add_tamagoyaki)
         bpy.types.TOPBAR_MT_file_export.remove(menu_export_collada)
         bpy.types.TOPBAR_MT_file.remove(menu_add_templates)
         bpy.types.TOPBAR_MT_file_import.remove(menu_import_tamagoyaki_shape)
@@ -5628,7 +5584,6 @@ def unregister():
 
     del bpy.types.Object.IKSwitchesProp
 
-    del bpy.types.Scene.MocapProp
 
     del bpy.types.WindowManager.LoggerIndexProp
     del bpy.types.WindowManager.LoggerPropList
@@ -5641,13 +5596,9 @@ def unregister():
     user_templates = None
     unregister_submodules()
 
-    unregister_WeightsPropGroup_attributes()
-    unregister_RetargetPropGroup_attributes()
-    unregister_MocapPropGroup_attributes()
-
     from bpy.utils import unregister_class
     for cls in reversed(classes):
-        unregister_class(cls)     
+        unregister_class(cls)
         registerlog.info("Unregistered init:%s" % cls)
 
     print("Tamagoyaki Shutdown Completed")
@@ -5664,11 +5615,3 @@ def register_submodules():
     for module in modules:
         module.register()
 
-### Copyright     2011-2013 Magus Freston, Domino Marama, and Gaia Clary
-### Modifications 2014-2015 Gaia Clary
-###
-### This file is part of Tamagoyaki 1.
-###
-### Tamagoyaki is distributed under an End User License Agreement and you
-### should have received a copy of the license together with Tamagoyaki.
-### The license can also be obtained from http://www.machinimatrix.org/

@@ -1,8 +1,11 @@
-### Copyright 2014-2015 Gaia Clary
+### Copyright     2021 The Machinimatrix Team
 ###
-### This file is part of Sparkles.
-### 
-
+### This file is part of Tamagoyaki
+###
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -21,9 +24,18 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy, addon_utils
-import urllib.request, mimetypes, http, xml, os, sys, re, tempfile
+import bpy
+import addon_utils
+import urllib.request
+import mimetypes
+import http
+import xml
+import os
+import sys
+import re
+import tempfile
 import logging
+
 from urllib.error import URLError, HTTPError
 from os import path
 from bpy.props import *
@@ -55,13 +67,13 @@ def call_url(self, url, supported_extensions=None):
         ds = url[10:].split("/")
         mod  = sys.modules[ds[0]]
         func = ds[1]
-        print("Call %s.%s" % (mod,func)) 
+        print("Call %s.%s" % (mod,func))
         data_source = getattr(mod,func)
         data = data_source()
         extension = None
         filename = None
     else:
-        ssl_context = install_certificates()
+        ssl_context = get_ssl_context()
         try:
 
             https_handler = urllib.request.HTTPSHandler(context=ssl_context)
@@ -112,7 +124,7 @@ def create_feed_url(link, userid="", password=""):
 
     url = prepare_url(url)
     return url
-    
+
 
 
 
@@ -121,7 +133,7 @@ def create_feed_url(link, userid="", password=""):
 
 def prepare_url(href, query=None):
     url = ""
-    
+
 
 
 
@@ -133,7 +145,7 @@ def prepare_url(href, query=None):
         if href.startswith("/"): # is a unix file
             url = "file://"
     url += href
-    
+
 
     if not query is None and href.startswith("http"):
         hasQuery = (url.find("?") != -1)
@@ -146,7 +158,7 @@ def prepare_url(href, query=None):
 
     return url
 
-    
+
 
 
 
@@ -158,7 +170,7 @@ def get_extension_and_name(self, response, supported_extensions=None):
 
     filename = None
     extension = None
-    
+
 
     content_disposition = response.getheader('content-disposition')
     if not content_disposition is None:
@@ -169,13 +181,13 @@ def get_extension_and_name(self, response, supported_extensions=None):
             if not extp_match is None:
                 extension = "." + extp_match.group(1)
         return extension, filename
-    
+
 
     content_type = response.getheader('content-type')
     if not content_type is None:
 
         extension = mimetypes.guess_extension(content_type.lower())
-          
+
 
         if supported_extensions == None or extension in supported_extensions:
             path = urllib.parse.urlparse(response.geturl()).path
@@ -187,6 +199,11 @@ def get_extension_and_name(self, response, supported_extensions=None):
 
     return None, None
 
+def get_ssl_context():
+    import ssl
+    import certifi
+    return ssl.create_default_context(cafile=certifi.where())
+
 
 def install_certificates():
 
@@ -195,7 +212,7 @@ def install_certificates():
 
     import ssl
     import platform
-    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     ssl_context.verify_mode = ssl.CERT_REQUIRED
     ssl_context.check_hostname = True
     ssl_context.load_default_certs()

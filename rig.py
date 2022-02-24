@@ -1,8 +1,11 @@
-### Copyright 2015 Matrice Laville
+### Copyright     2021 The Machinimatrix Team
 ###
 ### This file is part of Tamagoyaki
-### 
-
+###
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -21,10 +24,14 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy, os, logging, traceback, re
+import bpy
+import os
+import logging
+import traceback
+import re
+
 from bpy.props import *
 from bpy.app.handlers import persistent
-
 from . import animation, create, data, const, util
 from .util import PVector, s2b, mulmat, matrixScale, matrixLocation
 from .data import Skeleton
@@ -70,7 +77,7 @@ def matrixToStringArray(Mat, precision=0):
 
 def calculate_bind_shape_matrix(arm, mesh):
     Marm = arm.matrix_world
-    
+
 
 
     t = mulmat(Rz90I, mesh.matrix_local).to_translation()
@@ -82,11 +89,11 @@ def calculate_bind_shape_matrix(arm, mesh):
 
 #
 def get_offset_to_parent(bone, get_roll=True):
-    
+
     head = Vector(bone.head)
     tail = Vector(bone.tail)
     roll = bone.roll if get_roll else 0;
-    
+
     parent = bone.parent
     if parent:
         head -= bone.parent.head
@@ -100,12 +107,12 @@ def get_offset_from_sl_bone(bone, corrs=None, get_roll=True):
     head, tail, roll = get_offset_to_parent(bone, get_roll)
     head -= Vector(bone[JOINT_BASE_HEAD_ID])
     tail -= Vector(bone[JOINT_BASE_TAIL_ID])
-    
+
     if corrs:
         corr = corrs.get(bone.name, None)
         if corr:
             head -= Vector(corr['head'])
-            tail -= Vector(corr['tail'])    
+            tail -= Vector(corr['tail'])
 
     return head, tail, roll
 
@@ -157,8 +164,8 @@ def set_connect(bone, connect, msg=None):
         if msg:
             connectlog.info("%s bone %s o-- %s %s" % (\
               "Connecting" if connect else "Disconnect",
-              bone.parent.name, 
-              bone.name, 
+              bone.parent.name,
+              bone.name,
               msg
              ))
     else:
@@ -209,7 +216,7 @@ def get_all_deform_bones(arm, sort=True, order='TOPDOWN'):
     bones = [ebones[name] for name in keys if name[0] in ["m", "a"] or name in SLVOLBONES or name == 'COG']
 
     return bones
-    
+
 def get_cb_partner(bone, bones):
     pname = bone.name[1:] if bone.name[0] == 'm' else 'm' + bone.name
     return bones.get(pname)
@@ -220,10 +227,10 @@ def reset_bone(armobj, bone, boneset):
     tail  = h + t #Skeleton.tail(context, bone, ebones)
     roll  = boneset[bone.name].roll if bone.name in boneset else 0
 
-    if 'fix_head' in bone: del bone['fix_head'] 
+    if 'fix_head' in bone: del bone['fix_head']
     if 'fix_tail' in bone: del bone['fix_tail']
     if 'cache' in bone: del bone['cache']
-    
+
     if armobj.mode == 'EDIT':
         bone.head = head
         bone.tail = tail
@@ -249,11 +256,14 @@ def remove_joint_from_armature(bone, joints):
         return 1
     return 0
 
-def del_offset_from_sl_armature(context, arm, delete_joint_info, all=True):
+def del_offset_from_sl_armature(context, arm, delete_joint_info, all=True, bone_names=None):
     log.info("Delete %s Joint Offsets from [%s]" % ("All" if all else "Selected", arm.name))
     ebones = arm.data.edit_bones
     boneset = data.get_reference_boneset(arm)
-    bones = get_joint_bones(arm, all=all, order='BOTTOMUP')
+    if bone_names:
+        bones = [ebones.get(name) for name in bone_names]
+    else:
+        bones = get_joint_bones(arm, all=all, order='BOTTOMUP')
 
     joint_offset_list = arm.data.JointOffsetList
     joint_offset_list.clear()
@@ -283,11 +293,15 @@ def del_offset_from_sl_armature(context, arm, delete_joint_info, all=True):
                 counter += remove_joint_from_armature(b, joints)
         if all:
             orphans = 0
+            todel = []
             for key in joints.keys():
                 if key not in bones:
-                    log.debug("Removing orphan Joint [%s]" % (key) )
-                    del joints[key]
-                    orphans += 1
+                    todel.append(key)
+            for key in todel:
+                log.debug("Removing orphan Joint [%s]" % (key) )
+                del joints[key]
+                orphans += 1
+
 
             del arm['sl_joints']
 
@@ -296,19 +310,19 @@ def del_offset_from_sl_armature(context, arm, delete_joint_info, all=True):
     return
 
 def copy_bone (from_bone, to_bone, mode):
-   if mode == 'EDIT':
+    if mode == 'EDIT':
 
 
-       to_bone.head = from_bone.head
-       to_bone.tail = from_bone.tail
-       to_bone.roll = from_bone.roll
-   else:
+        to_bone.head = from_bone.head
+        to_bone.tail = from_bone.tail
+        to_bone.roll = from_bone.roll
+    else:
 
 
-       to_bone.head_local = from_bone.head_local
-       to_bone.tail_local = from_bone.tail_local
+        to_bone.head_local = from_bone.head_local
+        to_bone.tail_local = from_bone.tail_local
 
-   
+
 def get_sync_pair(bone, bones):
     name = bone.name
     if name[0] == 'm' and name != 'mPelvis':
@@ -323,7 +337,7 @@ def get_sync_pair(bone, bones):
 
 def synchronize_bone(bone, bones, mode):
     mbone, cbone = get_sync_pair(bone, bones)
-        
+
     if mbone and cbone:
         if mbone.select_head:
             copy_bone (mbone, cbone, mode)
@@ -331,7 +345,7 @@ def synchronize_bone(bone, bones, mode):
             copy_bone (cbone, mbone, mode)
 
 def get_toe_location(armobj):
-    bones = util.get_modify_bones(armobj, only='mToeRight')    
+    bones = util.get_modify_bones(armobj, only='mToeRight')
     loc = bones[0].head if armobj.mode == 'EDIT' else bones[0].head_local
     return loc
 
@@ -437,7 +451,7 @@ def calculate_offset_from_sl_armature(
         bone, joint = calculate_joint_offset_from_restpose(context, armobj, jointBone, edit_bones)
         head = Vector(joint['head'])
         tail = Vector(joint['tail'])
-
+        
         if joint['enabled'] :
             key, dummy = get_joint_for_bone(joint_dict, bone) # Only want the name here
 
@@ -454,6 +468,7 @@ def calculate_offset_from_sl_armature(
                 prop.has_tail = True
                 prop.tail=tail
             if prop:
+                prop.joint = bone.head
                 prop.name = key
                 try:
                     joint_dict[key] = joint
@@ -489,7 +504,7 @@ def rebuild_joint_position_info(arm_obj, with_joint_tails=True):
 
     deform_bones = get_all_deform_bones(arm_obj)
     reset_cache(arm_obj)
-    
+
     log.debug("| Update armature bone location meta...")
     for ebone in [b for b in ebones if not b.get(JOINT_BASE_HEAD_ID)]:
         update_rel_loc(arm_obj, ebone)
@@ -510,6 +525,21 @@ def adjust_hand_structure(arm_obj, joint_offset_list, joint_dict, with_joint_tai
         ebone = arm_obj.data.edit_bones.get(name)
         if ebone:
             create_joint_info(ebone, arm_obj, joint_offset_list, joint_dict, with_joint_tails)
+
+
+def has_modified_joint_info(arm_obj):
+    joint_dict = arm_obj.get('sl_joints')
+    if not joint_dict:
+        return False
+
+    deform_bones = get_all_deform_bones(arm_obj)
+    for ebone in deform_bones:
+        joint = joint_dict.get(ebone.name)
+        if joint:
+            bind_location = joint.get('joint')
+            if bind_location == None or Vector(bind_location) != ebone.head:
+                return True
+    return False
 
 
 def create_joint_info(ebone, arm_obj, joint_offset_list, joint_dict, with_joint_tails):
@@ -566,6 +596,7 @@ def create_joint_info(ebone, arm_obj, joint_offset_list, joint_dict, with_joint_
                     'enabled':True,
                     'hmag':hmag,
                     'tmag':tmag,
+                    'joint':ebone.head,
                     'h0':relhead + offset}
         prop = None
         if hmag > MinJointOffset:
@@ -580,6 +611,7 @@ def create_joint_info(ebone, arm_obj, joint_offset_list, joint_dict, with_joint_
             prop.has_tail = True
             prop.tail=dtail
         if prop:
+            prop.joint = ebone.head
             prop.name = key
             joint_dict[key] = joint
 
@@ -621,7 +653,7 @@ def get_sl_bone_offset(arm_obj, dbone, parent, Bones):
         bone_offset = head - phead
     else:
         bone_offset = head
-    
+
     return bone_offset, head, p
 
 
@@ -630,7 +662,7 @@ def get_sl_bone_offset(arm_obj, dbone, parent, Bones):
 #
 
 
-
+#
 
 
 #
@@ -708,12 +740,12 @@ def calculate_pivot_matrix(context=None, arm_obj=None, dbone=None, bones=None, w
         if with_joints:
             h, t = get_custom_restposition(arm_obj, dbone, with_joint_offset=True)
             if dbone.parent:
-               p, t = get_custom_restposition(arm_obj, dbone.parent, with_joint_offset=True)
-               bone_offset = h - p
+                p, t = get_custom_restposition(arm_obj, dbone.parent, with_joint_offset=True)
+                bone_offset = h - p
         else:
             head = dbone.head.copy() #the bone is moved around if you omitt the copy() here!
             if dbone.parent:
-               bone_offset = head - dbone.parent.head
+                bone_offset = head - dbone.parent.head
         sl_bone_offset, hd, pr = get_sl_bone_offset(arm_obj, dbone, parent, Bones)
         if sl_bone_offset != bone_offset:
             bone_type = "custom_pos"
@@ -752,7 +784,7 @@ def set_to_restpose(context, arm):
     jointType = arm.RigProp.JointType
     filepath = util.get_skeleton_file()
 
-    boneset   = get_rigtype_boneset(rigType, jointType, filepath)
+    boneset   = data.get_rigtype_boneset(rigType, jointType, filepath)
 
     active = context.object
     util.set_active_object(bpy.context, arm)
@@ -774,7 +806,7 @@ def calculate_local_matrix(arm, bone, boneset = None, rotate=False, verbose=Fals
         jointType = arm.RigProp.JointType
         filepath = util.get_skeleton_file()
 
-        boneset   = get_rigtype_boneset(rigType, jointType, filepath)
+        boneset   = data.get_rigtype_boneset(rigType, jointType, filepath)
 
     Bone    = boneset[bone.name]
     pivot   = Vector(Bone.pivot0)    # pivot comint from avatar_skeleton
@@ -794,7 +826,7 @@ def calculate_local_matrix(arm, bone, boneset = None, rotate=False, verbose=Fals
         L += Vector([ -loc[1], loc[0], loc[2]])
     else:
         L += Vector([ loc[0],  loc[1], loc[2]])
-    
+
     if verbose:
         print("bone %s pivot %s trans %s scale %s" % (bone.name, Vector(pivot), (M*L).translation, scale) )
 
@@ -817,15 +849,24 @@ def rot0_mat(dbone):
 
 
 def pose_mat(armobj, dbone):
-    
+
     if dbone.name in SLVOLBONES:
         return pose_mat(armobj, dbone.parent)
 
-    custom_tail = custom_restpose_tail(armobj, dbone)
-    sl_tail = util.toVector(dbone.get(JOINT_BASE_TAIL_ID, custom_tail))
-    Q = sl_tail.rotation_difference(custom_tail)
-    M = Q.to_matrix().to_4x4()
+    MB = dbone.matrix_local # Current Restpose Matrix
+    if 'bind_mat' in dbone:
+        BMI = util.matrix_from_array(dbone['bind_mat']).inverted()
+    else:
+        BMI = Matrix(dbone['mat0']).inverted()
+
+    M = MB @ BMI
     return M
+  
+
+
+
+
+
 
 def custom_restpose_tail(armobj, dbone):
 
@@ -855,11 +896,11 @@ def scale_mat(armobj, dbone, apply_armature_scale, with_appearance):
 
 
 
-        
 
 
 
-    
+
+
     if apply_armature_scale:
         Marm = armobj.matrix_world
         tl,tr,ts = Marm.decompose()
@@ -882,21 +923,22 @@ def calculate_bind_matrix(armobj, dbone, apply_armature_scale=False, with_sl_rot
     loc = dbone.head_local
     if with_appearance and use_bind_pose and dbone.parent:
         R = pose_mat(armobj, dbone)
+        R.translation=(0,0,0)
     else:
         R = Matrix()
 
     if apply_armature_scale:
         loc = mulmat(loc, armobj.matrix_local)
-
+    
     L = matrixLocation(loc)
     R0 = rot0_mat(dbone)
     S = scale_mat(armobj, dbone, apply_armature_scale=False, with_appearance=with_appearance)
-
+    
     M = mulmat(L, R, R0, S)
 
     if with_sl_rot:
         M= mulmat(Rz90I, M, Rz90)
-  
+
     return M
 
 def calculate_inverse_bind_matrix(armobj, dbone, apply_armature_scale=False, with_sl_rot=True, use_bind_pose=True, with_appearance=True):
@@ -914,9 +956,9 @@ def calculate_inverse_bind_matrix(armobj, dbone, apply_armature_scale=False, wit
             if armobj.RigProp.up_axis == 'Y':
                 M = mulmat(YUPtoZUP, M)
 
-    if M == None: 
+    if M == None:
         M = calculate_bind_matrix(armobj, dbone, apply_armature_scale, with_sl_rot, use_bind_pose, with_appearance=with_appearance)
-    
+
     Minv = M.inverted()
     return Minv
 
@@ -940,7 +982,7 @@ def adjustAvatarBonesToRig(armobj, boneset):
         try:
 
             Cbone = S[cbone.name] # The original cbone bone descriptor
-            Mbone = Cbone.parent  # The original mBone descriptor       
+            Mbone = Cbone.parent  # The original mBone descriptor
             mbone = cbone.parent  # The mBone partner of the cbone
 
             DCT   = Vector(Cbone.tail() - Mbone.tail())
@@ -978,7 +1020,7 @@ def adjustVolumeBonesToRig(armobj):
 
             M = N.rotation_difference(n)
 
-            l = M*Vector(B.head() - P.head())
+            l = M @ Vector(B.head() - P.head())
             t = b.tail - b.head
             bhead  = p.head + l
             btail  = bhead  + t
@@ -1006,7 +1048,7 @@ def adjustAttachmentBonesToRig(armobj):
 
             M = N.rotation_difference(n)
 
-            l = M*Vector(B.head() - P.head())
+            l = M @ Vector(B.head() - P.head())
             t = Vector((0,0,0.03))
 
             bhead  = p.head + Vector(l)
@@ -1020,7 +1062,7 @@ def adjustAttachmentBonesToRig(armobj):
 def adjustAvatarCenter(armobj):
 
     if armobj.mode != 'EDIT':
-         raise Exception("adjustAvatarCenter: object:mode is: %s:%s Expected an edit mode here" % (armobj.name, armobj.mode))
+        raise Exception("adjustAvatarCenter: object:mode is: %s:%s Expected an edit mode here" % (armobj.name, armobj.mode))
 
     bones = armobj.data.edit_bones
 
@@ -1036,7 +1078,7 @@ def adjustAvatarCenter(armobj):
     Tinker = get_tinker_bone(bones)
     Torso = bones.get("Torso")
     mTorso = bones.get("mTorso")
-    
+
     master = Pelvis if Pelvis else mPelvis
     torso  = Torso if Torso else mTorso
 
@@ -1072,7 +1114,7 @@ def adjustSpineBones(armobj):
 
     dbones = armobj.data.edit_bones
     joints = util.get_joint_cache(armobj)
-    
+
     def adjust_bone(bname, pname):
         dbone = dbones.get(bname)
         pbone = dbones.get(pname)
@@ -1095,7 +1137,7 @@ def adjustSpineBones(armobj):
 
 def adjustCollarLink(armobj, side):
     if armobj.mode != 'EDIT':
-         raise "adjustCollarLink: must be called in edit mode"
+        raise "adjustCollarLink: must be called in edit mode"
 
     bones = armobj.data.edit_bones
     mNeck = bones.get('mNeck', None)
@@ -1111,7 +1153,7 @@ def adjustCollarLink(armobj, side):
 
 def adjustHipLink(armobj, side):
     if armobj.mode != 'EDIT':
-         raise "adjustHipLink: must be called in edit mode"
+        raise "adjustHipLink: must be called in edit mode"
 
     bones = armobj.data.edit_bones
     mTorso = bones.get('mTorso',None)
@@ -1137,11 +1179,11 @@ def show_wrist(armobj, side, msg):
         log.warning("show_bone: Wrist%s head %s - %s (%s)" % (side, Wrist.head, Wrist.tail, msg))
         log.warning(''.join(traceback.format_stack()))
     util.ensure_mode_is(omode)
-    
+
 
 def adjustThumbController(armobj, side):
     if armobj.mode != 'EDIT':
-         raise "adjustThumbController: must be called in edit mode"
+        raise "adjustThumbController: must be called in edit mode"
 
     bones = armobj.data.edit_bones
     Wrist = bones.get('Wrist%s' % side, None)
@@ -1160,7 +1202,7 @@ def adjustThumbController(armobj, side):
 def adjustFingerLink(armobj, side):
 
     if armobj.mode != 'EDIT':
-         raise "adjustFingerLink: must be called in edit mode"
+        raise "adjustFingerLink: must be called in edit mode"
 
     bones = armobj.data.edit_bones
     fingers = [b for b in bones if re.match("Hand.*1%s"%side, b.name) and b.parent and not b.use_connect]
@@ -1310,7 +1352,7 @@ def adjustIKHandToRig(bones, side):
         td = ikElbowTarget.tail - ikElbowTarget.head
         ikElbowTarget.head.z = Elbow.head.z
         ikElbowTarget.tail  = ikElbowTarget.head + td
-        
+
         ikElbowLine.head = Elbow.head.copy()
         ikElbowLine.tail = ikElbowTarget.head.copy()
 
@@ -1318,14 +1360,14 @@ def adjustIKHandToRig(bones, side):
 def adjustHandStructure(armobj):
     bones  = get_structure_bones(armobj)
     for finger0 in bones:
-       name = finger0.name
-       if name.startswith("Hand") and (name.endswith("0Left") or name.endswith("0Right")):
-           name = name.replace("0", "1")
-           finger1 = armobj.data.edit_bones.get(name)
-           if finger1:
-               finger0.tail=finger1.head
-               finger1.use_connect=True
-               finger1.parent=finger0
+        name = finger0.name
+        if name.startswith("Hand") and (name.endswith("0Left") or name.endswith("0Right")):
+            name = name.replace("0", "1")
+            finger1 = armobj.data.edit_bones.get(name)
+            if finger1:
+                finger0.tail=finger1.head
+                finger1.use_connect=True
+                finger1.parent=finger0
 
 def SLBoneStructureRestrictStates(armobj):
     bones  = get_structure_bones(armobj)
@@ -1336,8 +1378,8 @@ def SLBoneStructureRestrictStates(armobj):
     if mute_count == 0:
         return 'Enabled', 'Disable'
     return 'Mixed', ''
-    
-        
+
+
 def setSLBoneStructureRestrictSelect(armobj, restrict):
     bones  = get_structure_bones(armobj, include_all=True)
     for bone in bones:
@@ -1348,7 +1390,7 @@ def setSLBoneStructureRestrictSelect(armobj, restrict):
             bone.select_head = False
         elif bone.select_tail == True and bone.select_head == True:
             bone.select      = True
-    
+
 def getControlledBonePairs(armobj):
     bones  = util.get_modify_bones(armobj)
     bone_pairs = [[bones[b.name[1:]],b] for b in bones if b.name[0]=='m' and b.name[1:] in bones]
@@ -1375,8 +1417,8 @@ def needRigFix(armobj):
         if not c:
             log.info("Bone %s missing (unexpected)" % (cname))
             continue
-        chead = Vector(c.head) if armobj.mode == 'EDIT' else Vector(c.head_local) 
-        bhead = Vector(b.head) if armobj.mode == 'EDIT' else Vector(b.head_local) 
+        chead = Vector(c.head) if armobj.mode == 'EDIT' else Vector(c.head_local)
+        bhead = Vector(b.head) if armobj.mode == 'EDIT' else Vector(b.head_local)
         diff = (chead - bhead).magnitude
         if diff > MIN_JOINT_OFFSET:
 
@@ -1432,22 +1474,22 @@ def get_tinker_bone(bones):
 def matchTinkerToPelvis(context, armobj, alignToDeform=False):
     with set_context(context, armobj, 'EDIT'):
         bones = armobj.data.edit_bones
-        
+
         mpelvis = bones.get('mPelvis')
         pelvis = bones.get('Pelvis')
         master = mpelvis if alignToDeform == 'ANIMATION_TO_DEFORM' else pelvis
-        
+
         pelvisi = get_tinker_bone(bones)
         cog = bones.get('COG')
-        
+
         pelvis.head = master.head.copy()
         pelvis.tail = master.tail.copy()
         mpelvis.head = master.head.copy()
         mpelvis.tail = master.tail.copy()
-        
+
         pelvisi.tail = master.head.copy()
         pelvisi.head = master.tail.copy()
-        
+
         cogdiff = cog.tail - cog.head
         cog.head = pelvis.tail.copy()
         cog.tail = cog.head + cogdiff
@@ -1483,7 +1525,7 @@ def mesh_uses_collision_volumes(obj):
         if vg.name in volbones:
             return True
     return False
-    
+
 def armature_uses_collision_volumes(arm):
     volbones = data.get_volume_bones()
     bones = util.get_modify_bones(arm)
@@ -1526,6 +1568,7 @@ def adjustBoneRoll(arm):
         for bone in roll_change_bones:
             bone.select = True
 
+    arm.select_set(True)
     omode = util.set_object_mode('EDIT')
     roll_change_bones = get_bones_from_layers(arm, [B_LAYER_WING, B_LAYER_HAND, B_LAYER_FACE, B_LAYER_TAIL])
     deselect_all_bones(arm)
@@ -1563,11 +1606,11 @@ def get_IK_constraint(bone):
 
     con = bone.constraints.get("IK")
     if con:
-        return con        
+        return con
 
     constraints = [con for con in bone.constraints if con.type=='IK']
     con = constraints[0] if constraints else None
-    return con    
+    return con
 
 def get_ik_influence(pose_bones, bone_name, ik_bone_name):
     try:
@@ -1577,7 +1620,7 @@ def get_ik_influence(pose_bones, bone_name, ik_bone_name):
 
         influence = 0
     return influence
-    
+
 def create_ik_button(row, active, layer):
     if active == None or active.pose == None: return
 
@@ -1635,7 +1678,7 @@ def get_bone_constraint(bone, type, namehint=None):
         return None
 
     if len(candidates) == 1:
-       return candidates[0]
+        return candidates[0]
 
     if namehint:
         for c in candidates:
@@ -1678,7 +1721,7 @@ def set_rotation_limit(bones, state):
         b.use_ik_limit_x = state
         b.use_ik_limit_y = state
         b.use_ik_limit_z = state
-        
+
         for c in b.constraints:
             if c.type =='LIMIT_ROTATION':
                 store[c.name] = [c.influence, c.use_limit_x, c.use_limit_y, c.use_limit_z]
@@ -1688,7 +1731,7 @@ def set_rotation_limit(bones, state):
                 c.use_limit_z = state
 
     return backup
-    
+
 def restore_bone_rotation_limit_state(bones, backup):
     for b in bones:
         store, b.use_ik_limit_x, b.use_ik_limit_y, b.use_ik_limit_z, b.bone.select = backup.get(b.name)
@@ -1703,6 +1746,29 @@ def set_bone_rotation_limit_state(arm, state, all=False):
         bones = [b for b in arm.pose.bones if b.bone.select]
 
     return set_rotation_limit(bones, state)
+
+class TamagoyakiApplyScaleToJoints(bpy.types.Operator):
+    bl_idname      = "tamagoyaki.apply_scale_to_joints"
+    bl_label       = "Apply Scale to Joints"
+    bl_description =\
+'''When you want to apply object Scale to an Tamagoyaki Armature with edited joints
+then you always must apply the new scale also to the joints. This operator
+does the job for you:
+- apply Scale in Object mode
+- apply scale to all edited joints'''
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        oactive = context.active_object
+        arm = util.get_armature(oactive)
+        if arm and has_modified_joint_info(arm):
+            util.set_active_object(context, arm)
+            omode  = util.ensure_mode_is('EDIT')
+            bpy.ops.tamagoyaki.armature_jointpos_store(store_as_bind_pose=False)
+            util.ensure_mode_is(omode)
+            util.set_active_object(context, oactive)
+        return {'FINISHED'}
+
 
 class TamagoyakiFaceWeightGenerator(bpy.types.Operator):
     bl_idname      = "tamagoyaki.face_weight_generator"
@@ -1840,7 +1906,7 @@ class TamagoyakiFaceWeightGenerator(bpy.types.Operator):
 
         util.ensure_mode_is(amode)
         bpy.context.object.data.pose_position="POSE"
-    
+
         bpy.ops.pose.select_all(action='DESELECT')
         for bname in selected_bone_names:
             arm.data.bones[bname].select=True
@@ -1881,14 +1947,14 @@ def get_islands(ob, minsize=1):
         for vert in poly.vertices:
             island_map[vert] = id
             island[vert]=True
-            
+
     return [island for island in islands.values() if len(island) >= minsize]
 
 def select_island(ob, minsize=1):
     bpy.ops.mesh.select_all(action='DESELECT')
     bpy.ops.mesh.reveal()
     ob.update_from_editmode()
-    
+
     islands = get_islands(ob, minsize)
     active_island = None
     for island in islands:
@@ -1936,17 +2002,17 @@ class TamagoyakiFromManuelLab(bpy.types.Operator):
             log.info("Converting %s" % ob.name)
 
             if ob.type == 'MESH':
-               log.info("ob is a MESH")
-               arm = util.get_armature(ob)
-               if arm and arm.get('tamagoyaki',None) is None:
-                   log.info("ob ARMATURE %s" % arm.name)
-                   util.set_active_object(bpy.context, ob)
-                   bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
-                   for mod in [ mod for mod in ob.modifiers if mod.type=='ARMATURE']:
-                       log.info("Removed Modifier %s" % mod.name)
-                       bpy.ops.object.modifier_apply(modifier=mod.name)
-                   util.remove_object(context, arm)
-                   log.info("deleted %s" % arm.name)
+                log.info("ob is a MESH")
+                arm = util.get_armature(ob)
+                if arm and arm.get('tamagoyaki',None) is None:
+                    log.info("ob ARMATURE %s" % arm.name)
+                    util.set_active_object(bpy.context, ob)
+                    bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
+                    for mod in [ mod for mod in ob.modifiers if mod.type=='ARMATURE']:
+                        log.info("Removed Modifier %s" % mod.name)
+                        bpy.ops.object.modifier_apply(modifier=mod.name)
+                    util.remove_object(context, arm)
+                    log.info("deleted %s" % arm.name)
 
             convert_weight_groups(arm, obj, armature_type=MANUELMAP)
 
@@ -1974,7 +2040,7 @@ class TamagoyakiFromManuelLab(bpy.types.Operator):
 
         if len(tamagoyakis) == 1:
             util.set_active_object(bpy.context, tamagoyakis[0])
-            select = util.object_select_get(active) 
+            select = util.object_select_get(active)
             util.object_select_set(active, True)
             bpy.ops.tamagoyaki.store_bind_data()
             context.scene.MeshProp.weightSourceSelection = 'NONE'
@@ -1982,7 +2048,7 @@ class TamagoyakiFromManuelLab(bpy.types.Operator):
             excludes=[B_EXTENDED_LAYER_SL_EYES, B_EXTENDED_LAYER_ALT_EYES]
             from . import mesh
             mesh.bind_to_armature(self,
-                context, 
+                context,
                 tamagoyakis[0],
                 excludes=excludes,
                 enforce_meshes = None )
@@ -2075,13 +2141,13 @@ class TamagoyakiMergeWeights(bpy.types.Operator):
         arm    = util.get_armature(obj)
         bones  = util.get_modify_bones(arm)
         active_bone = bones.active
-        
+
         selected = [b for b in bones if b.select and not b==active_bone and b.name in obj.vertex_groups]
-        
+
         if not active_bone:
             self.report({'ERROR'},"No bone selected")
             return {'CANCELLED'}
- 
+
         active_group = self.convert_weight_groups(obj, active_bone, selected)
         active_bone.select = True
         util.mode_set(toggle=True) # Enforce display of updated weight group in edit mode
@@ -2093,7 +2159,7 @@ class ButtonEnableIK(bpy.types.Operator):
     bl_idname = "tamagoyaki.ik_enable"
     bl_label = "IK"
     bl_description = "Enable IK"
-    
+
     @staticmethod
     def set_ik_status(context, enable_ik, ik_target_name, ik_property, val):
         active = context.active_object
@@ -2104,12 +2170,12 @@ class ButtonEnableIK(bpy.types.Operator):
                 apply_ik_orientation(context, arm, apply_all=True, target=ik_target_name)
             else:
                 ButtonApplyIK.apply(context, ik_target_name, 'BOTH') #adjust fk to ik
-            
+
         ButtonEnableIK.set_ik_influence(arm, val, ik_target_name)
 
         return ik_enabled
 
-    @staticmethod 
+    @staticmethod
     def toggle_ik_influence( arm, switch, bname):
         switch = not switch
         influence = 1.0 if switch else 0
@@ -2121,9 +2187,9 @@ class ButtonEnableIK(bpy.types.Operator):
 
         return switch
 
-    @staticmethod    
+    @staticmethod
     def set_ik_influence(arm, influence, bname):
-    
+
         def set_influence(side):
             bone = arm.pose.bones.get(bname+side, None)
             if bone:
@@ -2159,7 +2225,7 @@ class ButtonEnableIK(bpy.types.Operator):
                 arm.pose.bones['ElbowRight'].rotation_quaternion = Q_R_SEED
 
         if bname == 'Face':
-            ButtonEnableIK.set_face_controller_influence(arm, arm.IKSwitchesProp.face_ik_value)            
+            ButtonEnableIK.set_face_controller_influence(arm, arm.IKSwitchesProp.face_ik_value)
         else:
             set_influence('Left')
             set_influence('Right')
@@ -2211,13 +2277,13 @@ class ButtonApplyIK(bpy.types.Operator):
         name = "Limb",
         description = "Which Limb shall be baked from IK to FK",
         default='NONE')
-        
+
     symmetry : EnumProperty(
         items=symmetry_items,
         name="Symmetry",
         description="Which side of the Skeleton shall be baked from IK to FK",
         default='BOTH')
-    
+
     @classmethod
     def description(cls, context, properties):
         limb = ButtonApplyIK.limb_items[properties['limb']][1]
@@ -2267,7 +2333,7 @@ class ButtonApplyIK(bpy.types.Operator):
 
 
 def get_bone_recursive(posebone, ii, stopname='Pelvis'):
-    result = posebone    
+    result = posebone
     if result.name != stopname:
         for i in range(0,ii):
             result = result.parent
@@ -2298,7 +2364,7 @@ def setIKTargetOrientation(armobj, parent, child, target, line, handle, is_arm):
             M1 = bparent.matrix
             M2 = bparent.bone.matrix_local
             m = btarget.bone.matrix_local
-            M = mulmat(M1, M2.inverted(), m)    
+            M = mulmat(M1, M2.inverted(), m)
             btarget.matrix = M
 
     except KeyError:
@@ -2357,7 +2423,7 @@ def setIKHindLimb2TargetOrientation(context, obj, side):
     target = 'ikHindLimb2Target' + side
     line = 'ikHindLimb2Line' + side
     handle = 'ikHindLimb3' + side
-    
+
     setIKTargetOrientation(obj, parent, child, target, line, handle, is_arm=False)
 
 def setIKAnkleOrientation(context, obj, side):
@@ -2422,7 +2488,7 @@ def apply_ik_orientation(context, armature, apply_all=False, target=None):
     hasRArmBones  = not bones.isdisjoint(RArmBones)
     hasLHindBones = not bones.isdisjoint(LHindBones)
     hasRHindBones = not bones.isdisjoint(RHindBones)
-    
+
 
     hasLPinchBones = not bones.isdisjoint(LPinchBones)
     hasRPinchBones = not bones.isdisjoint(RPinchBones)
@@ -2486,14 +2552,14 @@ def copy_pose_from_armature(context, srcarm, tgtarm, all=True, use_bonemap=False
     setSLBoneRotationMute(None, context, True, 'ALL')
     set_bone_rotation_limit_state(tgtarm, False, all=True)
     bonemap = bpy.context.scene.MocapProp if use_bonemap else None
-    
+
     MSW  = srcarm.matrix_world
     MSWI = MSW.inverted()
     MTW  = tgtarm.matrix_world
     MTWI = MTW.inverted()
     SCA  = MSW.to_scale()
     S = matrixScale(SCA)
-    
+
     for name in names:
         tgt = tgt_bones[name]
         source_name = bonemap.get(name) if bonemap else name
@@ -2554,9 +2620,9 @@ class FocusOnBone(bpy.types.Operator):
 
 class DrawOffsets(bpy.types.Operator):
     '''Draw offsets from current rig to SL Default Rig (Using the Grease Pencil)
-    
+
 Please use the Grease Pencil tools in the 'N' properties sidebar
-to edit or remove the lines when you no longer need them'''    
+to edit or remove the lines when you no longer need them'''
 
     bl_idname = "tamagoyaki.draw_offsets"
     bl_label = "Draw Joint Offsets"
@@ -2625,10 +2691,10 @@ def armatureAsDictionary(armobj):
     names = Skeleton.bones_in_hierarchical_order(armobj, order='TOPDOWN')
     for name in names:
         dbone = armobj.data.edit_bones[name]
-        dict[name] = [dbone.head.copy(), 
-                      dbone.tail - dbone.head, 
-                      dbone.roll, 
-                      None, 
+        dict[name] = [dbone.head.copy(),
+                      dbone.tail - dbone.head,
+                      dbone.roll,
+                      None,
                       dbone.matrix.copy()
                      ]
 
@@ -2650,64 +2716,137 @@ def matches_filter(name, filter):
                 return True
     return False
 
-def bones_in_hierarchical_order(armobj, roots=None, bone_names=None, filter=None, reverse=False):
-    if not bone_names:
+def bone_names_in_hierarchical_order(armobj, roots=None, bone_names=None, filter=None, reverse=False):
+    if bone_names == None:
         bone_names = []
     if not roots:
         roots = [b for b in armobj.data.bones if b.parent == None]
 
     if reverse:
-        bnames = get_bones_in_reverse_hierarchical_order(armobj, roots, bone_names, filter)
+        bnames = get_bone_names_in_reverse_hierarchical_order(armobj, roots, bone_names, filter)
     else:
-        bnames = get_bones_in_hierarchical_order(armobj, roots, bone_names, filter)
+        bnames = get_bone_names_in_hierarchical_order(armobj, roots, bone_names, filter)
     return bone_names
 
-def get_bones_in_hierarchical_order(armobj, roots, bone_names, filter):
+def get_bone_names_in_hierarchical_order(armobj, roots, bone_names, filter):
     for root in roots:
         if not matches_filter(root.name, filter):
             bone_names.append(root.name)
         if root.children:
-            bone_names = bones_in_hierarchical_order(armobj, root.children, bone_names, filter=filter)
+            bone_names = bone_names_in_hierarchical_order(armobj, root.children, bone_names, filter=filter)
     return bone_names
 
-def get_bones_in_reverse_hierarchical_order(armobj, roots, bone_names, filter):
+def get_bone_names_in_reverse_hierarchical_order(armobj, roots, bone_names, filter):
     for root in roots:
         if root.children:
-            bone_names = bones_in_hierarchical_order(armobj, root.children, bone_names, filter=filter, reverse=True)
+            bone_names = bone_names_in_hierarchical_order(armobj, root.children, bone_names, filter=filter, reverse=True)
         if not matches_filter(root.name, filter):
             bone_names.append(root.name)
     return bone_names
 
-def retargetPoseBone(context, 
-                     target_pose_bone, 
-                     source_rig, 
-                     mocap, 
-                     source_ref_pose=None, 
+
+def bones_in_hierarchical_order(armobj, roots=None, bones=None, filter=None, reverse=False):
+    if bones == None:
+        bones = []
+    if not roots:
+        roots = [b for b in armobj.data.bones if b.parent == None]
+
+    if reverse:
+        bnames = get_bones_in_reverse_hierarchical_order(armobj, roots, bones, filter)
+    else:
+        bnames = get_bones_in_hierarchical_order(armobj, roots, bones, filter)
+    return bones
+
+def get_bones_in_hierarchical_order(armobj, roots, bones, filter):
+    for root in roots:
+        if not matches_filter(root.name, filter):
+            bones.append(root)
+        if root.children:
+            bones = get_bones_in_hierarchical_order(armobj, root.children, bones, filter=filter)
+    return bones
+
+def get_bones_in_reverse_hierarchical_order(armobj, roots, bones, filter):
+    for root in roots:
+        if root.children:
+            bones = get_bones_in_reverse_hierarchical_order(armobj, root.children, bones, filter=filter)
+        if not matches_filter(root.name, filter):
+            bones.append(root)
+    return bones
+
+
+def find_pose_bone_parents(mocap, src_rig, tgt_pose_bone):
+    if not (tgt_pose_bone and tgt_pose_bone.parent):
+
+        return None, None
+    tgt_parent = tgt_pose_bone.parent
+    while tgt_parent:
+        pbone = mocap.get(tgt_parent.name)
+        if pbone:
+            src_parent = src_rig.pose.bones.get(pbone)
+            if src_parent :
+                return src_parent, tgt_parent
+            
+        tgt_parent = tgt_parent.parent
+    return None, None
+
+
+
+
+
+
+
+
+def transfer_pose(src_rig, src_pose_bone, tgt_rig, tgt_pose_bone, src_ref, tgt_ref):
+
+    def get_rest_mat(pose_bone, reference_pose):
+        binfo = reference_pose.get(pose_bone.name) if reference_pose else None
+        mat = binfo[3] if binfo else pose_bone.bone.matrix_local
+        return mat
+        
+    scpbm = src_pose_bone.matrix
+    scdbm = get_rest_mat(src_pose_bone, src_ref)
+    tcdbm = get_rest_mat(tgt_pose_bone, tgt_ref)
+
+    sm_world = src_rig.matrix_world
+    sm_apply_rotscale = sm_world.inverted()
+    sm_apply_rotscale.translation=((0,0,0))
+
+    tm_world = tgt_rig.matrix_world
+    tm_apply_rotscale = tm_world.inverted()
+    tm_apply_rotscale.translation=((0,0,0))
+
+    SD = sm_world @ scdbm @ sm_apply_rotscale # src bone in world Space
+    SP = sm_world @ scpbm @ sm_apply_rotscale # src Pose bone in world Space
+    TD = tm_world @ tcdbm @ tm_apply_rotscale # tgt bone in world Space
+
+    Q = SD.to_quaternion().rotation_difference(TD.to_quaternion())
+    ROT = Q.to_matrix().to_4x4()
+
+    matrix = SP @ ROT# rotation in WORLD space
+    
+    return matrix
+
+
+def retargetPoseBone(context,
+                     target_pose_bone,
+                     source_rig,
+                     target_rig,
+                     mocap,
+                     source_ref_pose=None,
                      target_ref_pose=None):
 
     source_pose_bone = get_source_pose_bone(source_rig, target_pose_bone, mocap)
     if not source_pose_bone:
-        return target_pose_bone.matrix.copy(), False
+        return None, False
 
-    sm_world = source_rig.matrix_world
-    spbonem = source_pose_bone.matrix.copy()
-
-    sdbonem = source_pose_bone.bone.matrix_local.copy()
-    if source_ref_pose:
-
-        binfo = source_ref_pose.get(source_pose_bone.name)
-        if binfo:
-            sdbonem = binfo[3].copy()
-
-    tdbonem = target_pose_bone.bone.matrix_local.copy()
-    if target_ref_pose:
-
-        binfo = target_ref_pose.get(target_pose_bone.name)
-        if binfo:
-            tdbonem = binfo[3].copy()
-
-    matrix = mulmat(spbonem, sdbonem.inverted(), tdbonem)
-    matrix.translation = tdbonem.translation + mulmat(sm_world, spbonem.translation) - mulmat(sm_world, sdbonem.translation)
+    matrix = transfer_pose(
+            source_rig,
+            source_pose_bone,
+            target_rig,
+            target_pose_bone,
+            source_ref_pose,
+            target_ref_pose
+    )
 
     return matrix, True
 
@@ -2720,53 +2859,112 @@ def get_source_pose_bone(source_rig, target_pose_bone, mocap):
     else:
         spbone = None
         log.debug("Target Bone %s not mapped to source rig %s" % (target_pose_bone.name, source_rig.name) )
-        
+
     return spbone
 
 
-def armatureFromMocap(context, target, mocap, with_mbones=True, source_ref_pose=None, target_ref_pose=None, refloc=None):
+def retarget_armature_from_mocap(context, frame, depsgraph, target, mocap, with_mbones=True, source_ref_pose=None, target_ref_pose=None, root_offset=None):
 
     source = bpy.data.objects[mocap.source]
-    active = util.get_active_object(context)
-    amode   = active.mode if active else None
-    if active:
-        util.mode_set(mode='OBJECT')
-
-    util.set_active_object(context, target)
-    omode = target.mode
-    util.mode_set(mode='POSE')
-
-    bone_names = bones_in_hierarchical_order(target, roots=None, bone_names=None, filter=['ik'])
+    bone_names = bone_names_in_hierarchical_order(target, roots=None, bone_names=None, filter=['ik'], reverse=False)
     pbones  = target.pose.bones
 
+    pose_bones = []
+    for bname in bone_names: # [b for b in bone_names if b in MTUIBONES_EXTENDED]:
 
-
-
-
-
-    for bname in bone_names:
+        tpbone = pbones.get(bname, None)
+        tpbone.bone.select=False
         if bname in SLVOLBONES:
             continue # This is for testing only. it looks like some data is applied twice when Volume bones are affected...
         if not with_mbones and bname[0]=='m':
             continue # For retargeting we only retarget to the animation bones
 
-        tpbone = pbones.get(bname, None)
-        matrix, changed = retargetPoseBone(context, tpbone, source, mocap, source_ref_pose, target_ref_pose)
-        if changed:
-            tpbone.matrix = matrix
-            util.update_depsgraph(context) # need this to recalculate internal matrices of all pose bones
+        pose_bones.append(tpbone)
+        tpbone.bone.select=True
 
-    tpbone = pbones.get('COG', None)
-    if tpbone and refloc:
-        tpbone.location -= refloc
+    try:
+        bpy.ops.anim.keyframe_delete_v3d()
+    except:
+        pass
+
+    matrix_map = {}
+    for tpbone in pose_bones:
+        matrix, changed = retargetPoseBone(context, tpbone, source, target, mocap, source_ref_pose, target_ref_pose)
+        if not changed:
+             continue
+
+        if tpbone.name == '_COG':
+            if root_offset:
+                matrix.translation += root_offset
+        else:
+            if not mocap.with_translation:
+                matrix.translation=tpbone.matrix.translation
+
+        matrix_map[tpbone.name] = matrix
+
+    compute_pose([target.pose.bones.get('Origin')], matrix_map)
+
+    for tpbone in pose_bones:
+        if matrix_map.get(tpbone.name):
+            if tpbone.rotation_mode=='QUATERNION':
+                tpbone.keyframe_insert(data_path="rotation_quaternion", frame=frame, group=tpbone.name)
+            else:
+                tpbone.keyframe_insert(data_path="rotation_euler", frame=frame, group=tpbone.name)
+            if mocap.with_translation:
+                tpbone.keyframe_insert(data_path="location", index=-1, frame=frame, group=tpbone.name)
+
+def compute_pose(root_bones, matrix_map):
+
+    def compute_pose_recursive(pbone, matrix_map, parent_matrix=None):
+
+        key = pbone.name
+        parent_pbone = pbone.parent
+
+        if key in matrix_map:
+            matrix = matrix_map[key]
 
 
-    util.mode_set(mode=amode)
-    util.mode_set(mode='OBJECT')
-    util.mode_set(mode=omode)
-    util.set_active_object(context, active)
-    util.mode_set(mode=amode)
-    
+
+
+
+
+            if parent_pbone:
+                pbone.matrix_basis = pbone.bone.convert_local_to_pose(
+                    matrix,
+                    pbone.bone.matrix_local,
+                    parent_matrix=parent_matrix,
+                    parent_matrix_local=parent_pbone.bone.matrix_local,
+                    invert=True
+                )
+            else:
+                pbone.matrix_basis = pbone.bone.convert_local_to_pose(
+                    matrix,
+                    pbone.bone.matrix_local,
+                    invert=True
+                )
+        else:
+
+            if parent_pbone:
+                matrix = pbone.bone.convert_local_to_pose(
+                    pbone.matrix_basis,
+                    pbone.bone.matrix_local,
+                    parent_matrix=parent_matrix,
+                    parent_matrix_local=parent_pbone.bone.matrix_local,
+                )
+            else:
+                matrix = pbone.bone.convert_local_to_pose(
+                    pbone.matrix_basis,
+                    pbone.bone.matrix_local,
+                )
+
+
+        for child in pbone.children:
+            compute_pose_recursive(child, matrix_map, matrix)
+
+    for pbone in root_bones:
+        compute_pose_recursive(pbone, matrix_map)
+
+
 def armatureFromDictionary(context, armobj, dict, mocap=None, with_mbones=True, corr = None):
 
     if corr == None:
@@ -2780,18 +2978,18 @@ def armatureFromDictionary(context, armobj, dict, mocap=None, with_mbones=True, 
     else:
         source = bpy.data.objects[mocap.source]
         target = bpy.data.objects[mocap.target]
-    
+
         apply_as_restpose = False
         all_bones         = True
         adjust_tails      = False
-    
+
     active = util.get_active_object(context)
     amode   = active.mode if active else None
     if active:
         util.mode_set(mode='OBJECT')
     util.set_active_object(context, armobj)
     omode = armobj.mode
-    bone_names = bones_in_hierarchical_order(armobj, roots=None, bone_names=None, filter=['ik'])
+    bone_names = bone_names_in_hierarchical_order(armobj, roots=None, bone_names=None, filter=['ik'])
 
     util.mode_set(mode='POSE')
 
@@ -2831,7 +3029,7 @@ def armatureFromDictionary(context, armobj, dict, mocap=None, with_mbones=True, 
         if tpbone and selected:
 
             if mocap and source and target:
-                matrix, changed = retargetPoseBone(context, tpbone, source, mocap)
+                matrix, changed = retargetPoseBone(context, tpbone, source, target, mocap)
                 if changed:
                     tpbone.matrix = matrix
                     util.update_view_layer(context)
@@ -2872,7 +3070,7 @@ def armatureFromDictionary(context, armobj, dict, mocap=None, with_mbones=True, 
                     matrix.rotate(dq)
                     matrix = matrix.to_4x4()
                     matrix.translation = shead
-                
+
                 tpbone.matrix = matrix
                 util.mode_set(mode='OBJECT')
                 util.mode_set(mode='POSE')
@@ -2929,7 +3127,7 @@ def autosnap_bones(armobj, snap_control_to_rig=False):
     for dbone in [b for b in ebones if b.name[0] == 'm' and b.name[1:] in ebones]:
         cbone = ebones.get(dbone.name[1:])
         if dbone.head==cbone.head and dbone.tail==cbone.tail and dbone.roll==cbone.roll:
-            continue    
+            continue
 
         master = dbone if snap_control_to_rig else cbone
         slave  = cbone if snap_control_to_rig else dbone
@@ -2978,7 +3176,7 @@ def add_armature_preset(context, filepath):
     file_preset.write("rig.armatureFromDictionary(context, armobj, dict)\n")
     file_preset.close()
 
-class TAMAGOYAKI_MT_armature_presets_menu(Menu):
+class AVASTAR_MT_armature_presets_menu(Menu):
     bl_label  = "Armature Presets"
     bl_description = "Armature Presets (bone configurations)\nStore the editbone matrix values for a complete Armature\nThis can later be used\n\n- as Restpose template to setup other Armatures\n- as pose template for posing another armature."
     preset_subdir = os.path.join("tamagoyaki","armatures")
@@ -2989,7 +3187,7 @@ class TamagoyakiAddPresetArmature(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.armature_presets_add"
     bl_label = "Add Armature Preset"
     bl_description = "Create new Preset from current Rig"
-    preset_menu = "TAMAGOYAKI_MT_armature_presets_menu"
+    preset_menu = "AVASTAR_MT_armature_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","armatures")
 
@@ -3004,11 +3202,11 @@ class TamagoyakiUpdatePresetArmature(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.armature_presets_update"
     bl_label = "Update Armature Preset"
     bl_description = "Store current Slider settings in last selected Preset"
-    preset_menu = "TAMAGOYAKI_MT_armature_presets_menu"
+    preset_menu = "AVASTAR_MT_armature_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","armatures")
 
     def invoke(self, context, event):
-        self.name = bpy.types.TAMAGOYAKI_MT_armature_presets_menu.bl_label
+        self.name = bpy.types.AVASTAR_MT_armature_presets_menu.bl_label
         print("Updating Preset", self.name)
         return self.execute(context)
 
@@ -3019,7 +3217,7 @@ class TamagoyakiRemovePresetArmature(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.armature_presets_remove"
     bl_label = "Remove Armature Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "TAMAGOYAKI_MT_armature_presets_menu"
+    preset_menu = "AVASTAR_MT_armature_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","armatures")
 
 def getActiveArmature(context):
@@ -3147,21 +3345,22 @@ def setSLBoneLocationMute(operator, context, mute, selection, is_link=False):
         util.mode_set(mode='POSE')
         connect_bones = {}
 
-        poseBones = get_pose_bones(armobj, selection, "Link" if is_link else None, deforming=False)
+        control_bones = get_pose_bones(armobj, selection, "Link" if is_link else None, deforming=False)
+
 
         Bones = data.get_reference_boneset(armobj, rigtype='EXTENDED')
-        for bone in poseBones.values():
+        for bone_name in control_bones:
+            bone = armobj.pose.bones.get(bone_name)
             has_location_constraint = False
             iks = [c for c in bone.constraints if c.type=='IK' and c.target==None]
             if len(iks) > 0:
-
-                lock_ik_bone(armobj, bone, iks, connect_bones)
                 has_location_constraint = True
+                lock_ik_bone(armobj, bone, iks, connect_bones)
 
             if is_link and "Link" in bone.name:
 
                 connect_bones[bone.name]=not mute
-            
+
             if bone.name=='Tinker' or not has_location_constraint:
 
                 bone.lock_location[0] = not mute
@@ -3175,11 +3374,15 @@ def setSLBoneLocationMute(operator, context, mute, selection, is_link=False):
             Bone = Bones.get(name)
             if name == 'Tinker' or (Bone and Bone.connected):
                 try:
+
                     bone = armobj.data.edit_bones[name]
-                    set_connect(bone, muted, "setSLBoneLocationMute")
+                    if Bone.connected:
+                        set_connect(bone, muted, "setSLBoneLocationMute")
                     mbone = armobj.data.edit_bones.get('m'+name)
                     if mbone:
-                        set_connect(mbone, muted, "setSLBoneLocationMute")
+                        Bone = Bones.get(mbone.name)
+                        if Bone.connected:
+                            set_connect(mbone, muted, "setSLBoneLocationMute")
                 except:
                     disconnect_errors += 1
                     if disconnect_errors < 10:
@@ -3228,7 +3431,7 @@ def get_pose_bones(armobj, selection, filter=None, ordered=False, spine_check=Fa
             spine_id = int(name[6])
         else:
             return False
-        
+
         if spine_id in range(1,3) and armobj.RigProp.spine_unfold_lower:
             return False
         if spine_id in range(3,5) and armobj.RigProp.spine_unfold_upper:
@@ -3246,11 +3449,13 @@ def get_pose_bones(armobj, selection, filter=None, ordered=False, spine_check=Fa
 
 
                 if deforming and not b.use_deform:
-                    if 'm'+b.name in bones:
-                        pb = armobj.pose.bones.get('m'+b.name)
+                    deform_bone = armobj.pose.bones.get('m'+b.name)
+                    if deform_bone:
+                        pb = deform_bone
                 elif not deforming and b.use_deform:
-                    if b.name[1:] in bones:
-                        pb = armobj.pose.bones.get(b.name[1:])
+                    control_bone = armobj.pose.bones.get(b.name[1:])
+                    if control_bone:
+                        pb = control_bone
                 pose_bones.append(pb)
         return pose_bones
 
@@ -3258,7 +3463,7 @@ def get_pose_bones(armobj, selection, filter=None, ordered=False, spine_check=Fa
         active = armobj.data.bones.active
         if active and not active.use_deform:
             if 'm' + active.name in armobj.pose.bones:
-                active = armobj.pose.bones['m'+active.name] 
+                active = armobj.pose.bones['m'+active.name]
             else:
                 active = None
         return active
@@ -3277,7 +3482,7 @@ def get_pose_bones(armobj, selection, filter=None, ordered=False, spine_check=Fa
 
     pose_bones = []
     result = {}
-                
+
     if selection == 'SELECTION':
         pose_bones = collect_pose_bones_from(armobj, util.getVisibleSelectedBones(armobj), deforming)
     elif selection == 'VISIBLE':
@@ -3299,7 +3504,10 @@ def get_pose_bones(armobj, selection, filter=None, ordered=False, spine_check=Fa
     elif selection == 'DEFORM':
         return util.get_deform_bone_names(armobj)
     else:
-        pose_bones = collect_pose_bones_from(armobj, armobj.data.bones, deforming)
+        pose_bones = collect_pose_bones_from(armobj, bones_in_hierarchical_order(armobj), deforming)
+        if True: #selection=='DEFAULT':
+            pose_bones = [b for b in pose_bones if not b.name in ["Origin", "COG", "WristLeft", "WristRight", "FaceEyeALtTarget", "EyeTarget"]]
+
 
 
 
@@ -3417,7 +3625,7 @@ def get_parent_bone(bone, with_structure=False):
     parent = bone.parent
     if with_structure or not parent:
         return parent
-    
+
     if parent.get('is_structure', False):
         return get_parent_bone(parent, with_structure)
 
@@ -3449,7 +3657,7 @@ def get_floor_compensation(armobj, pos=None, tail=None, use_cache=False):
     val = None
     if use_cache:
         val = get_item_cache(armobj, 'floor')
-    
+
     if val:
         dh, dt = Vector(val[0]), Vector(val[1])
     else:
@@ -3529,10 +3737,10 @@ def get_sl_restposition(armobj=None, dbone=None, use_cache=True, with_structure=
         return V0.copy(), V0.copy()
     parent  = get_parent_bone(dbone, with_structure)
 
-    
+
     bones = util.get_modify_bones(armobj)
 
-    
+
     if use_cache:
         val = get_item_cache(dbone, 'slr')
         if val:
@@ -3585,7 +3793,7 @@ def get_custom_restposition(armobj=None, dbone=None, use_cache=True, with_joint_
     bones = util.get_modify_bones(armobj)
     master = get_master_bone(bones, dbone)
     parent = get_parent_bone(master)
-    
+
 
     if relative and master.name in ['COG','mPelvis', 'aAvatar Center']:
         M=Matrix()
@@ -3603,20 +3811,20 @@ def get_custom_restposition(armobj=None, dbone=None, use_cache=True, with_joint_
 
     relhead, reltail = get_rel_loc(armobj, master)
     pos += relhead
-    
+
     if joints and with_joint_offset:
         jhead, jtail = util.get_joint_position(joints, master)
         pos += jhead
         tail = reltail+jtail
     else:
         tail = reltail
-    
+
     if dbone.name in ['Tinker','PelvisInv']:
 
         tt = tail.copy()
         pos += tail
         tail = -tt
-   
+
     if use_cache:
         set_item_cache(dbone, 'cur', [pos, tail])
 
@@ -3648,7 +3856,7 @@ def get_sl_bindposition(armobj=None, dbone=None, use_cache=True, absolute=False)
 
     if dbone == None:
         return V0.copy(), V0.copy()
-        
+
     if use_cache:
         val = get_item_cache(dbone, 'slbr')
         if val:
@@ -3676,13 +3884,13 @@ def get_sl_bindposition(armobj=None, dbone=None, use_cache=True, absolute=False)
     tail = Vector([s[i]*t[i] for i in range(3)])
 
     pos += d
-    
+
     if dbone.name in ['Tinker','PelvisInv']:
 
         tt = tail.copy()
         pos += tail
         tail = -tt
-    
+
     if use_cache:
         set_item_cache(dbone, 'slbr', [pos, tail])
 
@@ -3735,7 +3943,7 @@ def get_custom_bindposition(armobj, dbone, use_cache=True, with_joint_offset=Tru
 
 
     MT = bind_rotation_matrix(armobj, master, use_cache, use_bind_pose)# if with_joint_offset else Matrix()
-    
+
     d, t = get_rel_loc(armobj, master)
 
 
@@ -3770,7 +3978,7 @@ def get_custom_bindposition(armobj, dbone, use_cache=True, with_joint_offset=Tru
 
 
     pos += d
-    
+
     if dbone.name in ['Tinker','PelvisInv']:
 
         tt = tail.copy()
@@ -3895,7 +4103,7 @@ def sync_timeline_action(scene):
         return
 
     context = bpy.context
-    
+
     global sync_timeline_enabled
     if not sync_timeline_enabled:
 
@@ -3962,9 +4170,9 @@ def check_dirty_armature_on_update(scene):
 
     context = bpy.context
     active = util.get_active_object(context)
-    
+
     if not scene.SceneProp.panel_appearance_enabled:
-        return 
+        return
 
     need_check = (active and active.type =='ARMATURE' and 'tamagoyaki' in active and util.is_in_user_mode())
     if not need_check:
@@ -4264,7 +4472,7 @@ def fix_tamagoyaki_armature(context, armobj):
     bones = armobj.data.edit_bones
     pbones = armobj.pose.bones
     offset_count = 0
-    
+
     for bone in bones:
         if not (bone.name[0:2]=='ik' or 'Link' in bone.name or bone.name=='Origin'):
             try:
@@ -4275,7 +4483,7 @@ def fix_tamagoyaki_armature(context, armobj):
                     log.debug("| Bone %s is offset by %f from expected loc %s" % (bone.name, magnitude, h) )
             except:
                 log.warning("| Could not check bone %s for having joint offset" % (bone.name))
-        
+
         if bone.use_deform and not bone.layers[B_LAYER_DEFORM]:
             bone.layers[B_LAYER_DEFORM]=True
 
@@ -4293,7 +4501,7 @@ def fix_tamagoyaki_armature(context, armobj):
     util.object_hide_set(armobj, hidden)
     util.set_active_object(context, active_object)
     util.ensure_mode_is(original_mode)
-    
+
     adjustHandStructure(armobj)
 
 def guess_pose_layers(armobj):
@@ -4358,7 +4566,7 @@ class ResetSpineBones(bpy.types.Operator):
 def get_folding_state(armobj, spinea_name, spineb_name, boneset, unfolded):
 
     bones = armobj.data.bones
-    mSpinea = bones.get(spinea_name) 
+    mSpinea = bones.get(spinea_name)
     mSpineb = bones.get(spineb_name)
 
     if mSpinea and mSpineb and mSpinea.use_deform==mSpineb.use_deform:
@@ -4414,6 +4622,41 @@ def update_hip_compatibility(self, context):
         omode = util.ensure_mode_is('EDIT')
         update_hip_boneroll(context, armobj)
         util.ensure_mode_is(omode)
+
+
+def SLBoneLockRotationLimitStates(armobj, context):
+    all = context.scene.MeshProp.allBoneConstraints
+    if all:
+        bones = armobj.pose.bones
+    else:
+        bones = context.selected_pose_bones
+    try:
+        limit_count = 0
+        free_count  = 0
+        part_count  = 0
+
+        if len(bones) == 0:
+            return '',''
+
+        for b in bones:
+            for c in b.constraints:
+                if c.type =='LIMIT_ROTATION':
+                    if c.influence == 1:
+                        limit_count += 1
+                    elif c.influence == 0:
+                        free_count += 1
+                    else:
+                        part_count +=1
+
+        if free_count==0 and part_count == 0:
+            return 'All limits', 'Disable rotation limits'
+        if limit_count == 0 and part_count == 0:
+            return 'No limits', 'Enable rotation limits'
+        return 'Some limits', ''
+    except:
+        pass
+    return '',''
+
 
 def update_eye_configuration(self, context):
 
@@ -4519,7 +4762,7 @@ def armatureSpineUnfoldLower(arm):
     has_changed |= set_loc(mspine2, end - dv, end)
     has_changed |= set_loc(mspine1, begin + dv, end-dv)
     has_changed |= set_loc(mpelvis, mpelvis.head, begin + dv)
- 
+
     has_changed |= set_loc(spine2, mspine2.head, mspine2.tail)
     has_changed |= set_loc(spine1, mspine1.head, mspine1.tail)
     has_changed |= set_loc(pelvis, mpelvis.head, mpelvis.tail)
@@ -4546,7 +4789,7 @@ def reset_rig_to_restpose(armobj):
         armobj.data.layers[l]=True
     bpy.ops.pose.select_all(action='SELECT')
     armobj.data.layers = layers
-    
+
 def armatureSpineUnfoldUpper(arm):
     util.ensure_mode_is('EDIT')
     bones  = util.get_modify_bones(arm)
@@ -4564,7 +4807,7 @@ def armatureSpineUnfoldUpper(arm):
         print("armatureSpineUnfold: Upper spine is already unfolded, nothing to do")
         return has_changed
 
- 
+
     chest  = bones.get('Chest')
     spine3 = bones.get('Spine3')
     spine4 = bones.get('Spine4')
@@ -4606,7 +4849,7 @@ def armatureSpineUnfoldUpper(arm):
     has_changed |= set_loc(spine4, mspine4.head, mspine4.tail)
     has_changed |= set_loc(spine3, mspine3.head, mspine4.head)
     has_changed |= set_loc(torso, mtorso.head, mtorso.tail)
-    
+
     if spine4 and spine3 and chest:
         has_changed |= set_connect(spine4, True)
         has_changed |= set_connect(spine3, True)
@@ -4650,7 +4893,7 @@ def armatureSpineFold(arm):
     upper_begin   = Vector(mTorso.head)
     lower_end     = Vector(mTorso.head)
     lower_begin   = Vector(mPelvis.head)
-    
+
 
 
     has_changed = False
@@ -4945,13 +5188,13 @@ class TamagoyakiCheckHierarchy(Operator):
         armobj = context.object
         self.messages, error_count, info_count = check_bone_hierarchy(armobj)
         return {'FINISHED'}
-        
+
 class TamagoyakiAdjustArmatureOrigin(Operator):
     bl_idname = "tamagoyaki.adjust_armature_origin"
     bl_label = "Adjust Origin"
     bl_description = "Quick fix: Adjust Root Bone position to Armature Origin"
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     adjust_origin : EnumProperty(
         items=(
             ('ROOT_TO_ORIGIN',   'Armature', UpdateRigProp_adjust_origin_armature),
@@ -4987,13 +5230,14 @@ classes = (
     TamagoyakiMergeWeights,
     FocusOnBone,
     DrawOffsets,
-    TAMAGOYAKI_MT_armature_presets_menu,
+    AVASTAR_MT_armature_presets_menu,
     TamagoyakiAddPresetArmature,
     TamagoyakiUpdatePresetArmature,
     TamagoyakiRemovePresetArmature,
     ResetSpineBones,
     TamagoyakiCheckHierarchy,
     TamagoyakiAdjustArmatureOrigin,
+    TamagoyakiApplyScaleToJoints,
     ButtonEnableIK,
     ButtonApplyIK
 )

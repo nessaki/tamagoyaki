@@ -1,8 +1,11 @@
-### Copyright 2019 Machinimatrix
+### Copyright     2021 The Machinimatrix Team
 ###
-### This file is part of Tamagoyaki.
+### This file is part of Tamagoyaki
 ###
-
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -21,11 +24,13 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy, logging, time
+import bpy
+import logging
+import time
+
 from bpy.props import *
 from .import animation, armature_util, bind, const, create, data, mesh, messages, shape, util, rig, weights
-from bpy.props import StringProperty, IntProperty, BoolProperty, EnumProperty, FloatProperty
-
+from bpy.props import StringProperty, IntProperty, BoolProperty, EnumProperty, FloatProperty, PointerProperty
 from .const import *
 from .messages import *
 from bpy.app.handlers import persistent
@@ -57,7 +62,7 @@ def update_scene_data(self, context):
     global update_scene_data_on
     if not update_scene_data_on:
         return
-    
+
     scene=context.scene
     active = util.get_active_object(context)
     if not ( active and active.type =='ARMATURE' and 'tamagoyaki' in active):
@@ -97,7 +102,7 @@ def update_toggle_select(self, context):
 def update_animation(self, context):
 
     obj = context.active_object
-         
+
     shape.setHands(obj, context.scene)
 
 
@@ -108,11 +113,11 @@ def update_sync_influence(context, val, symmetry):
 
     pbones = obj.pose.bones
     for part in ["Thumb", "Index", "Middle", "Ring", "Pinky"]:
-        name = "ik%sTarget%s" % (part, symmetry) 
+        name = "ik%sTarget%s" % (part, symmetry)
         bone = pbones[name]
         if bone.sync_influence:
             name = "ik%sSolver%s" % (part, symmetry)
-            bone = pbones[name] 
+            bone = pbones[name]
             con  = bone.constraints['Grab']
             con.influence = val
 
@@ -166,6 +171,12 @@ def update_bone_type(self, context):
     if arm and  len(self.display_type) > 0:
         armature_util.set_display_type(arm, self.display_type.pop())
 
+def update_bone_rotation_limits(self, context):
+    if self.enableBoneConstraints:
+        bpy.ops.tamagoyaki.set_rotation_limits(all=True)
+    else:
+        bpy.ops.tamagoyaki.unset_rotation_limits(all=True)
+
 def check_unique_snail_callback(self, context):
 
     return
@@ -173,7 +184,7 @@ def check_unique_snail_callback(self, context):
 def slider_options(self, context):
     ob = util.get_active_object(context)
     obtype = ob.type if ob else 'NONE'
-    
+
     if obtype=='ARMATURE':
         items=[
                 ('NONE',  "No Sliders", "Disable Tamagoyaki Sliders from all of Armature's Custom Meshes "),
@@ -199,7 +210,7 @@ def update_sliders(context, arms=None, objs=None):
         active = util.get_active_object(context)
         if arms==None and objs==None:
             arms,objs = util.getSelectedArmsAndObjs(context)
-        
+
         try:
             util.set_disable_update_slider_selector(True)
 
@@ -281,7 +292,7 @@ def add_material_for(armature_name, part_name, onlyMainCharacter, type, isUnique
 
         prep = "tamagoyaki"
         if isUnique == True:
-          prep = armature_name
+            prep = armature_name
         mat_name = prep + ":mat:" + type_abb+ ':' + mat_name
 
     try:
@@ -295,7 +306,7 @@ def set_tamagoyaki_materials(context):
     material_type = obj.tamagoyakiMaterialProp.material_type
     unique = obj.tamagoyakiMaterialProp.unique
 
-    print("Set materials for", obj.name)    
+    print("Set materials for", obj.name)
     print("New material type is", material_type)
     print("unique material   is", unique)
 
@@ -324,12 +335,30 @@ RigTypeItems=(
 
 
 class AnimPropGroup(bpy.types.PropertyGroup):
+   
     Loop : BoolProperty(name="Loop", default = False, description="Loop part of the animation", update=loopUpdate)
     Loop_In : IntProperty(name="Loop In", description="Frame to start looping animation")
     Loop_Out : IntProperty(name="Loop Out", description="Frame to stop looping, rest will play when animation is stopped")
     Priority : IntProperty(name="Priority", default = 3, min=MIN_PRIORITY, max=MAX_PRIORITY, description="Priority at which to play the animation")
     Ease_In : FloatProperty(name="Ease In", default=0.8, min=0, description="Fade in the influence of the animation at the beginning [s]")
     Ease_Out : FloatProperty(name="Ease Out", default=0.8, min=0, description="Fade out the influence of the animation at the end [s]")
+    
+    Simplify_Factor : FloatProperty(
+                      default=0.2,
+                      min=0,
+                      max=1,
+                      name="",
+                      description=\
+"""Amount of Animation simplification (compression):
+
+0: no simplification = no compression
+1: maximum simplification = highest compression tol:0.05(*)
+
+High values mean small files, fewer details in animation
+Low values mean large files, more details in animation
+
+(*): tol is the maximum Cartesian distance error to tolerate"""
+    )
 
     frame_start : IntProperty(
                   name="Start Frame",
@@ -418,6 +447,7 @@ class AnimPropGroup(bpy.types.PropertyGroup):
     $fps     : Frame per Second
     $start   : start frame
     $end     : end frame
+    $runtime : Length of animation in full seconds
 
 additionally for .anim format:
 
@@ -514,6 +544,8 @@ class ScenePropGroup(bpy.types.PropertyGroup):
         description= "SL supports 2 Skeleton Defintions.\n\n- The POS definition is used for the System Avatar (to make cloth).\n- The PIVOT definition is used for mesh characters\n\nAttention: You need to use POS if your Devkit was made with POS\nor when you make cloth for the System Avatar",
         default='PIVOT')
 
+    tamagoyakiSkeletonType : GSkeletonType
+
     skeleton_file   : StringProperty( name = "Skeleton File", default = "avatar_skeleton.xml",
                                       description = "This file defines the Deform Skeleton\n"
                                                   + "This file is also used in your SL viewer. You find this file in:\n\n"
@@ -529,7 +561,7 @@ class ScenePropGroup(bpy.types.PropertyGroup):
                                                   + "You must make sure that the Definition file used in Tamagoyaki matches\n"
                                                   + "with the file used in your Viewer.\n\n"
                                                   + "When you enter a simple file name then Tamagoyaki reads the data its own lib subfolder\n"
-                                    )        
+                                    )
 
     target_system   : EnumProperty(
         items=(
@@ -593,7 +625,7 @@ class ScenePropGroup(bpy.types.PropertyGroup):
                                         + "Please refer to the Tamagoyaki documentation (developerkits)"
                            )
     collada_export_with_joints : BoolProperty(
-                    default=True, 
+                    default=True,
                     name= "Export with Joints",
                     description=SceneProp_collada_export_with_joints_description
                     )
@@ -630,15 +662,7 @@ class ScenePropGroup(bpy.types.PropertyGroup):
                      default = True
                      )
 
-    panel_appearance_editable : BoolProperty(
-                     name = "Lock Avatar Shape",
-                     default = True,
-                     description= "Used to lock the Avatar shape in their current state.\n\n"\
-                                + "Note:\n"
-                                + "When you select the Animesh Preset (White Stickman)\n"
-                                + "the Avatar shape are automatically locked\n"
-                                + "However you always can unlock even when you selected Animesh mode"
-                     )
+    panel_appearance_editable : g_appearance_editable
 
     loc_timeline : BoolProperty(
                    name = "Synchronize",
@@ -719,6 +743,9 @@ class ScenePropGroup(bpy.types.PropertyGroup):
 
     apply_as_bindshape : g_apply_as_bindshape
 
+    spk_filter_boundary_verts : g_spkg_filter_boundary_verts
+    spk_filter_smooth_faces : g_spkg_filter_smooth_faces
+
 
 class MeshPropGroup(bpy.types.PropertyGroup):
 
@@ -770,7 +797,7 @@ class MeshPropGroup(bpy.types.PropertyGroup):
 
     removeDoubles : BoolProperty(
         default=False,name="Weld Parts",
-        description="Remove duplicate verts from adjacent edges of joined parts")
+        description="Remove duplicate verts from adjacent edges of joined parts, make the parts one mesh")
 
     toTPose : BoolProperty(
         default=False,
@@ -825,13 +852,13 @@ class MeshPropGroup(bpy.types.PropertyGroup):
 
     weld_normals : BoolProperty(
         default=True,
-        name="Weld Edge Normals",
+        name="Align Edge Normals",
         description="Adjust normals at matching object boundaries (to avoid visual seams)")
 
     weld_to_all_visible : BoolProperty(
         default=False,
-        name="Weld to all visible",
-        description="If enabled, then take all visible mesh objects into account for welding the normals, otherwise weld only with selected objects" 
+        name="Align to all visible",
+        description="If enabled, then take all visible mesh objects into account for aligning the normals, otherwise align normals only with selected objects"
         )
 
     export_triangles : BoolProperty(
@@ -867,6 +894,18 @@ class MeshPropGroup(bpy.types.PropertyGroup):
         default=False,
         name="Mirror from opposite Bones",
         description="Copy weights from Bones opposite to selection (merge with current weights!)")
+
+    enableBoneConstraints : BoolProperty(
+        default=True,
+        name = "Rotation Constraints",
+        description = "Enable bone rotation limits\n\n"\
+        + "Note\n"\
+        + "For individual configuration:\n"\
+        + "- Open the vertical Rigging Tab\n"\
+        + "- Open the Rig Controls Panel\n"\
+        + "- Custmoize the rotation limits",
+        update=update_bone_rotation_limits
+    )
 
     allBoneConstraints : BoolProperty(
         default=False,
@@ -911,19 +950,21 @@ class MeshPropGroup(bpy.types.PropertyGroup):
         description="Selection depending on usage of the Weight Groups",
         default='ALL')
 
-    save_shape_selection : g_save_shape_selection 
+    save_shape_selection : g_save_shape_selection
 
-    weight_mapping : g_weight_mapping
     weightSourceSelection : g_weightSourceSelection
     bindSourceSelection : g_bindSourceSelection
     weightBoneSelection : g_weightBoneSelection
-        
+
     use_mirror_x : weights.g_use_mirror_x
     clearTargetWeights : weights.g_clearTargetWeights
+    smoothTargetWeights : weights.g_smoothTargetWeights
     copyWeightsToSelectedVerts : weights.g_copyWeightsToSelectedVerts
+    copyWeightsForSelectedBones : weights.g_copyWeightsForSelectedBones
     keep_groups : weights.g_keep_groups
     with_hidden_tamagoyaki_meshes : weights.g_with_hidden_tamagoyaki_meshes
     with_listed_tamagoyaki_meshes : weights.g_with_listed_tamagoyaki_meshes
+    with_selected_tamagoyaki_meshes : weights.g_with_selected_tamagoyaki_meshes
 
     attachSliders : BoolProperty(
         name="Attach Sliders",
@@ -935,11 +976,11 @@ class MeshPropGroup(bpy.types.PropertyGroup):
         name="Attach Sliders",
         default=True,
         description="Attach the Avatar shape after binding")
-        
+
 
     all_selected : BoolProperty(
         name = "Apply to Selected",
-        default = False, 
+        default = False,
         description = "Apply this Operator to all selected Objects\n\n"\
                     + "If this property is disabled, apply only to active Object"
         )
@@ -1059,17 +1100,17 @@ def gender_shape_set(armobj, use_male_shape):
     util.set_gender_update_in_progress(True)
     armobj.ShapeDrivers.male_80 = use_male_shape
     util.set_gender_update_in_progress(False)
- 
 
-class RigPropGroup(bpy.types.PropertyGroup):    
-    IKHandInfluenceLeft  : FloatProperty(name="Left Hand IK Combined", 
+
+class RigPropGroup(bpy.types.PropertyGroup):
+    IKHandInfluenceLeft  : FloatProperty(name="Left Hand IK Combined",
                            default=0.0,
                            min=0.0,
                            max=1.0,
                            update=update_sync_influence_left,
                            description="Combined Influence for all IK Controllers of the Left Hand"
                            )
-                           
+
     IKHandInfluenceRight : FloatProperty(name="Right Hand IK Combined",
                            default=0.0,
                            min=0.0,
@@ -1088,6 +1129,7 @@ class RigPropGroup(bpy.types.PropertyGroup):
 
 
     JointTypeItems = GJointTypeItems
+    SkeletonTypeItems = GSkeletonTypeItems
 
     ConstraintSet   : EnumProperty(
         items       = constraintItems,
@@ -1110,9 +1152,10 @@ class RigPropGroup(bpy.types.PropertyGroup):
         name        = "Rig Type",
         description = "Basic: Old Avatar Skeleton, Extended: Bento Bones",
         default     = 'BASIC')
-    
+
     JointType : GJointType
-    
+    SkeletonType : GSkeletonType
+
     affect_all_joints : BoolProperty(
                name    = "All Joints",
                default = True,
@@ -1130,7 +1173,7 @@ class RigPropGroup(bpy.types.PropertyGroup):
                default = False,
                description = RigProp_restpose_mode_description
                )
-    
+
     export_pose_reset_anim : BoolProperty(
         default     = False,
         name        = "with Reset Animation",
@@ -1186,31 +1229,41 @@ class RigPropGroup(bpy.types.PropertyGroup):
         update = gender_update_handler
         )
 
+    exportBakedGender : BoolProperty(
+            name        = "Export with Baked Gender",
+            description = \
+"""Only relevant when gender is set to male and 
+only when you have compatibility issues with meshes
+made by Tamagoyaki versions < 2.80:
+This option bakes the male bone sizes into the exported armature. 
+WARNING: You normally would not want to have this option enabled""",
+            default     = False
+            )
 
     display_joint_heads : BoolProperty (
                default = True,
                name = "Heads",
                description = "List the Bones with modified Bone head location (Joint offsets)"
                )
-    
+
     display_joint_tails : BoolProperty (
                default = False,
                name = "Tails",
                description = "List the Bones with modified Bone tail location (Bone ends)"
                )
-    
+
     generate_joint_tails : BoolProperty (
                default = True,
                name = "Generate Tail Offsets",
                description = "Generate Joint entries also for Bone tails\nYou want to keep this enabled! (experts only)"
                )
-    
+
     generate_joint_ik : BoolProperty (
                default = False,
                name = "Generate IK Offsets",
                description = "Generate Joint Offsets for the IK Joints\nMake IK Bones react on Sliders (experimental)"
                )
-    
+
     display_joint_values : BoolProperty (
                default = False,
                name    = "Values [mm]",
@@ -1229,7 +1282,7 @@ class RigPropGroup(bpy.types.PropertyGroup):
 
         options     = {'ANIMATABLE', 'ENUM_FLAG'},
         update      = update_bone_type)
-    
+
     spine_is_visible : BoolProperty (
                default = False,
                name    = "Use Spine Bones",
@@ -1322,16 +1375,7 @@ Notes:
                      default = True
                      )
 
-    rig_appearance_editable : BoolProperty(
-                     name = "Lock Avatar Shape",
-                     default = True,
-                     description= "Used to lock the Avatar shape in their current state.\n\n"\
-                                + "Note:\n"
-                                + "When you select the Animesh Preset (White Stickman)\n"
-                                + "the Avatar shape are automatically locked\n"
-                                + "However you always can unlock even when you selected Animesh mode"
-                     )
-
+    rig_appearance_editable : g_appearance_editable
 
 class UpdateRigPropGroup(bpy.types.PropertyGroup):
     transferMeshes : BoolProperty(
@@ -1352,7 +1396,7 @@ class UpdateRigPropGroup(bpy.types.PropertyGroup):
     applyRotation : const.g_applyRotation
     use_male_shape : const.g_use_male_shape
     use_male_skeleton : const.g_use_male_skeleton
-    
+
     srcRigType : const.g_srcRigType
     tgtRigType : const.g_tgtRigType
     up_axis : g_up_axis
@@ -1458,7 +1502,7 @@ class UpdateRigPropGroup(bpy.types.PropertyGroup):
         description = UpdateRigProp_snap_attachment_points_description,
         default     = True
     )
-    
+
     fix_reference_meshes : BoolProperty(
         name        = "Fix Reference meshes",
         description = UpdateRigProp_fix_reference_meshes_description,
@@ -1476,13 +1520,13 @@ class UpdateRigPropGroup(bpy.types.PropertyGroup):
         description = "Developer kit has no head defined.\nEnable when you want to reuse the Default SL Head",
         default     = True
     )
-    
+
     devkit_use_bind_pose : BoolProperty(
         default=False,
         name        = "Use Bind Pose",
         description = RigProp_rig_use_bind_pose_description
         )
-        
+
     devkit_filepath : StringProperty(
         name = "Path to Kit",
         subtype = 'FILE_PATH',
@@ -1534,7 +1578,9 @@ by your exported Configuration'''
         )
 
     JointType : GJointType
+    SkeletonType : GSkeletonType
     tgtJointType : GJointType
+    tgtSkeletonType : GSkeletonType
 
 @persistent
 def update_rebake_settings(self, context):
@@ -1634,7 +1680,7 @@ class ObjectPropGroup(bpy.types.PropertyGroup):
        description = "Enable visibility of edges in Object Mode and Weight Paint Mode"
     )
 
-    apply_armature_on_unbind : g_apply_armature_on_unbind 
+    apply_armature_on_unbind : g_apply_armature_on_unbind
 
     purge_data_on_unbind : mesh.g_purge_data_on_unbind
 
@@ -1673,14 +1719,14 @@ class ObjectPropGroup(bpy.types.PropertyGroup):
         description = "All Materials used by object have baked textures"
     )
 
-    def update_is_hidden(self, context):
+    def update_is_hidden_from_op(self, context):
         armobj = util.get_armature_from_context(context)
         childset = util.get_animated_meshes(context, armobj, only_visible=False)
         for child in [child for child in childset if child.ObjectProp == self and child!=context.object]:
-            child.hide_set(child.ObjectProp.is_hidden)
+            child.hide_set(child.ObjectProp.is_hidden_from_op)
 
-    is_hidden: BoolProperty(
-        update = update_is_hidden,
+    is_hidden_from_op: BoolProperty(
+        update = update_is_hidden_from_op,
         default = False,
         name = "Hide",
         description = "hide this object from current operation.\n\n"\
@@ -1701,6 +1747,169 @@ class ObjectPropGroup(bpy.types.PropertyGroup):
         name = "Name",
         description = "Set name for frozen Object"
     )
+
+
+class MocapPropGroup(bpy.types.PropertyGroup):
+    flavor : StringProperty()
+    source : StringProperty()
+    target : StringProperty()
+    object_count : IntProperty(default=0, min=0)
+    reference_frame : g_reference_frame
+
+    use_scene_action_range : BoolProperty(name="Scene Action Range",
+        default = False,
+        description="Only transfer frames within the active Action range"
+    )
+
+    use_restpose : animation.g_use_restpose
+    show_bone_mapping : BoolProperty(name="Show bone mapping", default = False)
+    show_bone_mapper : BoolProperty(name="Show Bone Mapper", default = False)
+
+    simplificationitems = [
+        ('none', 'None', 'None'),
+        ('loweslocal', 'Lowes Local', 'Lowes Local'),
+        ('lowesglobal', 'Lowes Global', 'Lowes Global'),
+        ]
+    simplificationMethod : EnumProperty(items=simplificationitems, name='Method', default='none')
+    lowesLocalTol : FloatProperty(default=0.02, min=0, max=0.1, name="Tol")
+    lowesGlobalTol : FloatProperty(default=0.1, name="Tol")
+
+    seamlessRotFrames : IntProperty(name="Rot frames",
+        min=0,
+        default=0,
+        description="Blend range to make seamles rotation")
+
+    seamlessLocFrames : IntProperty(name="Loc frames",
+        min=0,
+        default=0,
+        description="Blend range to make seamles translation")
+
+    with_translation : BoolProperty(name="with Translation", default=False, description = "Prepare the Rig to allow translation animation")
+
+    rootBoneItems = [
+        ('Origin', 'Retarget to Origin', 'Use when Source Reference bone is mPelvis'),
+        ('COG', 'Retarget to COG', 'Use when Source Reference bone is Origin')
+    ]
+    
+    target_root_bone_name : EnumProperty(items=rootBoneItems, name='Retarget to', default='Origin')
+
+    interactive_auto : BoolProperty(
+        name="Automatic mapping",
+        default = False,
+        description =\
+'''Enable automatic retarget mapping from source bone to target bone
+
+What it does: As soon as you select a bone pair on the source rig 
+and its related bone on the target rig, the mapping is established.
+
+NOTE:The active pair is displayed in yellow. 
+Any previous mapping for the bone pair will then be overwritten.''',
+        update = create.update_interactive_retarget
+    )
+
+
+
+
+
+    rigtypes = [
+       ('BASIC', "Basic", "This Rig type Defines the Legacy Rig:\nThe basic Avatar with 26 Base bones and 26 Collision Volumes"),
+       ('EXTENDED', "Extended", "This Rig type Defines the extended Rig:\nNew bones for Face, Hands, Tail, Wings, ... (the Bento rig)"),
+    ]
+
+    rigtype : EnumProperty(
+        items       = rigtypes,
+        name        = "Rig Type",
+        description = "Basic: Old Avatar Skeleton, Extended: Bento Bones",
+        default     = 'EXTENDED')
+
+    with_sanitize : BoolProperty(
+                       name="Cleanup action",
+                       default=True,
+                       description = "Remove animation curves with less than 2 keyframes"
+                       )
+
+    keep_source_rig : BoolProperty(
+                       name="Keep Source Rig",
+                       default=False,
+                       description = "Do not destroy the imported Source Rig (for debugging purposes)"
+                       )
+
+    keep_reference_frame : g_keep_reference_frame
+
+    global_scale : FloatProperty(
+                       name = "Scale",
+                       default = INCHES_TO_METERS,
+                       description = "Scale factor for Skeleton size adjustment.\n"\
+                                   + "The default factor is to convert Inches to Meters\n"\
+                                   + "since SL uses Inches as unit of measurement for BVH animations"
+                       )
+
+
+
+
+
+class WeightsPropGroup(bpy.types.PropertyGroup):
+    pass
+
+class StringListProp(bpy.types.PropertyGroup):
+    name : StringProperty()
+
+
+def register_WeightsPropGroup_attributes():
+    bones = data.get_base_bones()
+    for bone in bones:
+        setattr(WeightsPropGroup, bone, FloatProperty(default=0.0, min=0.0, max=1.0, name=bone))
+
+
+def unregister_WeightsPropGroup_attributes():
+    bones = data.get_base_bones()
+    for bone in bones:
+        delattr(WeightsPropGroup, bone)
+
+
+def register_MocapPropGroup_attributes():
+    desc = \
+'''The >>%s<< mapping can only be deleted if:
+- You have disabled the automatic retarget mapper
+- or you have unselected the source bone and
+  its mapped target bone'''
+
+    for bone_name in MTUIBONES_EXTENDED:
+        update = eval("lambda a,b:update_check_retarget_map(a,b,'%s')"%bone_name)
+        setattr(MocapPropGroup, bone_name, StringProperty(update=update, description=desc%bone_name) )
+
+    setattr(MocapPropGroup, "sources", CollectionProperty(type=StringListProp))
+    setattr(MocapPropGroup, "targets", CollectionProperty(type=StringListProp))
+
+
+def unregister_MocapPropGroup_attributes():
+    for bone in MTUIBONES_EXTENDED:
+        delattr(MocapPropGroup, bone)
+    delattr(MocapPropGroup, "sources")
+    delattr(MocapPropGroup, "targets")
+
+
+def update_check_retarget_map(prop, context, key=None):
+
+    if not key:
+        return
+
+    source = bpy.data.objects.get(prop.source) if prop.source else None
+    target = bpy.data.objects.get(prop.target) if prop.target else None
+
+    if not (source and target):
+        return
+
+    target_bone = target.pose.bones.get(key)
+    create.mark_visual_retarget_bone_group(target, prop, target_bone, reset=False, clean=False)
+
+
+    unmapped_group = source.pose.bone_groups.get('unmapped')
+    for source_bone in source.pose.bones:
+        if source_bone.bone_group != unmapped_group and not source_bone.name in prop.values():
+            source_bone.bone_group = unmapped_group
+            source_bone.bone.select=False
+        
 
 class SparkleTimelinePropGroup(bpy.types.PropertyGroup):
 
@@ -1740,8 +1949,8 @@ def set_hand_fk_contraints_status(pbones, part, symmetry, mute):
         pbone = pbones[name] if name in pbones else None
         if pbone:
             for con in pbone.constraints:
-               if con.type in ["LIMIT_ROTATION", "COPY_ROTATION"]:
-                   con.mute=mute
+                if con.type in ["LIMIT_ROTATION", "COPY_ROTATION"]:
+                    con.mute=mute
 
 def update_hand_ik_type(self, context):
     try:
@@ -1829,7 +2038,7 @@ class IKSwitchesPropGroup(bpy.types.PropertyGroup):
         val = 1.0 if self.face_ik_enabled else 0.0
         if  self.face_ik_value != val:
             self.face_ik_value = val
-        self.Enable_Limbs = rig.ButtonEnableIK.set_ik_status(context, self.face_ik_enabled, 'Face', self.Enable_Face, val)
+        self.Enable_face = rig.ButtonEnableIK.set_ik_status(context, self.face_ik_enabled, 'Face', self.Enable_Face, val)
 
 
     def update_hinds_ik(self, context):
@@ -1837,7 +2046,7 @@ class IKSwitchesPropGroup(bpy.types.PropertyGroup):
         if self.hind_ik_value_left != val:
             self.hind_ik_value_left = val
         if self.hind_ik_value_right != val:
-            self.hind_ik_value_right = val      
+            self.hind_ik_value_right = val
         self.Enable_Limbs = rig.ButtonEnableIK.set_ik_status(context, self.hinds_ik_enabled, 'HindLimb3', self.Enable_Limbs, val)
 
 
@@ -1896,7 +2105,7 @@ class IKSwitchesPropGroup(bpy.types.PropertyGroup):
             self.hinds_ik_enabled = False
         elif enabled and not self.hinds_ik_enabled:
             self.hinds_ik_enabled = True
-   
+
     def update_leg_ik_value_left(self, context):
         enabled = (self.leg_ik_value_left + self.leg_ik_value_right) == 2
         disabled = (self.leg_ik_value_left + self.leg_ik_value_right) == 0
@@ -1920,7 +2129,7 @@ class IKSwitchesPropGroup(bpy.types.PropertyGroup):
             self.face_ik_enabled = False
         elif enabled and not self.face_ik_enabled:
             self.face_ik_enabled = True
-        
+
     arm_ik_value_left  : FloatProperty(name="Left Hand FK-IK distribution", min=0.0, max=1.0, default=0.0, update=update_arm_ik_value_left)
     arm_ik_value_right : FloatProperty(name="Right Hand FK-IK distribution", min=0.0, max=1.0, default=0.0, update=update_arm_ik_value_right)
     hind_ik_value_left  : FloatProperty(name="Left Hind FK-IK distribution", min=0.0, max=1.0, default=0.0, update=update_hind_ik_value_left)
@@ -1937,10 +2146,13 @@ classes = (
     ScenePropGroup,
     MeshPropGroup,
     RigPropGroup,
+    WeightsPropGroup,
+    StringListProp,
     UpdateRigPropGroup,
     BakerPropGroup,
     MaterialPropGroup,
     ObjectPropGroup,
+    MocapPropGroup,
     SparkleTimelinePropGroup,
     IKSwitchesPropGroup,
 )
@@ -1956,6 +2168,8 @@ def register():
     bpy.types.Scene.SparkleTimelineProp = PointerProperty(type = SparkleTimelinePropGroup)
     bpy.types.Object.ObjectProp     = PointerProperty(type = ObjectPropGroup)
     bpy.types.Object.AnimProp       = PointerProperty(type = AnimPropGroup)
+    bpy.types.Scene.MocapProp = PointerProperty(type = MocapPropGroup)
+    bpy.types.Object.MocapProp = PointerProperty(type = MocapPropGroup)
     bpy.types.Action.AnimProp       = PointerProperty(type = AnimPropGroup)
     bpy.types.Object.RigProp        = PointerProperty(type = RigPropGroup)
     bpy.types.Scene.AnimProp        = PointerProperty(type = AnimPropGroup)
@@ -1965,10 +2179,16 @@ def register():
     bpy.types.Scene.UpdateRigProp   = PointerProperty(type = UpdateRigPropGroup)
     bpy.types.Object.tamagoyakiMaterialProp = PointerProperty(type = MaterialPropGroup)
     bpy.types.Material.BakerProp    = PointerProperty(type = BakerPropGroup)
+        
+    register_WeightsPropGroup_attributes()
+    register_MocapPropGroup_attributes()
 
 def unregister():
-    from bpy.utils import unregister_class   
+    from bpy.utils import unregister_class
 
+    unregister_MocapPropGroup_attributes()
+    unregister_WeightsPropGroup_attributes()
+    
 
 
 
@@ -1983,6 +2203,9 @@ def unregister():
     if hasattr(bpy.types.Action,'AnimProp'): del bpy.types.Action.AnimProp
     if hasattr(bpy.types.Object,'AnimProp'): del bpy.types.Object.AnimProp
     if hasattr(bpy.types.Object,'ObjectProp'): del bpy.types.Object.ObjectProp
+    if hasattr(bpy.types.Object,'MocapProp'): del bpy.types.Object.MocapProp
+    if hasattr(bpy.types.Scene,'MocapProp'): del bpy.types.Scene.MocapProp
+
     if hasattr(bpy.types.Scene,'SparkleTimelineProp'): del bpy.types.Scene.SparkleTimelineProp
     if hasattr(bpy.types.Object,'IKSwitchesProp'): del bpy.types.Object.IKSwitchesProp
 

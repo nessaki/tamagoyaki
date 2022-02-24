@@ -1,9 +1,11 @@
-### Copyright 2015, Gaia Clary
-### Modifications 2015 Gaia Clary
+### Copyright     2021 The Machinimatrix Team
 ###
-### This file is part of Tamagoyaki 1.
+### This file is part of Tamagoyaki
 ###
-
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -41,9 +43,7 @@ msg_export_warnings = '%d areas found where the export could be optimized. (Plea
                 +  'you review the list and optimize your model if necessary.'
 
 
-msg_export_warning_note = 'Note: The issues above probably are not very important, but i\n'\
-                +  'recommend that you review the list and optimize your model if necessary.\n\n'\
-                +  'For Experts: More info can be found in the Blender Console'
+msg_export_warning_note = 'For more infos click on the message text(s) above'
 
 msg_export_errors = '%d areas found where the export failed. (Please Read on)|'\
                 +  '$operator\n\n'\
@@ -123,7 +123,7 @@ msg_discarded_weightgroups = "The following %d mesh Weight Groups will not be us
                 + "Note: You can change this by enabling 'Deform' in the corresponding\n"\
                 + "Bone properties of the associated Armature.\n\n"\
                 + "List of affected Weight Groups:\n\n"
-                
+
 msg_missing_uvmaps = "No UV Map found in %d %s:|"\
                 + "%s\n"\
                 + "DETAIL:\n"\
@@ -179,14 +179,14 @@ msg_failed_to_bind_automatic = "Could not generate weights for all vertices|"\
                 + "Hint: You can revert this operation by pressing CTRL Z|binding"
 
 msg_edit_system_mesh = '''Tamagoyaki Object "%s" should never be edited directly|Detail:
-Editing a system mesh can cause heavy distortions 
+Editing a system mesh can cause heavy distortions
 and may break the Avatar shape!
 
 Your Action:
 Please use the Freeze Tool to create an editable copy.
 You find the Freeze tool in the Tool Shelf:
 
-    Tamagoyaki Tab --> Tools Panel --> Freeze Shape section
+    Tamagoyaki Tab --> Skinning --> Freeze section
 
 Important: The freeze tool applies all shape keys to the mesh!
 |/help/freeze-shape'''
@@ -201,85 +201,8 @@ Note: Mats can have 2 numbers n/m where n is the number of user defined material
 and m is the number of materials created by the SL Importer
 
 * Estimates: Estimated numbers for different Levels of Detail.
-The estimates only give an estimate! 
+The estimates only give an estimate!
 The final numbers are calculated by the Mesh Importer.
-'''
-
-panel_info_workflow = '''Workflow (Only available for Tamagoyaki Armatures)| Quickinfo:
-* Presets for various Tasks:
-  - Skin      : Preset for weighting your mesh
-  - Pose      : Preset for posing your Mesh
-  - Retarget: Preset for importing a BVH animation for your Mesh
-  - Edit      : Preset for editing the Bones (for non human characters)
-'''
-
-panel_info_rigging = '''Rigging (Only available for Tamagoyaki Armatures)| Quickinfo:
-* Bone Display Style: modifies the look&feel of the bones.
-* Visibility: defines which bones are displayed
-* Deform Bones: These Bones are used to animate your Mesh
-'''
-
-panel_info_weight_sources = '''Weight sourcess - only applicable for the Meshes strategy:
-       All listed meshes are considered as influencing weight sources
-       All visible meshes are used as copy sources(*)
-
-    (*) Important: This is only applicable for the Meshes Strategy:
-        For each vertex all copied weights are taken only from the closest mesh.
-        If the closest mesh is listed but not visible, then no weights are copied
-        for the vertex!'''
-
-panel_info_skinning = '''Skinning|Skinning is the process of creating an association
-between a Mesh (the Skin) and a Rig.
-Quickinfo:
-
-Bind to Armature: Assign selected Meshes to selected Armature
-* Strategy: The method used to get the weigths.
-  Note: Each weight strategy uses different intitial parameters
-
-''' + panel_info_weight_sources
-
-panel_info_weight_copy = '''Weight Copy|The weight Copy panel allows to copy or generate weights.
-Quickinfo:
-
-Update Weights: copy weights by using the selkected weight copy strategy
-* Strategy: The method used to get the weigths.
-  Note: Each weight strategy uses different intitial parameters
-* Scope: The subset of bones for which weights shall be updated on the active mesh(*)
-
-''' + panel_info_weight_sources
-
-panel_info_materials = '''Material Settings (Only available for Tamagoyaki Meshes)| Quickinfo:
-* None: Default material
-* Female: female Starlight Textures
-* Male: colored objects (no textures available)
-* Custom: Placeholder (uses checker textures by default)
-* Template: Template textures (for matching to SL System textures)
-'''
-
-panel_info_posing = \
-'''Posing|Posing is the process of placing bones to create Poses
-and animations for the Meshes bound to the Skeleton.
-
-Quickinfo:
-
-* Pose Position : The Rig can be posed and animated. Current Pose is shown
-* Rest Position : the Rig's Restpose is shown. The rig can not be animated in this mode.
-* Draw Joint Offsets: Draw Greasepencil lines to indicate joint offsets
-  Only available when joints have been edited
-* Armature Presets: complete joint position presets (experimental)
-* Use Bind Pose: Use the current Pose as new Restpose
-
-* Bone constraints:
-  - Unlock the Secondlife bones to move them indepenedentlyfrom
-  - Unlock the Animation bones to add joint positions
-  - Unlock the Volume bones to allow moving them around (experimental)
-
-* As bindpose: Store joints to use with Default SL Rig and Bind pose
-* With Joints: Store joints to use with Joint positions
-* Generate LSL: Script to apply restpose animation (for use bind pose)
-* Export Restpose: to be used with the LSL Script
-  Can also be generated by the Collada exporter.
-
 '''
 
 panel_info_fitting = '''Fitting|The Fitting Panel is used to create the weights
@@ -296,34 +219,6 @@ Fitting Presets: Predefined weight distributions
 * Smooth Weights: tries to make the mesh smoother by smoothing the weights.
 '''
 
-panel_info_appearance = '''Avatar Shape|We support the same shape slider system as you can find
-in SL, OpenSim or other compatible worlds.
-
-* Shape Presets: Your Shapes to be applied in one click.
-* The orange stickman: Avatar default Shape
-* The white Stickman: Avatar technical restpose Shape
-
-* Bake to Mesh: Bake the current Shape key setting to Mesh
-'''
-panel_warning_appearance = '''Avatar Shape|This Armature has unsaved Joints!
-
-You probably have opened the Armature Editor and moved some bones.
-When you do this then you need to ensure the joint edits have been
-stored before you can use the Avatar shape again.
-
-You can store the joints when the Armature is in Edit mode.
-Then open the Posing panel.
-And Store Joint Edits.
-'''
-
-panel_info_tools = '''Tools|The Tamagoyaki Tools Panel is a container for tools which
-do not fit anywhere else. You find the Tamagoyaki Tool Panel in the Tool Shelf,
-in the Tamagoyaki tab.
-
-* Vertex Tools: to find zero weighted unweighted vertices, etc...
-* Most important tool: Freeze shape
-'''
-
 panel_info_weblinks = '''Weblinks|Some useful links into our documentation website
 '''
 
@@ -335,7 +230,7 @@ to get more information about each option.
 panel_info_debug_settings = '''Debug settings|This section is only good for debugging!
 Please do never change these settings unless you exactly know what you are doing'''
 
-panel_info_credentials = '''Credentials|If you have an account on the Machinimatrix Website
+panel_info_credentials = '''Credentials|If you have an account on the Avalab Website
 and if you have registered your Tamagoyaki purchase then
 you can get inbuilt Updates (see the Tamagoyaki Maintenance panel)
 You can plakce your credentials here if you do not want to
@@ -346,8 +241,10 @@ but within your local file system. Hence it is safe to
 forward blend files to other people.
 '''
 
-panel_info_visibility = '''Visibility|- Show Collada panel in tool Shelf
-- Show Avatar Shape Panel in Properties Panel
+panel_info_visibility = \
+'''Visibility|- Show Collada panel in properties Sidebar
+- Show the Fitting Panel in Properties Sidebar
+- Show Avatar Shape Panel in Properties Sidebar
 - Set Addon Complexity (hide/unhide parts of user interface)
 '''
 
@@ -368,8 +265,9 @@ hints:
 1.) Create Avatar (with Tris or with Quads)
 2.) Rig Type Basic (Legacy Rig) or Externded (Bento Rig)
 3.) Joint Type Pivot(recommended) or Pos(only rarely needed)
+4.) Skeleton Type AVASTAR or ANIMESH
 
-Whewn you reset to Factory (see above), then Tamagoyaki ensures 
+When you reset to Factory (see above), then Tamagoyaki ensures
 the settings are restored like from a fresh Tamagoyaki Installation.
 Note: The factory reset removes all of your own Custom Rig templates.
 '''
@@ -392,17 +290,6 @@ hints:
 
 Important: The meshes must be bound to the armature.
 |%s/reference/usermanual/advanced/devkits/users/|Devkit Usermanual'''
-
-panel_info_devkit_manager = '''Info|Direct import of a foreign developer kit into an Tamagoyaki Rig.
-You can configure additional entries in the Addon Properties panel.
-'''
-
-panel_info_register = '''Info|This panel is about your product registration.
-If you have registered your product
-and if you have created an account on our website,
-then you can always check/download/install
-the newest Update right away from this panel...
-'''
 
 panel_info_edited_joints = '''Joint State|This armature has been modified.
 Note: This Armature contains at least one bone with a Joint Offset.
@@ -439,7 +326,7 @@ This can potentially damage your Exported Objects.
 Your Action (optional): Consider to cleanup your Object Rotations before binding.
 '''
 
-panel_info_rigversion = '''The Tamagoyaki Rig Version | Describes which Tamagoyaki version was used to create the Armature. 
+panel_info_rigversion = '''The Tamagoyaki Rig Version | Describes which Tamagoyaki version was used to create the Armature.
 The version number contains 4 parts:
 
 - [V] Major version number (%s)
@@ -447,10 +334,10 @@ The version number contains 4 parts:
 - [U] Update number  (%s)
 - [ID] Rig ID (%s)
 
-The rig is compatible with current Tamagoyaki version 
+The rig is compatible with current Tamagoyaki version
 if at least one of the following matches apply:
 
-- [V,M,U] match (same version numbers), 
+- [V,M,U] match (same version numbers),
 - ID match (same rig ID)
 
 For more detailed information, see online documentation (link is below)
@@ -475,6 +362,7 @@ Other    : Export to worlds other than Second Life, currently identical to Basic
 Note: The Unsupported subpanel appears only when it is also enabled in the Addon panel.
 Please check the Tamagoyaki documentation for more details.
 |/help/io/collada-tamagoyaki/'''
+
 
 
 
@@ -606,7 +494,7 @@ The location of the Armature in the scene is not affected'''
 UpdateRigProp_devkit_filepath = \
 '''Enter the location of your Developerkit file.
 
-Important: The developerkit file must contain exactly one 
+Important: The developerkit file must contain exactly one
 armature and a set of Meshes parented or bound to the armature.
 
 We currently support 2 file types:
@@ -644,14 +532,14 @@ be disabled unless for debugging purposes!
 Tamagoyaki_fix_after_load_description = \
 '''Tamagoyaki needs its Rig data to be setup correct.
 This may sometimes not be the case, especially when
-you load an Tamagoyaki armature that was created by 
-another (older) version of Tamagoyaki. Therefore 
+you load an Tamagoyaki armature that was created by
+another (older) version of Tamagoyaki. Therefore
 Tamagoyaki inspects the data and fixes inconsistencies.
 
 However: It may be possible that the attempt to fix the data
 actually fails and makes the rig unusable. In that case you
 can disable the automatic fixing after load, so that your file
-loads with an unchanged rig. Then you can try to fix the 
+loads with an unchanged rig. Then you can try to fix the
 Armature manually'''
 
 AnimProp_Translation_description = \
@@ -694,7 +582,7 @@ RigProp_rig_use_bind_pose_description = \
 Calculate the difference between the current restpose and a regular SL T-Pose.
 This is used to import your Restpose to SL without actually converting it to a T-Pose.
 
-Important: 
+Important:
 When disabled: enable 'with joints' when importing to SL
 When enabled: keep 'with joints' disabled when importing to SL
 
@@ -707,7 +595,7 @@ The scale lock option implements the same behavior as the SL viewer when
 a Rig is imported with the lock bone scale option enabled.
 
 Note: This option only makes sense if your rig actually has edited joints.
-for more information please see the Secondlife documentation 
+for more information please see the Secondlife documentation
 Tip: Google for "bento Scale Locking Option"'''
 
 RigProp_rig_rig_export_in_sl_restpose = \
@@ -726,18 +614,18 @@ or apply a reset animation when wearing your model'''
 
 RigProp_rig_export_pose_reset_anim = \
 '''Generate an animation to apply the correct restpose to the SL rig.
-Tamagoyaki exports 2 files in this case: 
+Tamagoyaki exports 2 files in this case:
 
 - filename.dae (always)
 - filename_reset.anim (if option is set)
 
 Import the .dae and the .anim to SL
-and then place the .anim and an additional 
+and then place the .anim and an additional
 animation Resetter (LSL Script) into the model's inventory'''
 
 RigProp_rig_export_pose_reset_script = \
 '''Generate an animation Resetter (LSL Script) to auto apply a reset anim.
-Tamagoyaki exports one additional file in this case: 
+Tamagoyaki exports one additional file in this case:
 
 - filename.dae (always)
 - filename_reset.lsl (if option is set)
@@ -767,7 +655,7 @@ projects.
 This option reverts the Hip Bone roll to how it was before the fix'''
 
 SceneProp_collada_full_hierarchy = \
-'''* Disabled: Tamagoyaki includes unweighted bones from the parent bone chain 
+'''* Disabled: Tamagoyaki includes unweighted bones from the parent bone chain
    but only if they have Edited Joint Offsets (optimal choice).
 * Enabled: Tamagoyaki makes sure that all bones in the parent bone chain are exported
    regardless if they have weights or joint edits. (safest choice)
@@ -808,7 +696,7 @@ is a Pivot Rig (the default for Custom meshes)
 
 WARNING: This option tricks the SL importer into not adding
 artificial joint offsets to match a Pivot Rig to the SL Default Rig
-for System Avatars. This option is fully experimental! 
+for System Avatars. This option is fully experimental!
 
 Tip: If you depend on having a POS restpose then we recommend you use a POS Rig.
 You can setup POS rigs in Tamagoyaki preferndes -> Character Definitions'''
@@ -870,7 +758,7 @@ and the current shape is retained'''
 
 tamagoyaki_reparent_mesh_description = \
 '''Mismatch in Reference Mesh happens after editing the Mesh or
-upgrading the Rig. Tamagoyaki also indicates a mismatch when you 
+upgrading the Rig. Tamagoyaki also indicates a mismatch when you
 load an old rig/mesh combination with missing meta information.
 
 This is equal to: Unbind -> Bind to Armature'''
@@ -895,7 +783,7 @@ possible codes:
 - 407 No Version provided
 - 409 No purchaseid for given user
 
-Important: Please use your Machinimatrix account name to login.
+Important: Please use your Avalab account name to login.
 Just using the email address will log you in, but you can not use
 it for downloading anything from the server.
 
@@ -917,8 +805,8 @@ UpdateRigProp_transferJoints_text = \
 and calculate the joint offsets for the Rig.
 
 Note:
-The current slider settings and the current Skeleton both are taken 
-into account. You may optionally want to set the sliders to SL Restpose 
+The current slider settings and the current Skeleton both are taken
+into account. You may optionally want to set the sliders to SL Restpose
 (white stickman icon in appearance panel) to get reproducible results'''
 
 UpdateRigProp_up_axis_text = \
@@ -935,6 +823,12 @@ prop_with_listed_tamagoyaki_meshes = \
 '''Copy weights from entries in the Weight sources selection (See the list above)
 
 enabled:  copy from all items in the list, regardless if they are selected or not.
+disabled: Copy only from Selected items in the list'''
+
+prop_with_selected_tamagoyaki_meshes = \
+'''Copy weights only from Meshes selected in 3D viewport (See the list above)
+
+enabled:  copy from Meshes selected in the Viewport.
 disabled: Copy only from Selected items in the list'''
 
 Operator_apply_shape_sliders = \
@@ -966,7 +860,7 @@ M014_msg_empty_selection = "M014 : No objects selected of type '%s' (Nothing to 
 ### Code pieces
 
 pose_reset_script_lsl = '''/* ====================================================================
- Copyright 2018 Machinimatrix
+ Copyright 2021 Avalab
 
  This file is part of Tamagoyaki and may be used in combination with any
  rigged Mesh that was created by Tamagoyaki.
@@ -975,17 +869,14 @@ pose_reset_script_lsl = '''/* ==================================================
  your Mesh Creations. But publishing this script or redistributing
  it in readable form is explicitly not allowed.
 
- Tamagoyaki is distributed under an End User License Agreement and you
- should have received a copy of the license together with Tamagoyaki.
- The license can also be obtained from http://www.machinimatrix.org/
- ====================================================================== 
+ ======================================================================
 */
 string animation;
 
 request_permissions()
 {
     key owner = llGetOwner();
-    llRequestPermissions(owner ,PERMISSION_TRIGGER_ANIMATION);    
+    llRequestPermissions(owner ,PERMISSION_TRIGGER_ANIMATION);
 }
 
 integer fetch_animation ()

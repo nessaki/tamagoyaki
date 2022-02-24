@@ -1,11 +1,11 @@
-### Copyright 2011, Magus Freston, Domino Marama, and Gaia Clary
-### Modifications 2013-2015 Gaia Clary
-### Modifications 2022 Nessaki
+### Copyright     2021 The Machinimatrix Team
 ###
 ### This file is part of Tamagoyaki
-### 
 ###
-
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -27,7 +27,7 @@
 import bpy
 import bmesh
 import sys
-import  xml.etree.ElementTree as et
+import xml.etree.ElementTree as et
 import xmlrpc.client
 import logging
 import gettext
@@ -77,7 +77,7 @@ g_purge_data_on_unbind = BoolProperty(
 This cleans up the meshes from all Tamagoyaki related data (Weights are preserved).
 
 Important: only if you have generated weightmaps with the fitting panel:
-when you intend to rebind the mesh to another Tamagoyaki Rig, 
+when you intend to rebind the mesh to another Tamagoyaki Rig,
 then please do not cleanup the data!
 ''')
 
@@ -109,7 +109,7 @@ def create_collada_layout(context, layout, attached, targets, on_toolshelf=False
     obox = layout.box()
     obox.enabled = len(targets) > 0 and error_count == 0
     obox.label(text="Export to Secondlife", icon=ICON_FILE_BLANK)
-    
+
     use_sliders = False
     in_restpose = False
     has_meshes = current_selection_can_export(context) and len(targets) > 0
@@ -118,7 +118,7 @@ def create_collada_layout(context, layout, attached, targets, on_toolshelf=False
     if armobj:
         use_sliders = util.use_sliders(context)
         in_restpose = armobj.RigProp.restpose_mode
-        
+
         if use_sliders and sceneProps.panel_appearance_enabled and not sceneProps.collada_export_with_joints:
             jol = armobj.data.JointOffsetList
             can_export = has_meshes and (in_restpose or (jol == None or len(jol) == 0)) and error_count == 0
@@ -165,7 +165,7 @@ def create_collada_layout(context, layout, attached, targets, on_toolshelf=False
         row.operator(ButtonColladaResetAdvanced.bl_idname, text="", icon=ICON_X)
 
         if ColladaDisplayAdvanced and ui_level > UI_SIMPLE:
-            
+
             if use_sliders:
                 col = box.column(align=True)
                 col.prop(armobj.RigProp,"rig_use_bind_pose")
@@ -228,10 +228,10 @@ def create_collada_layout(context, layout, attached, targets, on_toolshelf=False
             row = col.row(align=True)
             row.operator(ButtonColladaDisplayUnsupported.bl_idname, text="", icon=icon)
             row.operator(ButtonColladaDisplayUnsupported.bl_idname, text="Unsupported", icon=ICON_ERROR)
-            if ColladaDisplayUnsupported:   
+            if ColladaDisplayUnsupported:
                 col = box.column(align=True)
                 col.prop(meshProps, "max_weight_per_vertex")
-            
+
                 col = box.column(align=True)
 
                 if len(attached) == 1 and len(targets) == 1:
@@ -247,7 +247,7 @@ def create_collada_layout(context, layout, attached, targets, on_toolshelf=False
                 row.prop(sceneProps,"target_system", text=txt)
         else:
             ibox = obox.box()
-            ibox.alert=True            
+            ibox.alert=True
             ibox.label(text="Export blocked", icon=ICON_ERROR)
             col = ibox.column(align=True)
             if not has_meshes:
@@ -295,8 +295,8 @@ def displayShowBones(context, layout, active, armobj, with_bone_gui=False, colla
 
     if ui_level > UI_SIMPLE:
         box.label(text="Bone Display Style", icon=ICON_BONE_DATA)
+
         row = box.row(align=True)
-        
         row.prop(armobj.RigProp,"display_type", expand=True, toggle=False)
 
         split = box.split(factor=0.5, align=True)
@@ -310,7 +310,7 @@ def displayShowBones(context, layout, active, armobj, with_bone_gui=False, colla
         irow = split.row(align=True)
         irow.prop(context.space_data.overlay, "show_relationship_lines", text="Limits", icon=show_icon, toggle=True)
         irow.prop(context.scene.MeshProp, "enableBoneConstraints", text="", icon=enable_icon, toggle=True)
-        
+
         if active != armobj:
             row.prop(active.ObjectProp,"edge_display", text="Edges", toggle=True)
 
@@ -442,7 +442,7 @@ def displayBoneDetails(context, box, armobj, ui_level, for_retarget=False):
     display_ik_bone_groups = ButtonRigdisplayIKBoneGroups.visible
     display_deform_bone_groups = ButtonRigdisplayDeformBoneGroups.visible
     display_special_bone_groups = ButtonRigdisplaySpecialBoneGroups.visible
-    
+
     col = box.column(align=True)
     row=col.row(align=True)
     row.operator("tamagoyaki.rig_display_animation_bone_groups", icon = util.get_collapse_icon(display_animation_bone_groups))
@@ -457,7 +457,7 @@ def displayBoneDetails(context, box, armobj, ui_level, for_retarget=False):
 
             pass
         else:
-        row.prop(armobj.data, "layers", index=B_LAYER_ORIGIN, toggle=True, text="Origin", icon_value=visIcon(armobj, B_LAYER_ORIGIN, type='animation'))
+            row.prop(armobj.data, "layers", index=B_LAYER_ORIGIN, toggle=True, text="Origin", icon_value=visIcon(armobj, B_LAYER_ORIGIN, type='animation'))
 
         if armobj.RigProp.RigType != 'REFERENCE':
             do_display_animation_bone_groups(context, armobj, ui_level, col, for_retarget=for_retarget)
@@ -482,7 +482,7 @@ def displayBoneDetails(context, box, armobj, ui_level, for_retarget=False):
 
     excludes = []
     rig_sections = [B_EXTENDED_LAYER_ALL]
-    
+
     deformbone_count = len(data.get_deform_bones(armobj, rig_sections, excludes))
 
     col.separator()
@@ -495,7 +495,7 @@ def displayBoneDetails(context, box, armobj, ui_level, for_retarget=False):
         row = col.row(align=True)
         row.prop(armobj.data, "layers", index=B_LAYER_SL,          toggle=True, text="SL Base", icon_value=visIcon(armobj, B_LAYER_SL, type='deform'))
         row.prop(armobj.data, "layers", index=B_LAYER_VOLUME,      toggle=True, text="Volume",  icon_value=visIcon(armobj, B_LAYER_VOLUME, type='volume'))
-        
+
         if armobj.RigProp.RigType != 'BASIC':
             row = col.row(align=True)
             row.prop(armobj.data, "layers", index=B_LAYER_DEFORM_HAND, toggle=True, text="Hands",   icon_value=visIcon(armobj, B_LAYER_DEFORM_HAND, type='extended'))
@@ -550,7 +550,7 @@ def displayBoneDetails(context, box, armobj, ui_level, for_retarget=False):
 
 
 
-            
+
 
 class PanelAvatarShapeIO(bpy.types.Panel):
     '''
@@ -561,7 +561,7 @@ class PanelAvatarShapeIO(bpy.types.Panel):
     bl_category    = "Skinning"
 
     bl_label = "Avatar Shape IO"
-    bl_idname = "TAMAGOYAKI_PT_avatar_shape_io"
+    bl_idname = "AVASTAR_PT_avatar_shape_io"
     bl_context = 'object'
 
     @classmethod
@@ -587,7 +587,7 @@ class PanelAvatarShapeIO(bpy.types.Panel):
         col.operator("tamagoyaki.manage_all_shapes", icon=ICON_X, text="Manage System Meshes")
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_SHAPE_IO, msg=panel_info_appearance)
+        util.draw_info_header(self.layout.row(), AVASTAR_SHAPE_IO, id='panel_info_appearance')
 
     def draw(self, context):
         PanelAvatarShapeIO.draw_generic(self, context, context.active_object, self.layout)
@@ -604,7 +604,7 @@ CORRECTIVE_KEY_MAP = {
     "saddlebags_753":"saddlebags_854",
     "bowed_legs_841":"bowed_legs_853"
     }
-    
+
 def get_corrective_key_name_for(pid):
     if pid in CORRECTIVE_KEY_MAP:
         return CORRECTIVE_KEY_MAP[pid]
@@ -723,7 +723,7 @@ class ButtonSmoothWeights(bpy.types.Operator):
         if obj == None or obj.type != 'MESH': return False
         arm = obj.find_armature()
         if arm == None or not 'tamagoyaki' in arm: return False
-        if len([b for b in arm.data.bones if b.select]) < 1:      
+        if len([b for b in arm.data.bones if b.select]) < 1:
             return False
         return True
 
@@ -743,7 +743,7 @@ class ButtonSmoothWeights(bpy.types.Operator):
 
         self.omode = util.ensure_mode_is("OBJECT") if obj.mode == 'EDIT' else obj.mode
 
-        selected_bone_names  = [b.name for b in arm.data.bones if b.select and b.use_deform]        
+        selected_bone_names  = [b.name for b in arm.data.bones if b.select and b.use_deform]
         groups = [weights.get_bone_group(obj, n) for n in selected_bone_names if weights.get_bone_partner(n)]
         self.workset = []
         for g in groups:
@@ -790,7 +790,7 @@ class ButtonSmoothWeights(bpy.types.Operator):
         bm.free()
         util.ensure_mode_is(self.omode)
         return{'FINISHED'}
-        
+
 
 
 class ButtonDistributeWeights(bpy.types.Operator):
@@ -805,7 +805,7 @@ class ButtonDistributeWeights(bpy.types.Operator):
         if obj == None or obj.type != 'MESH': return False
         arm = obj.find_armature()
         if arm == None or not 'tamagoyaki' in arm: return False
-        if len([b for b in arm.data.bones if b.select]) < 1:     
+        if len([b for b in arm.data.bones if b.select]) < 1:
             return False
 
         sks = obj.data.shape_keys
@@ -828,7 +828,7 @@ class ButtonDistributeWeights(bpy.types.Operator):
 
         omode = util.ensure_mode_is("OBJECT") if obj.mode=='EDIT' else obj.mode
 
-        selected_bone_names  = [b.name for b in arm.data.bones if b.select and b.use_deform]        
+        selected_bone_names  = [b.name for b in arm.data.bones if b.select and b.use_deform]
         groups = [weights.get_bone_group(obj, n) for n in selected_bone_names if weights.get_bone_partner(n)]
         workset = []
         for g in groups:
@@ -860,7 +860,7 @@ class ButtonDistributeWeights(bpy.types.Operator):
 
         util.ensure_mode_is(omode)
         return{'FINISHED'}
-        
+
 
 
 class ButtonBasicPreset(bpy.types.Operator):
@@ -872,8 +872,8 @@ Most advanced features are hidden and the user interface
 looks less cluttered with features and buttons.
 Use this mode when you use Tamagoyaki only occasionally
 for simple tasks'''
-    
-    bl_options = {'REGISTER', 'UNDO'}  
+
+    bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
     def poll(cls, context):
@@ -882,12 +882,12 @@ for simple tasks'''
 
     def invoke(self, context, event):
         return self.execute(context)
-    
+
     def execute(self, context):
         preferences = util.getAddonPreferences()
         preferences.ui_complexity='0'
         context.scene.SceneProp.skill_level = 'BASIC'
-        return{'FINISHED'}    
+        return{'FINISHED'}
 
 
 
@@ -900,8 +900,8 @@ This mode enables all major and well tested features
 of Tamagoyaki. However you must have a good understanding
 about how to use the expert features. Our documentation
 at https://tamagoyaki.guru tries to help'''
-    
-    bl_options = {'REGISTER', 'UNDO'}  
+
+    bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
     def poll(cls, context):
@@ -910,12 +910,12 @@ at https://tamagoyaki.guru tries to help'''
 
     def invoke(self, context, event):
         return self.execute(context)
-    
+
     def execute(self, context):
         preferences = util.getAddonPreferences()
         preferences.ui_complexity='2'
         context.scene.SceneProp.skill_level = 'EXPERT'
-        return{'FINISHED'}    
+        return{'FINISHED'}
 
 
 
@@ -928,7 +928,7 @@ This mode enables also experimental functionality.
 In most cases you should not need to use this mode,
 unless you are trying to work above all limits'''
 
-    bl_options = {'REGISTER', 'UNDO'}  
+    bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
     def poll(cls, context):
@@ -937,12 +937,12 @@ unless you are trying to work above all limits'''
 
     def invoke(self, context, event):
         return self.execute(context)
-    
+
     def execute(self, context):
         preferences = util.getAddonPreferences()
         preferences.ui_complexity='3'
         context.scene.SceneProp.skill_level = 'ALL'
-        return{'FINISHED'}    
+        return{'FINISHED'}
 
 
 
@@ -1003,7 +1003,7 @@ Note: Use this Preset only for weighting tasks!
             log.warning("Skin&Weight: Automatic store jointpos edits")
             bind.ArmatureJointPosStore.exec_imp(context)
         return self.execute(context)
-    
+
     def execute(self, context):
         active = context.object
         amode = util.ensure_mode_is("OBJECT", context=context)
@@ -1041,7 +1041,7 @@ Note: Use this Preset only for weighting tasks!
             preferences.ui_complexity='2'
             context.scene.SceneProp.skill_level  = 'EXPERT'
 
-        return{'FINISHED'}    
+        return{'FINISHED'}
 
 
 
@@ -1101,7 +1101,7 @@ class ButtonBonePresetAnimate(bpy.types.Operator):
         if armobj and DIRTY_RIG in armobj:
             log.warning("Pose&Animate: Automatic store jointpos edits")
             bind.ArmatureJointPosStore.exec_imp(context)
-        
+
         return self.execute(context)
 
     def execute(self, context):
@@ -1185,7 +1185,7 @@ class ButtonBonePresetScrub(bpy.types.Operator):
         if armobj and DIRTY_RIG in armobj:
             log.warning("Pose&Animate: Automatic store jointpos edits")
             bind.ArmatureJointPosStore.exec_imp(context)
-        
+
         return self.execute(context)
 
     def execute(self, context):
@@ -1218,7 +1218,7 @@ class ButtonBonePresetRetarget(bpy.types.Operator):
     bl_label = "Motion Transfer"
     bl_description = '''Prepare rig for for transfering a pose or animation (Retargetting)
     Sets Armature to Object Mode'''
-    
+
     bl_options = {'REGISTER', 'UNDO'}
 
     preset               : StringProperty()
@@ -1243,7 +1243,7 @@ class ButtonBonePresetRetarget(bpy.types.Operator):
         col = box.column()
         col.prop(self,"set_in_front")
         col.prop(self,"use_default_locks")
-    
+
     def invoke(self, context, event):
         armobj = util.get_armature(context.object)
         if armobj and DIRTY_RIG in armobj:
@@ -1252,12 +1252,12 @@ class ButtonBonePresetRetarget(bpy.types.Operator):
 
         self.set_in_front = True
         return self.execute(context)
-        
+
     def execute(self, context):
         active = context.object
         amode = util.ensure_mode_is("OBJECT", context=context)
         armobj = util.get_armature(active)
-            
+
         util.object_show_in_front(armobj, self.set_in_front)
         armobj.data.show_bone_custom_shapes = False
 
@@ -1272,13 +1272,13 @@ class ButtonBonePresetRetarget(bpy.types.Operator):
         for b in bones:
             for c in b.constraints:
                 if c.type =='LIMIT_ROTATION':
-                    c.influence = 0 
+                    c.influence = 0
                     b.use_ik_limit_x = False
                     b.use_ik_limit_y = False
                     b.use_ik_limit_z = False
 
-                
-    
+
+
 
         util.set_active_object(context, armobj)
         util.mode_set(mode="OBJECT")
@@ -1299,8 +1299,8 @@ class ButtonBonePresetEdit(bpy.types.Operator):
     bl_description = '''Prepare rig for Editing
     Sets armature to Edit mode
     enables select of structure Bones'''
-    
-    bl_options = {'REGISTER', 'UNDO'}  
+
+    bl_options = {'REGISTER', 'UNDO'}
 
     preset : StringProperty()
     set_rotation_limits  : BoolProperty(name="Rotation Limits", description="Enable rotation limits on selected bones", default=False)
@@ -1322,19 +1322,19 @@ class ButtonBonePresetEdit(bpy.types.Operator):
         box = layout.box()
         col = box.column()
         col.prop(self,"set_in_front")
-    
+
     def invoke(self, context, event):
         self.set_in_front = True
         return self.execute(context)
-        
+
     def execute(self, context):
         active = context.object
         amode = util.ensure_mode_is("OBJECT", context=context)
         armobj = util.get_armature(active)
-            
+
         util.set_active_object(context, armobj)
         util.mode_set(mode='EDIT')
-        util.object_show_in_front(armobj, self.set_in_front)        
+        util.object_show_in_front(armobj, self.set_in_front)
         rig.setSLBoneStructureRestrictSelect(armobj, False)
         util.set_armature_layers(armobj, [B_LAYER_TORSO, B_LAYER_ARMS, B_LAYER_LEGS, B_LAYER_ORIGIN, B_LAYER_STRUCTURE, B_LAYER_EYE_TARGET, B_LAYER_EXTRA, B_LAYER_SPINE])
 
@@ -1343,8 +1343,8 @@ class ButtonBonePresetEdit(bpy.types.Operator):
         if int(preferences.ui_complexity) < 2:
             preferences.ui_complexity='2'
             context.scene.SceneProp.skill_level  = 'EXPERT'
-        
-        return{'FINISHED'}    
+
+        return{'FINISHED'}
 
 
 class ButtonBonePresetFit(bpy.types.Operator):
@@ -1355,8 +1355,8 @@ class ButtonBonePresetFit(bpy.types.Operator):
     - Set armature to POSE mode
     - Set Mesh to Weight Paint mode
     - Display Basic SL mBones and Volume Bones'''
-    
-    bl_options = {'REGISTER', 'UNDO'}  
+
+    bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
     def poll(cls, context):
@@ -1371,10 +1371,10 @@ class ButtonBonePresetFit(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-    
+
     def invoke(self, context, event):
         return self.execute(context)
-        
+
     def execute(self, context):
         active = context.object
         armobj = util.get_armature(active)
@@ -1405,7 +1405,7 @@ class ButtonBonePresetFit(bpy.types.Operator):
                     if space.type == 'VIEW_3D':
                         space.shading.type = 'SOLID'
 
-        return{'FINISHED'}    
+        return{'FINISHED'}
 
 
 def set_active_shape_key(obj,shape_key_name):
@@ -1428,7 +1428,7 @@ def prepare_rebake_uv(context, obj):
     uv_layers = util.get_uv_layers(me)
     if len(uv_layers) == 0:
         return
-    
+
 
     active_uv_layer = util.get_active_uv_layer(me)
     if not active_uv_layer.name.endswith("_rebake"):
@@ -1438,7 +1438,7 @@ def prepare_rebake_uv(context, obj):
         util.set_active_uv_layer(me, copy)
 
     seamed_edges = [edge.index for edge in me.edges if edge.use_seam]
-        
+
 
     util.ensure_mode_is('EDIT')
     bpy.ops.uv.seams_from_islands(mark_seams=True, mark_sharp=False)
@@ -1446,7 +1446,7 @@ def prepare_rebake_uv(context, obj):
     bpy.ops.mesh.select_non_manifold(extend=True)
     util.select_edges(me, seamed_edges, seam=True, select=True)
     bpy.ops.mesh.mark_seam(clear=False)
-    
+
     util.ensure_mode_is("OBJECT")
     for loop in me.loops:
         edge = me.edges[loop.edge_index]
@@ -1457,7 +1457,7 @@ class ButtonRebakeUV(bpy.types.Operator):
     bl_idname = "tamagoyaki.rebake_uv"
     bl_label = "Rebake UV Layout"
     bl_description = 'Constrained unwrap. For Tamagoyaki meshes: Similar to "Rebake textures" in world'
-    bl_options = {'REGISTER', 'UNDO'}  
+    bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
     def poll(self, context):
@@ -1468,7 +1468,7 @@ class ButtonRebakeUV(bpy.types.Operator):
             if len(uv_layers) > 0:
                 return True
         return False
-        
+
     def execute(self, context):
         try:
             active_shape_key       = context.object.active_shape_key
@@ -1476,19 +1476,19 @@ class ButtonRebakeUV(bpy.types.Operator):
             mix_shape_key          = None
             obj = context.active_object
             original_mode = util.ensure_mode_is("OBJECT")
-                        
+
             if active_shape_key:
 
                 mix_shape_key = obj.shape_key_add(name="tamagoyaki_mix", from_mix=True)
                 set_active_shape_key(obj,mix_shape_key.name)
-                
+
             prepare_rebake_uv(context, obj)
             util.ensure_mode_is('EDIT')
 
 
             bpy.ops.mesh.select_all(action='SELECT')
             bpy.ops.uv.unwrap()
-            
+
             if active_shape_key:
                 util.ensure_mode_is("OBJECT")
 
@@ -1496,45 +1496,65 @@ class ButtonRebakeUV(bpy.types.Operator):
                 context.object.active_shape_key_index = active_shape_key_index
 
             util.ensure_mode_is(original_mode, "OBJECT")
-                        
-            return{'FINISHED'}    
+
+            return{'FINISHED'}
         except Exception as e:
             util.ErrorDialog.exception(e)
-            return{'FINISHED'}    
+            return{'FINISHED'}
 
 
+
+
+
+
+#
+
+#
+
+
+
+
+#
+
+
+#
+
+
+
+
+#
 
 class ButtonFindDoubles(bpy.types.Operator):
     bl_idname = "tamagoyaki.find_doubles"
     bl_label = "Doubles"
     bl_description = "Find all double vertices in Mesh"
-    bl_options = {'REGISTER', 'UNDO'}  
-    
-    distance : FloatProperty(  
-       name="distance",  
-       default=0.0001,  
-       subtype='DISTANCE',  
+    bl_options = {'REGISTER', 'UNDO'}
+
+    distance : FloatProperty(
+       name="distance",
+       default=0.0001,
+       subtype='DISTANCE',
        unit='LENGTH',
        soft_min=0.0000001,
        soft_max=0.01,
        precision=4,
-       description="distance"  
+       description="distance"
        )
 
     @classmethod
     def poll(self, context):
         return context and context.object and context.object.type=='MESH'
-        
+
     def execute(self, context):
         try:
-            original_mode = util.ensure_mode_is("EDIT")
+            original_mode = util.ensure_mode_is('EDIT')
             count = util.select_all_doubles(context.object.data, dist=self.distance)
             util.ensure_mode_is(original_mode)
             if count > 0:
                 self.report({'WARNING'},"Object %s has %d duplicate Verts." % (context.object.name,count))
             else:
                 self.report({'INFO'},"Object %s has no duplicate verts." % context.object.name)
-            return{'FINISHED'}    
+            return{'FINISHED'}
         except Exception as e:
             util.ErrorDialog.exception(e)
             return{'FINISHED'}
@@ -1548,7 +1568,7 @@ class ButtonFindUnweighted_old(bpy.types.Operator):
     def execute(self, context):
         try:
             obj = context.active_object
-    
+
             unweighted, status = findUnweightedVertices(context, obj, use_sl_list=False)
             if status == NO_ARMATURE:
                 raise util.Warning(msg_no_armature + 'find_unweighted'%obj.name)
@@ -1566,10 +1586,10 @@ class ButtonFindUnweighted_old(bpy.types.Operator):
             else:
                 self.report({'INFO'},"Object %s has all verts weighted."%obj.name)
 
-            return{'FINISHED'}    
+            return{'FINISHED'}
         except Exception as e:
             util.ErrorDialog.exception(e)
-            return{'FINISHED'}    
+            return{'FINISHED'}
 
 
 
@@ -1589,10 +1609,10 @@ class ButtonFindUnweighted(bpy.types.Operator):
 
 
                 report = findWeightProblemVertices(context, obj, use_sl_list=False, find_selected_armature=True)
-                
+
                 if 'no_armature' in report['status']:
                     raise util.Warning(msg_no_armature + 'find_unweighted'%obj.name)
-                
+
                 elif 'unweighted' in report['status']:
                     error_counter += 1
                     weightpaint_candidate = obj
@@ -1607,27 +1627,27 @@ class ButtonFindUnweighted(bpy.types.Operator):
                 original_mode = util.ensure_mode_is('WEIGHT_PAINT')
                 weightpaint_candidate.data.use_paint_mask_vertex = True
                 bpy.ops.paint.vert_select_all(action='DESELECT')
-                
+
                 for vidx in unweighted:
                     weightpaint_candidate.data.vertices[vidx].select = True
-                    
+
                 util.ensure_mode_is(original_mode)
-                    
+
             elif error_counter > 1:
                 self.report({'WARNING'},"%d of the selected Meshes have unweighted verts!"%(error_counter))
 
-            return{'FINISHED'}    
+            return{'FINISHED'}
         except Exception as e:
             util.ErrorDialog.exception(e)
-            return{'FINISHED'}    
-        
+            return{'FINISHED'}
+
 
 class ButtonFindZeroWeights(bpy.types.Operator):
     bl_idname = "tamagoyaki.find_zeroweights"
     bl_label = "Zero weights"
     bl_description = "Find vertices with deforming weight_sum == 0"
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     min_weight : FloatProperty(
         name = "Min weight",
         min = 0.0,
@@ -1635,26 +1655,26 @@ class ButtonFindZeroWeights(bpy.types.Operator):
         default = 0)
 
     def draw(self, context):
-            layout = self.layout
-            scn = context.scene
-            col = layout.column(align=True)
-            col.prop(self, "min_weight")
-        
+        layout = self.layout
+        scn = context.scene
+        col = layout.column(align=True)
+        col.prop(self, "min_weight")
+
     def execute(self, context):
         try:
             error_counter = 0
             weightpaint_candidate = None
             for obj in context.selected_objects:
-            
+
                 if obj.type != "MESH":
                     continue
-       
+
 
                 report = findWeightProblemVertices(context, obj, use_sl_list=False, find_selected_armature=True, minweight=self.min_weight)
-                
+
                 if 'no_armature' in report['status']:
                     raise util.Warning(msg_no_armature + 'find_zeroweights'%obj.name)
-                
+
                 elif 'zero_weights' in report['status']:
                     error_counter += 1
                     weightpaint_candidate = obj
@@ -1662,7 +1682,7 @@ class ButtonFindZeroWeights(bpy.types.Operator):
                     self.report({'WARNING'},"%d zero-weight verts on %s"%(len(problems),obj.name))
                 else:
                     self.report({'INFO'},"Object %s: All verts properly weighted"%obj.name)
-              
+
             if error_counter == 1:
                 util.set_active_object(context, weightpaint_candidate)
                 original_mode = context.object.mode
@@ -1672,17 +1692,17 @@ class ButtonFindZeroWeights(bpy.types.Operator):
 
                 for vidx in problems:
                     obj.data.vertices[vidx].select = True
-                    
+
                 util.mode_set(mode=original_mode)
-                
+
             elif error_counter > 1:
                 self.report({'WARNING'},"%d of the selected Meshes have zero-weight verts!"%(error_counter))
 
-            return{'FINISHED'}    
+            return{'FINISHED'}
         except Exception as e:
             util.ErrorDialog.exception(e)
-            return{'FINISHED'}    
-        
+            return{'FINISHED'}
+
 
 class ButtonFindTooManyWeights(bpy.types.Operator):
     bl_idname      = "tamagoyaki.find_toomanyweights"
@@ -1698,20 +1718,20 @@ class ButtonFindTooManyWeights(bpy.types.Operator):
             error_counter = 0
             wp_obj = None
             for obj in context.selected_objects:
-            
+
                 if obj.type != "MESH":
                     continue
-   
 
-                report = findWeightProblemVertices(context, obj, 
+
+                report = findWeightProblemVertices(context, obj,
                          use_sl_list=False,
                          find_selected_armature=True,
                          max_weight=self.max_weight,
                          only_deform=self.only_deform )
-                
 
 
-                
+
+
                 if 'too_many' in report['status']:
                     error_counter += 1
                     wp_obj = obj
@@ -1735,10 +1755,10 @@ class ButtonFindTooManyWeights(bpy.types.Operator):
             elif error_counter > 1:
                 self.report({'WARNING'},"%d of the selected Meshes have verts with too many deforming weight groups!"%(error_counter))
 
-            return{'FINISHED'}    
+            return{'FINISHED'}
         except Exception as e:
             util.ErrorDialog.exception(e)
-            return{'FINISHED'}    
+            return{'FINISHED'}
 
 
 class ButtonFixTooManyWeights(bpy.types.Operator):
@@ -1762,7 +1782,7 @@ Note: vertex groups unrelated to bones are not touched by the limitation'''
         vertex_count = 0
         for obj in context.selected_objects:
             if obj.type != "MESH":
-                continue            
+                continue
 
             arm=obj.find_armature()
             if not obj or not arm:
@@ -1781,7 +1801,6 @@ Note: vertex groups unrelated to bones are not touched by the limitation'''
             for vindex, groups in candidates:
                 for gindex in range (0, len(groups)-self.max_weight):
                     obj.vertex_groups[groups[gindex].group].remove([vindex])
-         
 
             util.ensure_mode_is(omode)
 
@@ -1794,17 +1813,17 @@ Note: vertex groups unrelated to bones are not touched by the limitation'''
 
         self.report({'INFO'}, msg)
         return {'FINISHED'}
-  
+
 
 
 
 class ButtonFindAsymmetries(bpy.types.Operator):
     bl_idname = "tamagoyaki.find_asymmetries"
     bl_label = "Asymmetries"
-    bl_options     = {'REGISTER', 'UNDO'}    
+    bl_options     = {'REGISTER', 'UNDO'}
     bl_description = '''Find asymmetric vertices/edges/faces
 Marks all elements for which no symmetry partner was found
-This operator works on vertices, edges, or faces 
+This operator works on vertices, edges, or faces
 depending on the selection mode'''
 
     @classmethod
@@ -1823,19 +1842,19 @@ depending on the selection mode'''
         me = bpy.context.object.data
         selcount = len([v for v in me.vertices if v.select and not v.hide])
         util.ensure_mode_is(omode)
-        
+
         if selcount == 0:
             self.report({'INFO'}, "Object is symmetric")
         else:
             self.report({'WARNING'}, "Found %d asymmetric elements" % selcount)
 
-        return{'FINISHED'}    
+        return{'FINISHED'}
 
 
 class ButtonFixAsymmetries(bpy.types.Operator):
     bl_idname = "tamagoyaki.fix_asymmetries"
     bl_label = "Fix Asymmetries"
-    bl_options     = {'REGISTER', 'UNDO'}    
+    bl_options     = {'REGISTER', 'UNDO'}
     bl_description = '''Fix symmetry for selected vertex pairs
 Copy the mirrored location of each selected vertex'''
 
@@ -1877,7 +1896,7 @@ Copy the mirrored location of each selected vertex'''
         active_index = self.find_active_vertex_index(obj)
         if active_index and pair[0] != active_index:
             pair.reverse()
-        
+
         util.ensure_mode_is('OBJECT')
         fr = 1 if self.toggle_direction else 0
         to = 0 if fr else 1
@@ -1894,10 +1913,10 @@ Copy the mirrored location of each selected vertex'''
         verts[pair[to]].co = newval
         util.ensure_mode_is(omode)
 
-        return{'FINISHED'}    
+        return{'FINISHED'}
 
 def findWeightProblemVertices(context, obj, use_sl_list=True, armature=None, find_selected_armature=False, max_weight=4, only_deform=True, minweight=0):
-    
+
     def add_non_deforming_group(groupset, bonename):
         if bonename not in groupset:
             groupset[bonename] = 1
@@ -1919,11 +1938,11 @@ def findWeightProblemVertices(context, obj, use_sl_list=True, armature=None, fin
         obj.update_from_editmode()
 
     report = {'status':[], 'unweighted':[], 'zero_weights':[], 'too_many':[]}
-    
+
 
     if only_deform and armature is None:
         armature = util.getArmature(obj)
-        
+
 
         if armature is None and find_selected_armature:
             for tmp in context.selected_objects:
@@ -1953,11 +1972,11 @@ def findWeightProblemVertices(context, obj, use_sl_list=True, armature=None, fin
                         if g.weight <= minweight:
                             zero += 1 # Count numberof zero weights for this vertex
                     elif armature and (bonename in armature.data.bones and not armature.data.bones[bonename].use_deform):
-                        add_non_deforming_group(report['undeformable'] , bonename) 
+                        add_non_deforming_group(report['undeformable'] , bonename)
                 except:
 
                     pass
-                    
+
             if deforming == 0:
                 report['unweighted'].append(v.index)
             if deforming > max_weight:
@@ -1974,7 +1993,7 @@ def findWeightProblemVertices(context, obj, use_sl_list=True, armature=None, fin
         report['status'].append('zero_weights')
     if len(report['too_many']) > 0:
         report['status'].append('too_many')
-        
+
     return report
 
 
@@ -1987,15 +2006,15 @@ def findUnweightedVertices(context, obj, use_sl_list=True, arm=None):
 
 
     if arm is None:
-        return [v.index for v in obj.data.vertices], NO_ARMATURE 
-    
+        return [v.index for v in obj.data.vertices], NO_ARMATURE
+
     unweighted = []
 
     excludes = []
     rig_sections = [B_EXTENDED_LAYER_ALL]
-    
+
     deform_bones = data.get_deform_bones(arm, rig_sections, excludes) if use_sl_list else []
-    
+
     status = WEIGHTS_OK
     for v in obj.data.vertices:
         tot = 0.0
@@ -2068,7 +2087,7 @@ def bake_t_pose(self, context, arm):
     print("bake_t_pose: Start a t-pose bake")
     try:
         scn = context.scene
-    
+
         currentSelection = util.getCurrentSelection(context)
         tamagoyakis         = currentSelection['tamagoyakis']
         targets          = currentSelection['targets']
@@ -2084,7 +2103,7 @@ def bake_t_pose(self, context, arm):
 
         for target in detached:
 
-            report = findWeightProblemVertices(context, target, use_sl_list=False, find_selected_armature=True)                
+            report = findWeightProblemVertices(context, target, use_sl_list=False, find_selected_armature=True)
             if 'unweighted' in report['status']:
                 print("bake_t_pose: Found unweighted verts in %s" % target.name)
                 unweighted = report['unweighted']
@@ -2092,7 +2111,7 @@ def bake_t_pose(self, context, arm):
             if 'zero_weights' in report['status']:
                 print("bake_t_pose: Found zero weights in %s" % target.name)
                 zero_weights = report['zero_weights']
-                raise util.MeshError(msg_zero_verts%(len(zero_weights), target.name))        
+                raise util.MeshError(msg_zero_verts%(len(zero_weights), target.name))
 
         rig_sections = [B_EXTENDED_LAYER_ALL]
         excludes = [B_LAYER_VOLUME, B_EXTENDED_LAYER_SL_EYES, B_EXTENDED_LAYER_ALT_EYES]
@@ -2100,7 +2119,7 @@ def bake_t_pose(self, context, arm):
 
         for target in detached:
             print("bake_t_pose: Alter [%s] to Rest Pose" % (target.name) )
-            
+
             TMW  = target.matrix_world
             TMWI = TMW.inverted()
 
@@ -2131,7 +2150,7 @@ def bake_t_pose(self, context, arm):
                 if matrix_populated:
                     v.co = M.inverted()*v.co
                 else:
-                    failed_vert_transforms += 1                
+                    failed_vert_transforms += 1
             if failed_vert_transforms > 0:
                 print("Failed to convert %d  of %d vertices in Object %s" % (failed_vert_transforms, len(target.data.vertices), target.name ))
             else:
@@ -2147,7 +2166,7 @@ def bake_t_pose(self, context, arm):
 
         util.set_active_object(context, active)
         print("bake_t_pose: Alter to restpose finished.")
-        
+
     except Exception as e:
         print ("Exception in bake_t_pose")
         print ("bone was:", bname)
@@ -2163,7 +2182,7 @@ def get_keyblock_values(ob):
     else:
         key_values = []
     return key_values
-    
+
 
 
 def revertShapeSlider(context, obj):
@@ -2243,7 +2262,7 @@ This cleans up the meshes from all Tamagoyaki related information.
 
 Important (applies when you have generated weightmaps with the fitting panel):
 
-When you intend to rebind the mesh to another Tamagoyaki Rig, 
+When you intend to rebind the mesh to another Tamagoyaki Rig,
 then please do not cleanup the data!
 '''
     bl_options = {'REGISTER', 'UNDO'}
@@ -2260,7 +2279,7 @@ then please do not cleanup the data!
         util.ensure_mode_is(omode)
 
         return{'FINISHED'}
-        
+
 
 class ButtonUnParentArmature(bpy.types.Operator):
     bl_idname = "tamagoyaki.unparent_armature"
@@ -2273,13 +2292,13 @@ Tip: This operator preserves the Weights of your meshes,
 
     bl_options = {'REGISTER', 'UNDO'}
 
-    apply_armature_on_unbind : g_apply_armature_on_unbind 
+    apply_armature_on_unbind : g_apply_armature_on_unbind
 
     all : BoolProperty(
              default     = False,
              name        = "All Meshes",
              description = "Unbind also hidden Meshes")
-             
+
     purge_data_on_unbind : g_purge_data_on_unbind
     break_parenting_on_unbind : g_break_parenting_on_unbind
 
@@ -2320,20 +2339,20 @@ Tip: This operator preserves the Weights of your meshes,
 
 def unbind_from_armature(operator, context, attached, freeze=False, purge=False, keep_tamagoyaki_properties=False, break_parenting_on_unbind=True):
     if len(attached) == 0:
-        return None 
+        return None
 
 
     active_name = util.get_active_object(context).name
     amode = util.ensure_mode_is("OBJECT")
 
     bpy.ops.object.select_all(action='DESELECT')
-    backup = util.get_select_and_hide(attached, False, False, False)    
+    backup = util.get_select_and_hide(attached, False, False, False)
 
     if freeze:
         for target in attached:
             util.object_select_set(target, True)
         result = freezeSelectedMeshes(context, operator, apply_pose=True, remove_weights=False, join_parts=False, handle_source='DELETE', purge=purge)
-    else:    
+    else:
 
 
 
@@ -2349,14 +2368,14 @@ def unbind_from_armature(operator, context, attached, freeze=False, purge=False,
 
             for mod in [ mod for mod in target.modifiers if mod.type=='ARMATURE']:
                 bpy.ops.object.modifier_remove(modifier=mod.name)
- 
+
             if parent and not break_parenting_on_unbind:
                 util.set_active_object(context, parent)
                 bpy.ops.object.parent_set()
 
             util.object_select_set(target, False)
             log.debug("unbind from armature:removed armature modifiers from %s" % (target.name) )
-            
+
             if keep_tamagoyaki_properties and util.is_tamagoyaki_mesh(target):
                 pass
             else:
@@ -2377,7 +2396,7 @@ def unbind_from_armature(operator, context, attached, freeze=False, purge=False,
     util.ensure_mode_is(amode)
 
     operator.report({'INFO'},"Unparented %d meshes from Armature"% len(attached))
-    
+
     return result
 
 def bind_to_armature(self,
@@ -2537,7 +2556,6 @@ but also prepares the meshes to be used with Avatar Shape'''
 
     bl_options = {'REGISTER', 'UNDO'}
 
- 
     bindSourceSelection : g_bindSourceSelection
     weightBoneSelection : g_weightBoneSelection
     clearTargetWeights  : g_clearTargetWeights
@@ -2571,7 +2589,7 @@ but also prepares the meshes to be used with Avatar Shape'''
             return
 
         obj = context.object
-        
+
         if op:
             skelProp = op
             meshProp = op
@@ -2601,7 +2619,7 @@ but also prepares the meshes to be used with Avatar Shape'''
         self.weight_groin = skeletonProps.weight_groin
 
         weights.assign_weight_properties(self, skeletonProps)
-        
+
         self.toTPose = ui_level > UI_ADVANCED and meshProps.toTPose
         log.warning("Invoke parent_armature end")
         return self.execute(context)
@@ -2670,7 +2688,7 @@ but also prepares the meshes to be used with Avatar Shape'''
                     arm.data.bones[b].use_deform=False
             else:
                 invisible_deform_bones = []
-            
+
 
             try:
                 bind_to_armature(self,
@@ -2696,7 +2714,7 @@ but also prepares the meshes to be used with Avatar Shape'''
 
                 arm.ObjectProp.slider_selector = 'SL'
                 util.set_active_object(context, active)
-                bpy.types.TAMAGOYAKI_MT_fitting_presets_menu.bl_label='Fitting Presets'
+                bpy.types.AVASTAR_MT_fitting_presets_menu.bl_label='Fitting Presets'
 
         return {'FINISHED'}
 
@@ -2715,7 +2733,7 @@ class ButtonRebindArmature(bpy.types.Operator):
             detail = messages.tamagoyaki_reparent_armature_description_rebind
         else:
             detail = messages.tamagoyaki_reparent_armature_description_keep
-        
+
         return messages.tamagoyaki_reparent_armature_description % detail
 
     @staticmethod
@@ -2745,9 +2763,11 @@ class ButtonRebindArmature(bpy.types.Operator):
             bpy.ops.object.select_all(action='DESELECT')
 
             for child in scope:
+
+
+
                 log.warning("Reset shape definitions for %s" % child.name)
                 armobj = child.find_armature()
-
                 original_shape_dict = child.get('shape_buffer')
                 current_shape_dict = shape.asDictionary(armobj, full=True)
 
@@ -2766,7 +2786,6 @@ class ButtonRebindArmature(bpy.types.Operator):
                 if do_bind:
                     child['shape_buffer'] = current_shape_dict
                 else:
-                 
                     shape.fromDictionary(armobj, original_shape_dict)
                     shape.init_custom_bones(child, armobj)
                     shape.generateMeshShapeData(child)
@@ -2795,7 +2814,7 @@ class ButtonReparentArmature(bpy.types.Operator):
     include_children : BoolProperty(name="Include Children",
                    description = "Also reparent all children of current selection (recursively)",
                    default=False)
-    
+
     def execute(self, context):
         def get_target_armature(context, tamagoyakis):
             ob = context.object
@@ -2845,7 +2864,7 @@ class ButtonReparentArmature(bpy.types.Operator):
                 return {'FINISHED'}
 
             need_parenting = False
-            selected, scope = get_scope(context, targets)                 
+            selected, scope = get_scope(context, targets)
             bpy.ops.object.select_all(action='DESELECT')
             util.set_disable_update_slider_selector(True)
 
@@ -2873,7 +2892,7 @@ class ButtonReparentArmature(bpy.types.Operator):
 
                 arm_obj.ObjectProp.slider_selector = 'SL'
                 util.set_active_object(context, active)
-                bpy.types.TAMAGOYAKI_MT_fitting_presets_menu.bl_label='Fitting Presets'
+                bpy.types.AVASTAR_MT_fitting_presets_menu.bl_label='Fitting Presets'
 
             scope = ButtonApplyShapeSliders.exec_imp(context, [arm_obj], scope)
             active = context.scene.objects.get(active_name)
@@ -2923,7 +2942,7 @@ class ButtonReparentMesh(bpy.types.Operator):
                     util.set_select(selected)
                     util.ensure_mode_is(omode)
 
-                updateBindpose(context, target, armobj) 
+                updateBindpose(context, target, armobj)
             finally:
                 util.change_active_object(context, cactive, new_mode=cmode, msg="reparent2:")
         else:
@@ -2938,6 +2957,59 @@ def updateBindpose(context, obj, armobj):
     shape.resetToBindpose(armobj, context)
     shape.init_custom_bones(obj, armobj, all_verts=True)
     shape.fromDictionary(armobj, shape_buffer, update=True)
+
+
+
+
+
+
+#
+
+#
+#
+
+
+
+
+#
+
+
+
+
+#
+
+
+#
+
+
+
+
+#
+
+
+
+
+
+#
+
+#
+
+
+
+
+#
+
+
+
+
+#
+
+
+#
+
+
+
+
 
 
 
@@ -2964,23 +3036,23 @@ class ButtonArmatureAllowStructureSelect(bpy.types.Operator):
     bl_description = "Allow Selecting Structure bones"
 
     def execute(self, context):
-    
+
         active, armobj = rig.getActiveArmature(context)
         if armobj is None:
             self.report({'WARNING'},"Active Object %s is not attached to an Armature"%active.name)
         else:
             mode = active.mode
             util.mode_set(mode='POSE', toggle=True)
-        
+
             try:
                 rig.setSLBoneStructureRestrictSelect(armobj, False)
             except Exception as e:
                 util.ErrorDialog.exception(e)
-                
-            util.mode_set(mode=mode, toggle=True)  
-                
-        return{'FINISHED'}    
-        
+
+            util.mode_set(mode=mode, toggle=True)
+
+        return{'FINISHED'}
+
 
 class ButtonArmatureRestrictStructureSelect(bpy.types.Operator):
     bl_idname = "tamagoyaki.armature_restrict_structure_select"
@@ -3000,9 +3072,9 @@ class ButtonArmatureRestrictStructureSelect(bpy.types.Operator):
                 rig.setSLBoneStructureRestrictSelect(armobj, True)
             except Exception as e:
                 util.ErrorDialog.exception(e)
-                
-            util.mode_set(mode=mode, toggle=True)  
-                
+
+            util.mode_set(mode=mode, toggle=True)
+
         return{'FINISHED'}
 
 def draw_constraint_set(op, context):
@@ -3015,7 +3087,7 @@ class ButtonArmatureUnlockLocation(bpy.types.Operator):
     bl_label       = "Unlock Locations"
     bl_description = '''Unlock Control Bones for unconstrained animation.
     Can be helpful for face animations.
-    
+
     Warning: This mode overrides the Avatar shape for custom meshes!
     You might see shape changes on the Face and hands!
     '''
@@ -3024,7 +3096,7 @@ class ButtonArmatureUnlockLocation(bpy.types.Operator):
     reset_pose : BoolProperty(
             name        = "Reset to Restpose",
             description = "Reset the pose to Restpose before locking",
-            default     = False)    
+            default     = False)
 
     def execute(self, context):
         armobj = util.get_armature(context.object)
@@ -3036,8 +3108,8 @@ class ButtonArmatureUnlockLocation(bpy.types.Operator):
             util.ensure_mode_is(omode)
         except Exception as e:
             util.ErrorDialog.exception(e)
-        return{'FINISHED'}    
-        
+        return{'FINISHED'}
+
 
 class ButtonArmatureUnlockVolume(bpy.types.Operator):
     bl_idname = "tamagoyaki.armature_unlock_vol"
@@ -3051,15 +3123,14 @@ class ButtonArmatureUnlockVolume(bpy.types.Operator):
             rig.setSLBoneVolumeMute(self, context, False, armobj.RigProp.ConstraintSet)
         except Exception as e:
             util.ErrorDialog.exception(e)
-        return{'FINISHED'}    
-        
+        return{'FINISHED'}
+
 
 class ButtonArmatureUnlockRotation(bpy.types.Operator):
     bl_idname = "tamagoyaki.armature_unlock_rot"
     bl_label = "Unlock Rotations"
     bl_description = '''Unlock SL Base bone rotations from Control Bone rotations
-    Helpful only for Weighting tasks.
-    
+
 Unlocking rotation constraints allows you to pose the deform bones freely.
 This is only useful for testing weights on a mesh.
 Please do not use this for Animation purposes.'''
@@ -3071,8 +3142,8 @@ Please do not use this for Animation purposes.'''
             rig.setSLBoneRotationMute(self, context, True, armobj.RigProp.ConstraintSet)
         except Exception as e:
             util.ErrorDialog.exception(e)
-        return{'FINISHED'}    
-        
+        return{'FINISHED'}
+
 
 class ButtonArmatureLockRotation(bpy.types.Operator):
     bl_idname = "tamagoyaki.armature_lock_rot"
@@ -3086,8 +3157,8 @@ class ButtonArmatureLockRotation(bpy.types.Operator):
             rig.setSLBoneRotationMute(self, context, False, armobj.RigProp.ConstraintSet)
         except Exception as e:
             util.ErrorDialog.exception(e)
-        return{'FINISHED'}    
-        
+        return{'FINISHED'}
+
 
 def armature_lock_loc(context, constraintSet=None, op=None):
 
@@ -3115,8 +3186,8 @@ class ButtonArmatureLockLocation(bpy.types.Operator):
 
         except Exception as e:
             util.ErrorDialog.exception(e)
-        return{'FINISHED'}    
-        
+        return{'FINISHED'}
+
 
 class ButtonArmatureLockVolume(bpy.types.Operator):
     bl_idname = "tamagoyaki.armature_lock_vol"
@@ -3131,7 +3202,7 @@ class ButtonArmatureLockVolume(bpy.types.Operator):
         except Exception as e:
             util.ErrorDialog.exception(e)
         return{'FINISHED'}
-        
+
 
 
 class ButtonArmatureResetPoseLSL(bpy.types.Operator):
@@ -3141,7 +3212,7 @@ class ButtonArmatureResetPoseLSL(bpy.types.Operator):
     bl_description =\
 '''Generate Restpose Adjustment LSL Script.
    Usage:
-   
+
    1.) Click button: script is now in paste buffer
    2.) Add new LSL script to your model in SL
    3.) In LSL Editor Paste
@@ -3155,9 +3226,9 @@ class ButtonArmatureResetPoseLSL(bpy.types.Operator):
         col.label(text="The script is in")
         col.label(text="your Paste Buffer.")
         col.label(text="Now open an LSL Editor")
-        col.label(text="in SL and Paste the") 
+        col.label(text="in SL and Paste the")
         col.label(text="Script (80 lines)")
-    
+
     def execute(self, context):
         context.window_manager.clipboard=pose_reset_script_lsl
         return{'FINISHED'}
@@ -3170,10 +3241,10 @@ class ButtonSupportInfo(bpy.types.Operator):
     bl_description =\
 '''Copy Tamagoyaki support Information into the Paste buffer.
    Usage:
-   
+
    1.) Click button: Support info is now in paste buffer
    2.) Go to where you want to paste the info
-   4.) Press CTRL-V 
+   4.) Press CTRL-V
    5.) The information is pasted as Textblock
 '''
 
@@ -3183,10 +3254,10 @@ class ButtonSupportInfo(bpy.types.Operator):
         col.label(text="The data is now in")
         col.label(text="your Paste Buffer.")
         col.label(text="Please open the Application")
-        col.label(text="and then Paste the Data.") 
-    
+        col.label(text="and then Paste the Data.")
+
     def execute(self, context):
-        ob=context.object 
+        ob=context.object
         if ob:
             obname = ob.name
             obmode = ob.mode
@@ -3313,7 +3384,7 @@ class ButtonArmatureResetPose(bpy.types.Operator):
             col.label(text="No action was generated")
             col.label(text="This is unexpected!")
             col.label(text="Please report this")
-    
+
     def execute(self, context):
 
         ob = context.object
@@ -3323,7 +3394,7 @@ class ButtonArmatureResetPose(bpy.types.Operator):
             return {'CANCELLED'}
 
         subset = arm.AnimProp.used_restpose_bones
-    
+
         self.action, msg = create_armature_reset_action(context, subset)
         if not self.action:
             self.report({'WARNING'},msg)
@@ -3336,7 +3407,7 @@ def set_action(arm, action):
 
     if not arm.animation_data:
         arm.animation_data_create()
-    oaction = arm.animation_data.action 
+    oaction = arm.animation_data.action
     arm.animation_data.action = action
     return oaction
 
@@ -3346,7 +3417,7 @@ def create_armature_reset_action(context, subset):
         if not (arm and arm.animation_data):
             return None
         return arm.animation_data.action
-    
+
     def cleanup(action):
         for fcurve in action.fcurves:
             action.fcurves.remove(fcurve)
@@ -3360,7 +3431,7 @@ def create_armature_reset_action(context, subset):
                     break
                 if b.use_deform:
                     resultlist.append(b)
-        return resultlist        
+        return resultlist
 
     def remap_deform_to_anim(dbones, deform_bones):
         anim_bones=[]
@@ -3403,7 +3474,7 @@ def create_armature_reset_action(context, subset):
     for l in range(len(arm.data.layers)):
         arm.data.layers[l]=True
 
-        
+
     for b in dbones:
         b.hide = not b in animated_bones
         b.select = b in animated_bones
@@ -3431,14 +3502,14 @@ def create_armature_reset_action(context, subset):
     set_action(arm, oaction)
 
     return action, None
-    
+
 class ButtonArmatureApplyAsRestpose(bpy.types.Operator):
     bl_idname = "tamagoyaki.apply_as_restpose"
     bl_label = "Apply as Restpose"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = messages.tamagoyaki_apply_as_restpose_text
     store_as_bind_pose : const.g_store_as_bind_pose
-    
+
     def execute(self, context):
         tic = time.time()
         oactive = context.object
@@ -3526,7 +3597,7 @@ Handle with Care!'''
         col.prop(self,'apply_armature_on_snap_rig')
         col.prop(self,'preserve_volume')
         col.prop(self,'handleBakeRestPoseSelection')
-        col = box.column()        
+        col = box.column()
         col.prop(self,"adjust_stretch_to")
         col.prop(self,"adjust_pole_angles")
 
@@ -3595,13 +3666,13 @@ Handle with Care!'''
                 util.object_select_set(ob, ob in selection)
             log.info("|  Freezing %d Meshes" % (len(selection)) )
             preserve_volume = self.PV[self.preserve_volume]
-            frozen = freezeSelectedMeshes(context, 
-                             self, 
-                             apply_pose=True, 
-                             remove_weights=False, 
-                             join_parts=False, 
-                             appearance_enabled=False, 
-                             handle_source='DELETE', 
+            frozen = freezeSelectedMeshes(context,
+                             self,
+                             apply_pose=True,
+                             remove_weights=False,
+                             join_parts=False,
+                             appearance_enabled=False,
+                             handle_source='DELETE',
                              preserve_volume=preserve_volume)
 
             return frozen, unselectable, invisible
@@ -3851,7 +3922,7 @@ class ArmatureSpineUnfold(bpy.types.Operator):
             print("Could not linearise Avatar spine")
             raise
         return{'FINISHED'}
-        
+
 
 class ArmatureSpinefold(bpy.types.Operator):
     bl_idname = "tamagoyaki.armature_spine_fold"
@@ -3877,7 +3948,7 @@ class ArmatureSpinefold(bpy.types.Operator):
             print("Could not linearise Avatar spine")
             raise
         return{'FINISHED'}
-        
+
 
 class ButtonArmatureBoneSnapper(bpy.types.Operator):
     bl_idname = "tamagoyaki.armature_adjust_base2rig"
@@ -3890,21 +3961,21 @@ Then this function synchronizes your deform bones (SL Base Bones)
 to the edited Control Rig'''
 
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     fix_base_bones       : BoolProperty(name="Snap SL Base",           description="Propagate changes to the SL Base Bones",      default=True)
     fix_ik_bones         : BoolProperty(name="Snap IK Bones",          description="Propagate changes to the IK Bones",           default=True)
     fix_volume_bones     : BoolProperty(name="Snap Volume Bones",      description="Propagate changes to the Volume Bones",       default=False)
     fix_attachment_bones : BoolProperty(name="Snap Attachment Points", description="Propagate changes to the Attachment Points",  default=False)
     base_to_rig          : BoolProperty(name="Reverse Snap",           description="Reverse the snapping direction: Adjust the Rig bones to the Base bones. ",  default=False)
     adjust_pelvis        : BoolProperty(name="Adjust Pelvis",             description = UpdateRigProp_adjust_pelvis_description,        default = False)
-    sync                 : BoolProperty(name="Sync",                      description = "Synchronized joint store (debug)", default     = False)    
+    sync                 : BoolProperty(name="Sync",                      description = "Synchronized joint store (debug)", default     = False)
 
     def draw(self, context):
         layout = self.layout
         scn = context.scene
         box = layout.box()
         box.label(text="Snap Options", icon=ICON_BONE_DATA)
-        col = box.column(align=True)    
+        col = box.column(align=True)
         col.prop(self,"adjust_pelvis")
         col.prop(self,"sync")
         col.prop(self,"fix_base_bones")
@@ -3915,12 +3986,12 @@ to the edited Control Rig'''
 
     def execute(self, context):
         oumode = util.set_operate_in_user_mode(False)
-        try:    
-            active = context.active_object 
+        try:
+            active = context.active_object
             rig.reset_cache(active, full=True)
             if "tamagoyaki" in active and self.adjust_pelvis and rig.needTinkerFix(active):
                 rig.matchTinkerToPelvis(context, active, alignToDeform=False)
-            
+
             if self.fix_base_bones:
                 rig.adjustRigToSL(active) if self.base_to_rig else rig.adjustSLToRig(active)
             if self.fix_ik_bones:
@@ -3931,16 +4002,63 @@ to the edited Control Rig'''
             if self.fix_attachment_bones:
                 log.info("adjustAttachmentBonesToRig ...")
                 rig.adjustAttachmentBonesToRig(active)
-                
+
             log.warning("Snap Base to Rig: Calculate joint offsets...")
             bpy.ops.tamagoyaki.armature_jointpos_store()
         except Exception as e:
             util.ErrorDialog.exception(e)
         finally:
             util.set_operate_in_user_mode(oumode)
-        return{'FINISHED'}    
+        return{'FINISHED'}
 
 
+
+
+
+
+#
+
+#
+
+
+#
+
+#
+
+
+
+
+#
+
+
+
+
+#
+
+#
+
+
+#
+
+#
+
+
+
+
+#
+
+
+
+
+
+#
+
+#
+
+
+#
+
+#
 
 
 
@@ -3955,11 +4073,11 @@ class ButtonAlphaMaskBake(bpy.types.Operator):
     def execute(self, context):
 
         try:
-            active = context.active_object 
+            active = context.active_object
             create_bw_mask(active, active.tamagoyakiAlphaMask, "tamagoyaki_alpha_mask")
         except Exception as e:
             util.ErrorDialog.exception(e)
-        return {'FINISHED'}    
+        return {'FINISHED'}
 
 def get_deform_subset(armobj, subtype, only_deforming=None):
     if subtype == 'BASIC':
@@ -3989,7 +4107,7 @@ class ButtonDeformUpdate(bpy.types.Operator):
         dbones = [b for b in bones if b.use_deform]
         log.warning("Found %d deform bones" % (len(dbones)) )
         bind.fix_bone_layers(context, context.scene, lazy=False, force=True)
-        return {'FINISHED'}    
+        return {'FINISHED'}
 
 class ButtonDeformEnable(bpy.types.Operator):
     bl_idname = "tamagoyaki.armature_deform_enable"
@@ -3997,7 +4115,7 @@ class ButtonDeformEnable(bpy.types.Operator):
     bl_description = "Enable Deform option for bones (Either Selected bones, SL Base Bones, Volume Bones, or Extended Bones)"
 
     set : StringProperty()
-    
+
     def execute(self, context):
 
         try:
@@ -4010,7 +4128,7 @@ class ButtonDeformEnable(bpy.types.Operator):
         except:
             self.report({'WARNING'},"Could not enable deform for bones in %s"%context.object.name)
             raise
-        return {'FINISHED'}    
+        return {'FINISHED'}
 
 class ButtonDeformDisable(bpy.types.Operator):
     bl_idname = "tamagoyaki.armature_deform_disable"
@@ -4018,7 +4136,7 @@ class ButtonDeformDisable(bpy.types.Operator):
     bl_description = "Disable Deform option for bones (Either Selected bones, SL Base Bones, Volume Bones, or Extended Bones)"
     bl_options = {'REGISTER', 'UNDO'}
     set : StringProperty()
-    
+
     def execute(self, context):
 
         try:
@@ -4027,15 +4145,15 @@ class ButtonDeformDisable(bpy.types.Operator):
             weights.disableDeformingBones(armobj, bones , replace=False)
             bind.fix_bone_layers(context, context.scene, lazy=False, force=True)
             log.warning("Disabled %d %s Deform Bones" % (len(bones), self.set))
-            
+
         except:
             self.report({'WARNING'},"Could not disable deform for bones in %s"%context.object.name)
             raise
-        return {'FINISHED'}    
+        return {'FINISHED'}
 
 
 class ButtonImportTamagoyakiShape(bpy.types.Operator):
-    bl_idname = "tamagoyaki.import_shape"  
+    bl_idname = "tamagoyaki.import_shape"
     bl_label =  "Shape as Tamagoyaki(.xml)"
     bl_description = 'Create anTamagoyaki character and apply the imported inworld Shape (.xml)'
     bl_options = {'REGISTER', 'UNDO'}
@@ -4078,8 +4196,8 @@ class ButtonImportTamagoyakiShape(bpy.types.Operator):
 
         print("import from [%s]"%(self.filepath))
         shape.loadProps(context, armobj, self.filepath)
-        return{'FINISHED'}    
-    
+        return{'FINISHED'}
+
     def invoke(self, context, event):
         wm = context.window_manager
         wm.fileselect_add(self)
@@ -4087,7 +4205,7 @@ class ButtonImportTamagoyakiShape(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 class ButtonExportDevkitConfiguration(bpy.types.Operator):
-    bl_idname = "tamagoyaki.export_devkit_configuration"  
+    bl_idname = "tamagoyaki.export_devkit_configuration"
     bl_label =  "Export to File"
     bl_description = 'Export the developerkit configuration to file'
 
@@ -4103,7 +4221,7 @@ class ButtonExportDevkitConfiguration(bpy.types.Operator):
                 default=True,
                 options={'HIDDEN'},
                 )
-    
+
     filepath : StringProperty(
 
 
@@ -4113,9 +4231,9 @@ class ButtonExportDevkitConfiguration(bpy.types.Operator):
                 )
 
     def draw(self, context):
-        layout = self.layout  
+        layout = self.layout
         create_devkit_layout(context, layout)
- 
+
 
     def invoke(self, context, event):
         props = context.scene.UpdateRigProp
@@ -4170,7 +4288,7 @@ class ButtonExportDevkitConfiguration(bpy.types.Operator):
 
 
 class ButtonImportDevkitConfiguration(bpy.types.Operator):
-    bl_idname = "tamagoyaki.import_devkit_configuration"  
+    bl_idname = "tamagoyaki.import_devkit_configuration"
     bl_label =  "Import File"
     bl_description = 'Import a developerkit configuration from file'
 
@@ -4188,7 +4306,7 @@ class ButtonImportDevkitConfiguration(bpy.types.Operator):
                 default=True,
                 options={'HIDDEN'},
                 )
-    
+
     filepath : StringProperty(
 
 
@@ -4198,9 +4316,9 @@ class ButtonImportDevkitConfiguration(bpy.types.Operator):
                 )
 
     def draw(self, context):
-        layout = self.layout  
+        layout = self.layout
         create_devkit_layout(context, layout)
- 
+
 
     def invoke(self, context, event):
         props = context.scene.UpdateRigProp
@@ -4248,12 +4366,12 @@ class ButtonImportDevkitConfiguration(bpy.types.Operator):
         return {'FINISHED'}
 
     def draw(self, context):
-        layout = self.layout  
+        layout = self.layout
         create_devkit_layout(context, layout)
-                
+
 
 class ButtonExportSLCollada(bpy.types.Operator):
-    bl_idname = "tamagoyaki.export_sl_collada"  
+    bl_idname = "tamagoyaki.export_sl_collada"
     bl_label =  "Collada (Tamagoyaki) (.dae)"
     bl_description = 'Export the selection as Collada-1.4.1 (.dae) with compatibility with SL, OpenSim and similar worlds'
 
@@ -4262,24 +4380,24 @@ class ButtonExportSLCollada(bpy.types.Operator):
         default="*.dae",
         options={'HIDDEN'},
     )
-    
+
     check_existing : BoolProperty(
                 name="Check Existing",
                 description="Check and warn on overwriting existing files",
                 default=True,
                 options={'HIDDEN'},
                 )
-    
+
     filepath : StringProperty(
 
 
 
                 default="//",
                 subtype='FILE_PATH',
-                )    
+                )
 
     def draw(self, context):
-        layout = self.layout  
+        layout = self.layout
         currentSelection = util.getCurrentSelection(context)
         attached         = currentSelection['attached']
         targets          = currentSelection['targets']
@@ -4300,12 +4418,12 @@ class ButtonExportSLCollada(bpy.types.Operator):
     def can_execute(cls, context):
         if not context:
             return False
-      
+
         ob = context.object
         if not ob:
             return False
 
-        if ob.type == 'ARMATURE' and 'avastar' in ob and ob.mode != 'EDIT':
+        if ob.type == 'ARMATURE' and 'tamagoyaki' in ob and ob.mode != 'EDIT':
             animated_meshes = util.get_animated_meshes(context, ob, only_selected=True)
             return len(animated_meshes) > 0
 
@@ -4385,7 +4503,7 @@ class ButtonExportSLCollada(bpy.types.Operator):
                 self.report({'WARNING'}, "%d issues in export selection" % (len(export_errors)))
                 util.ErrorDialog.exception(e)
                 return {'CANCELLED'}
-            
+
             meshProps = context.scene.MeshProp
 
             self.filepath = bpy.path.ensure_ext(bpy.data.filepath, self.filename_ext)
@@ -4423,7 +4541,7 @@ class ButtonExportSLCollada(bpy.types.Operator):
                 armobj=list(armobjs)[0]
                 print("| Tamagoyaki: Using armature %s as reference" % armobj.name)
             else:
-                print("| Tamagoyaki: No armatures in Export")
+                print("| Tamagoyaki: No reference armature selected for Export")
                 armobj = None
 
             if armobj:
@@ -4448,7 +4566,7 @@ class ButtonExportSLCollada(bpy.types.Operator):
 
             print("| Tamagoyaki: Enter main export loop")
 
-            good, mesh_count, export_warnings = exportCollada(context, 
+            good, mesh_count, export_warnings = exportCollada(context,
                 self.filepath,
                 apply_modifier_stack,
                 target_system,
@@ -4461,7 +4579,7 @@ class ButtonExportSLCollada(bpy.types.Operator):
 
             if good:
                 if len(export_warnings) > 0:
-                    e = util.ColladaExportWarning(msg_export_warning_note, export_warnings, "Your Export is OK, but it can be improved")
+                    e = util.ColladaExportWarning(msg_export_warning_note, export_warnings, "Your Export is OK, but it could be improved.")
                     self.report({'WARNING'}, "%d Errors in export selection" % (len(export_warnings)))
                     util.ErrorDialog.exception(e)
                 self.report({'INFO'},"Exported %d %s"% (mesh_count, util.pluralize("Mesh", 1)))
@@ -4531,7 +4649,7 @@ def generate_anim(context, filepath):
 def get_script_name(path, ext, type, postfix):
     path = "%s_%s.%s" % (path[:-len(ext)], type, postfix)
     return path
-    
+
 
 class DummyOp(bpy.types.Operator):
     bl_idname = "tamagoyaki.dop"
@@ -4552,7 +4670,7 @@ class UpdateTamagoyakiPopup(bpy.types.Operator):
 
     def check(self, context):
         return not self.executing
-    
+
     def invoke(self, context, event):
         self.executing = True
         preferences = util.getPreferences()
@@ -4593,7 +4711,7 @@ class UpdateTamagoyakiPopup(bpy.types.Operator):
         col_rig.label(text="Rig ID")
         col_bone.label(text="Joint Edits")
         col_stat.label(text="Hint")
-        
+
         sep = layout.separator()
         for armobj in armatures:
 
@@ -4630,6 +4748,68 @@ class UpdateTamagoyakiPopup(bpy.types.Operator):
         self.executing = True
 
         return {'FINISHED'}
+
+
+
+
+
+
+
+
+
+
+
+#
+
+
+
+
+#
+
+
+
+
+
+#
+
+#
+
+
+
+
+
+
+
+
+
+
+
+#
+
+
+#
+
+
+
+#
+
+
+
+
+
+
+#
+
+
+#
+
+
+
+
+
+
+
+#
 
 
 
@@ -4683,7 +4863,7 @@ class AVAMaterial:
     def __init__(self, aMaterial):
         self.material = aMaterial
         self.nodes = aMaterial.node_tree.nodes if aMaterial.node_tree else None
-    
+
     def get_nodes_by_type(self, type):
        if not self.nodes:
            return None
@@ -4851,14 +5031,14 @@ def freezeMeshObject(context, obj, apply_shape_modifiers=False):
 def hasTamagoyakiData(obj):
     clean_data = ['tamagoyaki-mesh', 'weight', 'ShapeDrivers', 'ObjectProp', 'RigProp', 'use_deform_preserve_volume']
     for prop in clean_data:
-        if prop in obj: 
+        if prop in obj:
             return True
-    
+
     props = [DIRTY_MESH, CHECKSUM, MORPH_SHAPE, NEUTRAL_SHAPE, MESH_STATS, 'original']
     for prop in props:
         if prop in obj:
             return True
-    
+
     if REFERENCE_SHAPE in obj:
         return True
 
@@ -4873,10 +5053,10 @@ def hasTamagoyakiData(obj):
 def cleanupTamagoyakiData(obj, purge, restore=False):
     clean_data = ['tamagoyaki-mesh', 'weight', 'ShapeDrivers', 'ObjectProp', 'RigProp', 'use_deform_preserve_volume']
     for prop in clean_data:
-        if prop in obj: 
+        if prop in obj:
             del obj[prop]
     shape.detachShapeSlider(obj, reset=restore)
-    
+
     if purge:
         purge_data = ['physics', 'fitting', 'FittingValues', SHAPE_BINDING, 'version']
         for prop in purge_data:
@@ -4944,12 +5124,12 @@ def freezeSelectedMeshes(context, operator=None, apply_pose=None, remove_weights
                 target,
                 apply_pose = apply_pose,
                 remove_weights = remove_weights,
-                preserve_volume=preserve_volume, 
+                preserve_volume=preserve_volume,
                 as_name=True)
         dupobj = bpy.data.objects[dupname]
 
         cleanupTamagoyakiData(dupobj, purge, restore=False)
-         
+
         if apply_pose:
 
             dupobj.parent_type = 'OBJECT'
@@ -4958,7 +5138,7 @@ def freezeSelectedMeshes(context, operator=None, apply_pose=None, remove_weights
                 del dupobj['tamagoyaki-mesh']
             except:
                 pass
-                
+
 
 
 
@@ -4991,7 +5171,7 @@ def freezeSelectedMeshes(context, operator=None, apply_pose=None, remove_weights
 
     result = []
 
-    if len(frozen) > 0: 
+    if len(frozen) > 0:
         if len(arms) > 0:
             arm = next(iter(arms)) #to have an existing context object
             util.set_active_object(context, arm)
@@ -5039,7 +5219,7 @@ def freezeSelectedMeshes(context, operator=None, apply_pose=None, remove_weights
 
             active_object = bpy.data.objects.get(active_mesh_name)
             active_object.parent = util.get_armature(active_object)
-            
+
             tc = 1
 
             if final_name:
@@ -5085,7 +5265,7 @@ def remove_verts_from_all_vgroups(obj, index_list):
     util.ensure_mode_is('EDIT')
     bpy.ops.object.vertex_group_remove_from(use_all_groups=True)
     bpy.ops.mesh.select_all(action='DESELECT')
-        
+
 def add_verts_to_vgroup(obj, index_list, group_name):
     print("add verts to group", group_name, ":", *index_list)
     util.ensure_mode_is('EDIT')
@@ -5107,7 +5287,7 @@ def weld_vertex_weights(context, obj, index_list):
     util.ensure_mode_is('OBJECT')
     me = obj.data
     for i in index_list:
-        me.vertices[i].select=True    
+        me.vertices[i].select=True
     util.ensure_mode_is('EDIT')
     status = weights.ButtonWeldWeightsFromRigged.weld_weights_from_rigged(
             context,
@@ -5116,14 +5296,14 @@ def weld_vertex_weights(context, obj, index_list):
             submeshInterpolation=True,
             allVisibleBones=True,
             allHiddenBones=True
-        )    
+        )
 
 def generate_face_weights(context, arm, obj):
     print("Generate face weights for %s:%s" % (arm.name, obj.name) )
     dbones = arm.data.bones
     for b in dbones:
         b.select=False
- 
+
     bones = [b for b in dbones if b.name.startswith('mFace') or b.name.startswith('mHead')]
     for b in bones:
         b.select=True
@@ -5145,7 +5325,7 @@ def generate_face_weights(context, arm, obj):
 
     upper_teeth = [42, 45, 46, 47, 86, 87, 201, 300, 395, 413, 665, 666, 720, 748]
     lower_teeth = [37, 38, 39, 79, 81, 139, 203, 210, 298, 394, 396, 661, 662, 664]
-    
+
     util.ensure_mode_is('OBJECT')
     remove_verts_from_all_vgroups(obj, upper_teeth+lower_teeth)
     add_verts_to_vgroup(obj, lower_teeth, 'mFaceJaw')
@@ -5208,7 +5388,7 @@ def generate_hand_weights(context, arm, obj):
     dbones = arm.data.bones
     for b in dbones:
         b.select=False
-    
+
     bones = [b for b in dbones if b.name.startswith('mHand') or b.name.startswith('mWrist')]
     for b in bones:
         b.select=True
@@ -5339,7 +5519,7 @@ def add_images_from_material(context, material, slot_index, mat_images, with_ima
         is_new = prepare_material_bake(context, material, slot_index, mat_images, force_rebake, width=width, height=height)
     else:
         is_new = False
-        
+
     return is_new
 
 def get_material_image_assoc(context, obj, mat_images, with_image_bake, force_rebake, width=128, height=128):
@@ -5361,7 +5541,7 @@ def get_images_for_material(mat_images, material):
         if mat_images[key] == material:
             images.append(key)
     return images
-    
+
 
 
 def create_libimages(root, base, mat_images, exportCopy, preferred_image_format, force_image_format, useImageAlpha, warnings):
@@ -5375,21 +5555,21 @@ def create_libimages(root, base, mat_images, exportCopy, preferred_image_format,
     else:
        cm = 'RGB'
     bpy.context.scene.render.image_settings.color_mode = cm
-    
+
     for image in mat_images:
         material = mat_images[image]
-        
+
         if image in saved: #Take care to process each image only once.
             continue
         saved.append(image)
 
         original_format     = image.file_format
-        
+
         if image.source == 'GENERATED' or force_image_format:
             format = preferred_image_format
         else:
             format = original_format
-            
+
         file_extension = format.lower()
         if file_extension == "jpeg":
             file_extension = "jpg"
@@ -5399,14 +5579,14 @@ def create_libimages(root, base, mat_images, exportCopy, preferred_image_format,
         try:
             image.file_format = format
         except:
-            msg = _("The image [%s] has an unsupported file fromat [%s].|\n\n" \
+            msg = "The image [%s] has an unsupported file fromat [%s].|\n\n" \
                   "YOUR ACTION:\nPlease disable export of UV tectures or switch \n"\
-                  "to another file format and try again." % (image.name,format))
+                  "to another file format and try again." % (image.name,format)
             logging.error(msg)
-            raise util.Warning(msg)            
-        collada_key = colladaKey(image.name) 
+            raise util.Warning(msg)
+        collada_key = colladaKey(image.name)
         imgx = subx(libimages, 'image', id=collada_key, name=collada_key)
-        
+
 
         collada_path = bpy.path.ensure_ext(collada_key, file_extension )
 
@@ -5435,7 +5615,7 @@ def create_libimages(root, base, mat_images, exportCopy, preferred_image_format,
             else:
                 source = bpy.path.abspath(image.filepath_raw)
                 source = os.path.abspath(source)
-                
+
                 if source == dest:
                     logging.info("Image %s Reason: Image already in place."%(collada_path))
                 else:
@@ -5456,7 +5636,7 @@ def create_libimages(root, base, mat_images, exportCopy, preferred_image_format,
                         warnings.append("  File : %s\n" % source)
                         warnings.append("  Mat  : %s\n" % material.name)
                         image_on_disk = False
-                        
+
         else:
 
 
@@ -5477,12 +5657,12 @@ def create_libimages(root, base, mat_images, exportCopy, preferred_image_format,
                 logging.info("Refer to image %s", source)
         if image_on_disk:
             subx(imgx,'init_from', text=collada_path)
-        
+
         image.file_format = original_format
-        
+
     bpy.context.scene.render.image_settings.color_mode = original_color_mode
     return libimages
-    
+
 
 
 
@@ -5511,7 +5691,7 @@ def create_polylists(mesh, welded_normals, progress):
     dae_precision = util.get_precision()
     current_time = time.time()
     begin_time   = current_time
-    
+
     def get_uv(uv_data, p, vidx, precision):
         uv = uv_data[p.loop_indices[vidx]].uv
         result = [util.sanitize_f(uv[0], precision),
@@ -5528,26 +5708,26 @@ def create_polylists(mesh, welded_normals, progress):
     if uvexists:
         uv_data = mesh.uv_layers.active.data
 
-            
+
     polylists= {}
     normals  = []
     normalsd = {}
     uv_array = []
     uvidx = 0
-    
+
     last_mat_index = -1
     vcount = []
     ps     = []
-    lc     = 0    
+    lc     = 0
     is_triangle = True
     pcounter = 0
-    
+
     for p in polygons:
         corner_count=len(p.vertices)
         is_triangle = is_triangle and corner_count==3
         pcounter += 1
         if pcounter % 1000 == 0:
-            util.progress_update(1, absolute=False)            
+            util.progress_update(1, absolute=False)
 
         mat_index = p.material_index
         if mat_index != last_mat_index:
@@ -5573,7 +5753,7 @@ def create_polylists(mesh, welded_normals, progress):
 
         vcount.append(str(corner_count))
         lc += corner_count
-        
+
         if p.use_smooth:
 
             fixcount = 0
@@ -5584,11 +5764,11 @@ def create_polylists(mesh, welded_normals, progress):
                     fixcount +=1
                 else:
                     n = mesh.loops[p.loop_indices[vidx]].normal
-                
+
                 nidx = get_normal_index(n, normals, normalsd)
                 if uvexists:
                     ps.extend((str(v),str(nidx),str(uvidx)+" "))
-                    
+
 
 
                     uv = get_uv(uv_data, p, vidx, dae_precision)
@@ -5602,7 +5782,7 @@ def create_polylists(mesh, welded_normals, progress):
 
             n = p.normal
             nidx = get_normal_index(n, normals, normalsd)
-            
+
             for vidx, v in enumerate(p.vertices):
                 if uvexists:
                     ps.extend((str(v),str(nidx),str(uvidx)+" "))
@@ -5614,7 +5794,7 @@ def create_polylists(mesh, welded_normals, progress):
                     uvidx +=1
                 else:
                     ps.extend((str(v),str(nidx)+" "))
-                
+
         ps.append("  ")
 
     if last_mat_index != -1:
@@ -5648,7 +5828,7 @@ def add_material_list(tech, obj, uv_count):
         if material is None:
 
             continue
-            
+
         collada_material = colladaKey(material.name + "-material")
         inst = subx(tech, "instance_material", symbol=collada_material, target="#"+collada_material)
         if has_uv_layout:
@@ -5706,7 +5886,7 @@ def exportCollada(context,
 
 
         if not armobj.RigProp.exportBakedGender:
-        propgroups.gender_update(armobj, False)
+            propgroups.gender_update(armobj, False)
 
         if armobj.RigProp.rig_export_in_sl_restpose or armobj.RigProp.rig_use_bind_pose:
             shape_dict = shape.asDictionary(armobj, full=True)
@@ -5724,7 +5904,7 @@ def exportCollada(context,
             if shape_dict:
                 shape.fromDictionary(armobj, shape_dict, update=True)
             if not armobj.RigProp.exportBakedGender:
-            propgroups.gender_update(armobj, gender)
+                propgroups.gender_update(armobj, gender)
             del armobj['shape_info']
 
     def get_exported_bone_candidates(context, arm, only_deform, only_weighted, with_attachments):
@@ -5740,7 +5920,7 @@ def exportCollada(context,
             weighted_bones = set(arm.data.bones.keys())
 
         common_names = weighted_bones.intersection(deform_bones)
-        
+
         if not with_attachments:
             common_names = (n for n in common_names if n[0] != 'a')
 
@@ -5861,7 +6041,8 @@ def exportCollada(context,
                             util.shorten_text(arm.name),
                             util.shorten_text(obj.name)
                         )
-                    complexity_warnings.append([msg, help_page])
+                    help = get_help_page("EXPORT_WARN_M008")
+                    complexity_warnings.append([msg, help])
                     print("Warning: %s" % msg )
                     continue
 
@@ -5893,26 +6074,26 @@ def exportCollada(context,
     #
 
     #
-    root = et.Element('COLLADA', attrib={'xmlns':'http://www.collada.org/2005/11/COLLADASchema', 'version':'1.4.1'})  
+    root = et.Element('COLLADA', attrib={'xmlns':'http://www.collada.org/2005/11/COLLADASchema', 'version':'1.4.1'})
     root.tail = os.linesep
     xml = et.ElementTree(root)
-    
+
     asset = subx(root, 'asset')
 
     contributor = subx(asset, 'contributor')
-    subx(contributor, 'author', text = "Tamagoyaki User")    
+    subx(contributor, 'author', text = "Tamagoyaki User")
     tamagoyaki_version = "%d-%s-%d"%bl_info['version']
-    subx(contributor, 'authoring_tool', text = 'Tamagoyaki %s on Blender %s'%(tamagoyaki_version,bpy.app.version_string))    
+    subx(contributor, 'authoring_tool', text = 'Tamagoyaki %s on Blender %s'%(tamagoyaki_version,bpy.app.version_string))
     tstamp = time.strftime("%Y-%m-%dT%H:%M:%S")
 
 
 
-    subx(asset, 'created',  text=tstamp)    
-    subx(asset, 'modified', text=tstamp)    
-    subx(asset, 'unit',     name='meter', meter='1')    
-    subx(asset, 'up_axis',  text="Z_UP")    
-    
-    subx(root, 'library_cameras')    
+    subx(asset, 'created',  text=tstamp)
+    subx(asset, 'modified', text=tstamp)
+    subx(asset, 'unit',     name='meter', meter='1')
+    subx(asset, 'up_axis',  text="Z_UP")
+
+    subx(root, 'library_cameras')
     subx(root, 'library_lights')
 
     if len(mat_images) > 0:
@@ -5933,7 +6114,7 @@ def exportCollada(context,
     libgeo = subx(root, 'library_geometries')
     libcon = subx(root, 'library_controllers')
     libvis = subx(root, 'library_visual_scenes')
-    visual_scene = subx(libvis, 'visual_scene', id='Scene', name='Scene')   
+    visual_scene = subx(libvis, 'visual_scene', id='Scene', name='Scene')
     arm_roots = {}
 
     active = context.object
@@ -5941,7 +6122,6 @@ def exportCollada(context,
     root_bone_name = "Origin" if sceneProps.collada_complete_rig else "mPelvis"
 
     for arm in armatures:
-      
         logging.debug("Export armature %s", arm.name)
         aid = colladaKey(arm.name)
         node = subx(visual_scene, 'node', id=aid, name=aid, type='NODE')
@@ -5996,6 +6176,7 @@ def exportCollada(context,
             shape.saveProperties(arm, shape_file_path, normalize=True)
         arm.select_set(oselect)
         util.object_hide_set(arm, ohide)
+
 
     util.set_active_object(context, active)
     util.ensure_mode_is(omode, context=context)
@@ -6074,13 +6255,13 @@ def exportCollada(context,
             if created_materials.get(material_name) is not None:
                 continue
             created_materials[material_name]=material_name
-            
+
             effect_id     = material_name+"-effect"
             material_id   = material_name+"-material"
-            
+
             effect = subx(libeffects, "effect", id=effect_id)
             prof = subx(effect, "profile_COMMON")
-            
+
             images = get_images_for_material(mat_images, mat)
             if len(images) > 0:
                 image=images[0]
@@ -6095,7 +6276,7 @@ def exportCollada(context,
                 newparam = subx(prof, "newparam", sid=collada_name+'-surface')
                 surface = subx(newparam, "surface", type="2D")
                 initfrom = subx(surface, "init_from", text=collada_name)
-           
+
                 newparam = subx(prof, "newparam", sid=collada_name+'-sampler')
                 sampler2d = subx(newparam, "sampler2D")
                 source = subx(sampler2d, "source", text=collada_name+"-surface")
@@ -6130,7 +6311,7 @@ def exportCollada(context,
                 alpha = avamat.get_alpha()
                 c = ["%g"%(j) for j in diffuse_color]
 
-                c.append("%g"%alpha) 
+                c.append("%g"%alpha)
                 col = subx(wrap, "color", sid="diffuse", text=" ".join(c))
 
             wrap = subx(phong, "specular")
@@ -6176,18 +6357,18 @@ def exportCollada(context,
             positions.append("%g"%p.x)
             positions.append("%g"%p.y)
             positions.append("%g  "%p.z)
-            
-        pos = subx(source, 'float_array', id=mid+'-mesh-positions-array', 
+
+        pos = subx(source, 'float_array', id=mid+'-mesh-positions-array',
                    count=str(len(positions)))
         pos.text = " ".join(positions)
-        
+
         tech = subx(source, 'technique_common')
         accessor = subx(tech, 'accessor', source='#'+mid+'-mesh-positions-array',
                             stride='3', count=str(int(len(positions)/3)))
-        subx(accessor, 'param', name='X', type='float') 
-        subx(accessor, 'param', name='Y', type='float') 
-        subx(accessor, 'param', name='Z', type='float') 
-    
+        subx(accessor, 'param', name='X', type='float')
+        subx(accessor, 'param', name='Y', type='float')
+        subx(accessor, 'param', name='Z', type='float')
+
         welded_normals = None
         if adjusted_normals and meshobj.name in adjusted_normals:
             welded_normals = adjusted_normals[meshobj.name]
@@ -6199,47 +6380,47 @@ def exportCollada(context,
             log.warning("Export: This Blender release does not support Custom Normals.")
 
         polylists, normals, uv_array = create_polylists(mesh_data_copy, welded_normals, progress)
-        
+
         #
 
         #
-        
 
-        normals_array = []        
+
+        normals_array = []
         for n in normals:
             san = util.sanitize_v(n, dae_precision)
             normals_array.append("%g"% san[0])
             normals_array.append("%g"%san[1])
             normals_array.append("%g  "%san[2])
-                        
-        source = subx(mx, 'source', id=mid+'-mesh-normals') 
+
+        source = subx(mx, 'source', id=mid+'-mesh-normals')
         pos = subx(source, 'float_array', id=mid+'-mesh-normals-array',
-                            count=str(len(normals_array))) 
+                            count=str(len(normals_array)))
         pos.text = " ".join(normals_array)
-            
+
         tech = subx(source, 'technique_common')
         accessor = subx(tech, 'accessor', source='#'+mid+'-mesh-normals-array',
                             stride='3', count=str(int(len(normals_array)/3)))
-        subx(accessor, 'param', name='X', type='float') 
-        subx(accessor, 'param', name='Y', type='float') 
-        subx(accessor, 'param', name='Z', type='float') 
-            
+        subx(accessor, 'param', name='X', type='float')
+        subx(accessor, 'param', name='Y', type='float')
+        subx(accessor, 'param', name='Z', type='float')
+
         #
 
         #
 
         if len(uv_array) > 0:
-            source = subx(mx, 'source', id=mid+'-mesh-map-0') 
+            source = subx(mx, 'source', id=mid+'-mesh-map-0')
             pos = subx(source, 'float_array', id=mid+'-mesh-map-0-array',
-                                count=str(len(uv_array))) 
+                                count=str(len(uv_array)))
             pos.text = " ".join(uv_array)
-                
+
             tech = subx(source, 'technique_common')
             accessor = subx(tech, 'accessor', source='#'+mid+'-mesh-map-0-array',
                                 stride='2', count=str(int(len(uv_array)/2)))
-            subx(accessor, 'param', name='S', type='float') 
-            subx(accessor, 'param', name='T', type='float') 
-        
+            subx(accessor, 'param', name='S', type='float')
+            subx(accessor, 'param', name='T', type='float')
+
         #
 
         #
@@ -6256,7 +6437,7 @@ def exportCollada(context,
                 collada_material = colladaKey(material.name+"-material")
             except:
                 material = None
-            
+
             face_count = util.get_tri_count(len(vcount), lc)
             list_type = 'triangles' if is_tris else 'polylist'
 
@@ -6274,26 +6455,26 @@ def exportCollada(context,
                 help = get_help_page("EXPORT_WARN_M005")
                 complexity_warnings.append([msg, help])
                 print("| Warning: %s" % msg )
-                
-            subx(polylist, 'input', source='#'+mid+'-mesh-vertices', 
-                                    semantic='VERTEX', offset='0') 
-            subx(polylist, 'input', source='#'+mid+'-mesh-normals', 
-                                    semantic='NORMAL', offset='1') 
+
+            subx(polylist, 'input', source='#'+mid+'-mesh-vertices',
+                                    semantic='VERTEX', offset='0')
+            subx(polylist, 'input', source='#'+mid+'-mesh-normals',
+                                    semantic='NORMAL', offset='1')
 
 
             if len(uv_array) > 0:
-                subx(polylist, 'input', source='#'+mid+'-mesh-map-0', 
-                                        semantic='TEXCOORD', offset='2', set='0') 
+                subx(polylist, 'input', source='#'+mid+'-mesh-map-0',
+                                        semantic='TEXCOORD', offset='2', set='0')
             if not is_tris:
                 subx(polylist, 'vcount', text=' '.join(vcount))
             subx(polylist, 'p', text=' '.join(ps))
-           
+
         extra = subx(geo, 'extra')
         tech = subx(extra, 'technique', profile='MAYA')
         subx(tech, 'double_sided', text='1')
-           
+
         node = subx(visual_scene, 'node', id=mid, name=mid, type='NODE')
-        
+
         #
 
         #
@@ -6303,7 +6484,7 @@ def exportCollada(context,
             util.set_active_object(context, arm)
             aid = colladaKey(arm.name)
             controler = subx(libcon, 'controller', name=aid, id=aid+"_"+mid+'-skin')
-            skin = subx(controler, 'skin', source='#'+mid+'-mesh')  
+            skin = subx(controler, 'skin', source='#'+mid+'-mesh')
 
             bsm = rig.calculate_bind_shape_matrix(arm, meshobj)
             bsm = " ".join(["%g"%bsm[ii][jj] for ii in range(4) for jj in range(4)])
@@ -6312,7 +6493,7 @@ def exportCollada(context,
             #
 
             #
-            source = subx(skin, 'source', id=aid+"_"+mid+"-skin-joints") 
+            source = subx(skin, 'source', id=aid+"_"+mid+"-skin-joints")
             dbones = [g.name for g in meshobj.vertex_groups] if sceneProps.collada_only_weighted else arm.data.bones.keys()
             indices= [g.index for g in meshobj.vertex_groups] #need this to "fix" corrupt vgroup info
 
@@ -6331,21 +6512,21 @@ def exportCollada(context,
                     msg = ("> " + messages.M004_weight_limit_exceed + "\n")%(meshobj.name, bone_count, MAX_EXPORT_BONES)
                     help = get_help_page("EXPORT_WARN_M004")
                     complexity_warnings.append([msg, help])
-            
+
             subx(source, 'Name_array', id=aid+"_"+mid+'-skin-joints-array',
-                                    count=str(len(export_bones)), 
+                                    count=str(len(export_bones)),
                                     text = get_bind_joint_array(renamed_groups, 10))
             tech = subx(source, 'technique_common')
-            accessor = subx(tech, 'accessor', 
+            accessor = subx(tech, 'accessor',
                                 source='#'+aid+'_'+mid+'-skin-joints-array',
                                 stride='1',
                                 count=str(len(export_bones)))
-            subx(accessor, 'param', name='JOINT', type='name') 
-            
+            subx(accessor, 'param', name='JOINT', type='name')
+
             #
 
             #
-            source = subx(skin, 'source', id=aid+"_"+mid+"-skin-bind_poses") 
+            source = subx(skin, 'source', id=aid+"_"+mid+"-skin-bind_poses")
             poses = []
             rig.reset_cache(arm)
             counter = 0
@@ -6374,12 +6555,12 @@ def exportCollada(context,
                                         count=str(len(poses)),
                                         text = "\n"+" ".join(poses))
             tech = subx(source, 'technique_common')
-            accessor = subx(tech, 'accessor', 
+            accessor = subx(tech, 'accessor',
                                 source='#'+aid+'_'+mid+'-skin-bind_poses-array',
                                 stride='16',
                                 count=str(int(len(poses)/16)))
-            subx(accessor, 'param', name='TRANSFORM', type='float4x4') 
-                
+            subx(accessor, 'param', name='TRANSFORM', type='float4x4')
+
             #
 
             #
@@ -6397,8 +6578,8 @@ def exportCollada(context,
                 vcounter += 1
                 if vcounter % 1000 == 0:
                     progress += 1
-                    util.progress_update(progress)         
-            
+                    util.progress_update(progress)
+
                 weights = []
                 for g in v.groups:
 
@@ -6425,13 +6606,13 @@ def exportCollada(context,
 
 
                 weights.sort(key=lambda x: x[0], reverse=True)
-                
+
                 if max_weight_per_vertex > 0 and len(weights)>max_weight_per_vertex:
                     if truncated_vcount < 10:
                         logging.warn("found vertex with %d deform weights in %s. Truncating to %d."%(len(weights), meshobj.name, max_weight_per_vertex))
                     weights = weights[:max_weight_per_vertex]
-                    truncated_vcount += 1 
-                
+                    truncated_vcount += 1
+
 
                 tot = 0
                 for w,g in weights:
@@ -6440,17 +6621,17 @@ def exportCollada(context,
                     for wg in weights:
                         wg[0]=wg[0]/float(tot)
                 else:
-                    zero_weight_count += 1                    
-                    
+                    zero_weight_count += 1
+
                 for weight,group in weights:
                     widx = len(ws)
                     w = util.sanitize_f(weight, dae_precision)
                     ws.append("%g"%w)
-                    vs.append(str(group)) 
+                    vs.append(str(group))
                     vs.append(str(widx)+" ")
                 vs.append(" ")
                 vcount.append(str(len(weights)))
-            
+
             if broken_vgroup_count > 0:
                 logging.warn("Number of wrong associations from vertex to vertex group")
 
@@ -6471,53 +6652,53 @@ def exportCollada(context,
                 help = get_help_page("EXPORT_WARN_M001")
                 complexity_warnings.append([msg, help])
                 logging.warn(msg)
-                
+
             subx(source, 'float_array', id=aid+"_"+mid+'-skin-weights-array',
                                         count=str(len(ws)),
                                         text = " ".join(ws))
             tech = subx(source, 'technique_common')
-            accessor = subx(tech, 'accessor', 
+            accessor = subx(tech, 'accessor',
                                 source='#'+aid+'_'+mid+'-skin-weights-array',
                                 stride='1',
                                 count=str(len(ws)))
-            subx(accessor, 'param', name='WEIGHT', type='float') 
+            subx(accessor, 'param', name='WEIGHT', type='float')
             joints = subx(skin, 'joints')
             subx(joints, 'input', semantic='JOINT', source='#'+aid+'_'+mid+'-skin-joints')
-            subx(joints, 'input', semantic='INV_BIND_MATRIX', 
+            subx(joints, 'input', semantic='INV_BIND_MATRIX',
                                 source='#'+aid+'_'+mid+'-skin-bind_poses')
             vweights = subx(skin, 'vertex_weights', count=str(len(vcount)))
             subx(vweights, 'input', semantic='JOINT',
                                     source='#'+aid+'_'+mid+'-skin-joints',
-                                    offset='0') 
+                                    offset='0')
             subx(vweights, 'input', semantic='WEIGHT',
                                     source='#'+aid+'_'+mid+'-skin-weights',
-                                    offset='1') 
+                                    offset='1')
             subx(vweights, 'vcount', text=" ".join(vcount))
             subx(vweights, 'v', text=" ".join(vs))
-            
+
             #
 
             #
-            subx(node, 'translate', sid='location', text='0 0 0')   
-            subx(node, 'rotate', sid='rotationZ', text='0 0 1 0')   
-            subx(node, 'rotate', sid='rotationY', text='0 1 0 0')   
-            subx(node, 'rotate', sid='rotationX', text='1 0 0 0')   
-            subx(node, 'scale', sid='scale', text='1 1 1')   
-   
-            con = subx(node, 'instance_controller', url='#'+aid+'_'+mid+'-skin')   
-            
+            subx(node, 'translate', sid='location', text='0 0 0')
+            subx(node, 'rotate', sid='rotationZ', text='0 0 1 0')
+            subx(node, 'rotate', sid='rotationY', text='0 1 0 0')
+            subx(node, 'rotate', sid='rotationX', text='1 0 0 0')
+            subx(node, 'scale', sid='scale', text='1 1 1')
+
+            con = subx(node, 'instance_controller', url='#'+aid+'_'+mid+'-skin')
+
             if arm in armatures:
                 rootnames = arm_roots.get(arm.name,None)
                 if rootnames:
                     for rootname in rootnames:
-                        subx(con, 'skeleton', text= "#%s" % rootname) 
+                        subx(con, 'skeleton', text= "#%s" % rootname)
                 else:
                     subx(con, 'skeleton', text='#%s' % root_bone_name)
 
             else:
 
-                subx(con, 'skeleton', text='#Origin') 
-                
+                subx(con, 'skeleton', text='#Origin')
+
             if len(meshobj.data.materials) > 0:
                 bind = subx(con, "bind_material")
                 tech = subx(bind, "technique_common")
@@ -6553,7 +6734,7 @@ def exportCollada(context,
 
 
 
-            con = subx(node, 'instance_geometry', url='#'+mid+'-mesh')   
+            con = subx(node, 'instance_geometry', url='#'+mid+'-mesh')
 
             if len(meshobj.data.materials) > 0:
                 bind = subx(con, "bind_material")
@@ -6607,7 +6788,7 @@ def subx(parent, tag, **attrib):
     sub = et.SubElement(parent, tag, attrib=attrib2)
     if 'text' in attrib:
         sub.text = attrib['text']
-    return sub    
+    return sub
 
 def bonetoxml(arm, parent, bonename, apply_armature_scale, target_system, export_bone_set, rigstates, sceneProps, is_root=False, with_joints=False, Bones=None):
     dae_precision = util.get_precision()
@@ -6730,13 +6911,13 @@ def create_bw_mask(obj, vgroup, mask_name):
     polygons   = me.polygons
     vertices   = me.vertices
     groupIndex = obj.vertex_groups[vgroup].index
-    
+
     try:
 
         vcol = me.vertex_colors[mask_name]
     except:
         vcol = me.vertex_colors.new(name=mask_name)
- 
+
 
     for p in polygons:
         for index in p.loop_indices:
@@ -6762,7 +6943,7 @@ class UpdateMeshStatistic(bpy.types.Operator):
     '''
     Collect mesh information for selected mesh objects
     '''
-    bl_idname = "avastar.update_mesh_stats"
+    bl_idname = "tamagoyaki.update_mesh_stats"
     bl_label = "Refresh statistic"
     bl_description = "Collect mesh information.\n"\
                    + "Please Refresh when you want to be sure\n"\
@@ -6876,7 +7057,7 @@ def snap_to_mesh(context, maxrange=0.001, mark_out_of_range=True, mark_snapped=F
     mesh_has_changed = False
     out_of_range = []
     snapped = []
-    
+
     max_offset = 0
 
     for vert in [v for v in bm.verts if v.select]:

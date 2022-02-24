@@ -1,9 +1,11 @@
-### Copyright 2015, Gaia Clary
-### Modifications 2015 Gaia Clary
+### Copyright     2021 The Machinimatrix Team
 ###
-### This file is part of Tamagoyaki 1.
+### This file is part of Tamagoyaki
 ###
-
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -22,20 +24,28 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy, bmesh, sys
-from mathutils import Vector, Matrix
-import  xml.etree.ElementTree as et
+import bpy
+import bmesh
+import sys
+import xml.etree.ElementTree as et
 import xmlrpc.client
+import logging
+import gettext
+import os
+import time
+import re
+import shutil
+
+from mathutils import Vector, Matrix
 from bpy_extras.io_utils import ExportHelper
 from bpy.props import *
-import logging, gettext, os, time, re, shutil
 from math import pi, exp
 from bpy.types import Menu, Operator
 from bl_operators.presets import AddPresetBase
 
 from . import const, data, messages, propgroups, rig, util, shape, bl_info
 from .const  import *
-from .util import mulmat
+from .util import ensure_mode_is, mulmat
 from bpy.app.handlers import persistent
 
 LOCALE_DIR = os.path.join(os.path.dirname(__file__), 'locale')
@@ -93,11 +103,11 @@ def update_with_hidden_tamagoyaki_meshes(self, context):
     armobj = util.get_armature_from_context(context)
     childset = util.get_animated_meshes(context, armobj, only_visible=False)
     for child in [child for child in childset if child != context.object]:
-        child.ObjectProp.is_hidden=child.hide_get()
+        child.ObjectProp.is_hidden_from_op = child.hide_get()
 
 g_with_hidden_tamagoyaki_meshes = BoolProperty(
             update = update_with_hidden_tamagoyaki_meshes,
-            name="Show hidden Sources",
+            name="Display hidden Sources",
             default=True,
             description="Also show all hidden Meshes bound to the Armature" )
 
@@ -106,6 +116,11 @@ g_with_listed_tamagoyaki_meshes = BoolProperty(
             default=False,
             description = prop_with_listed_tamagoyaki_meshes)
 
+g_with_selected_tamagoyaki_meshes = BoolProperty(
+            name="Display selectable Sources",
+            default=False,
+            description = prop_with_selected_tamagoyaki_meshes)
+
 g_with_hair = BoolProperty(
             name="Hair",
             default=False,
@@ -113,7 +128,7 @@ g_with_hair = BoolProperty(
 
 g_with_head = BoolProperty(
             name="Head",
-            default=True, 
+            default=True,
             description="Include Tamagoyaki head mesh as Weight Source" )
 
 g_with_eyes = BoolProperty(
@@ -146,23 +161,22 @@ g_use_mirror_x = BoolProperty(
             default=True,
             description = "Ensure that for each selected bone also its symmetric counterpart weightmap is created" )
 
-g_clearTargetWeights = BoolProperty(
-            name="Clear Target Maps",
-            default=True,
-            description="Make sure the target Weight maps are empty before Copying the weights to them\n"\
-                       +"Note: Only target weight maps are affected. All other weight maps remain unchanged.\n"\
-                       +"This option is disabled on purpose when you enable the Selected verts option")
-
 g_copyWeightsToSelectedVerts = BoolProperty(
             name="Selected Verts",
             default=False,
             description="Restrict the copy to selected vertices in the target mesh\n"\
                        +"Note: The weights of unselected vertices are preserved")
 
+g_copyWeightsForSelectedBones = BoolProperty(
+            name="Selected Bones",
+            default=False,
+            description="Restrict the copy to weightmaps of selected bones in the Rig\n"\
+                       +"Note: The weights of unselected bones are preserved")
+
 g_keep_groups = BoolProperty(
             name="Keep empty Maps",
             default=False,
-            description="Keep empty weight maps in the target mesh(es)" 
+            description="Keep empty weight maps in the target mesh(es)"
         )
 
 def module_load():
@@ -179,8 +193,9 @@ def mirrorBoneWeightsFromOppositeSide(context, operator, use_topology=False):
     layer_indices = [i for i, l in enumerate(bpy.data.armatures[armobj.data.name].layers) if l]
 
     activeBone = armobj.data.bones.active
-    counter = 0
+    activeVertexGroup = obj.vertex_groups.active
     selectedBoneNames = []
+    counter = 0
     for bone in armobj.data.bones:
         if bone.select and not bone.hide :
             bone_layers = [i for i, l in enumerate(bone.layers) if l]
@@ -193,10 +208,12 @@ def mirrorBoneWeightsFromOppositeSide(context, operator, use_topology=False):
 
     if len(selectedBoneNames) > 0:
         print("Calling Sparkles Mirror weight groups")
-        smart_mirror_vgroup(context, armobj, obj, selectedBoneNames)
+        smart_mirror_vgroup(context, armobj, obj, selectedBoneNames, clearTargetWeights=False)
 
-    armobj.data.bones.active = activeBone
-    bpy.ops.object.vertex_group_set_active(group=activeBone.name) 
+    if activeBone:
+        armobj.data.bones.active = activeBone
+    if activeVertexGroup:
+        obj.vertex_groups.active = activeVertexGroup
 
     return counter
 
@@ -224,6 +241,7 @@ def copyBoneWeightsToActiveBone(context, operator):
 def smart_mirror_vgroup(context, armobj, target, targetBoneNames, allVerts=True, clearTargetWeights=True, submeshInterpolation=True):
     context_obj   = context.object
     scene         = context.scene
+    depsgraph     = context.evaluated_depsgraph_get()
     original_mode = util.set_object_mode("OBJECT", object=target)
 
     clean_target_groups = []
@@ -247,7 +265,7 @@ def smart_mirror_vgroup(context, armobj, target, targetBoneNames, allVerts=True,
             pt = M @ vertex.co
             pt[0] *= -1 #(mirror along X Axis)
 
-            d, gdata = get_weights(target, target, pt, submeshInterpolation, sourceBoneNames)
+            d, gdata = get_weights(target, target, pt, submeshInterpolation, sourceBoneNames, depsgraph)
             vs.append((d,gdata))
 
             vmin = min(vs, key=lambda v: v[0])
@@ -276,12 +294,12 @@ def smart_mirror_vgroup(context, armobj, target, targetBoneNames, allVerts=True,
     target.select_set(True)
     util.set_object_mode(original_mode, object=target)
 
-def get_weights(source, target, point, submesh = False, restrictTo=None):
+def get_weights(source, target, point, submesh = False, restrictTo=None, depsgraph=None):
 
     M=source.matrix_world
     p = M.inverted() @ point
 
-    status, loc, face_normal, face_index = util.closest_point_on_mesh(source, p)
+    status, loc, face_normal, face_index = util.closest_point_on_mesh(source, p, depsgraph=depsgraph)
 
 
 
@@ -753,7 +771,7 @@ selector = arm.ObjectProp.slider_selector
 if selector != 'NONE':
     arm.ObjectProp.slider_selector='NONE'
 
-deforming_bones = data.get_volume_bones(arm, only_deforming=False) + data.get_base_bones(arm, only_deforming=False) + data.get_extended_bones(arm, only_deforming=False) 
+deforming_bones = data.get_volume_bones(arm, only_deforming=False) + data.get_base_bones(arm, only_deforming=False) + data.get_extended_bones(arm, only_deforming=False)
 weights.setDeformingBones(arm, deforming_bones, replace=True)
 
 selection = [active] if amode=='EDIT' else util.get_animated_meshes(context, arm, with_tamagoyaki=False, only_selected=True, return_names=False)
@@ -774,12 +792,12 @@ for obj in selection:
 
 util.set_active_object(bpy.context, active)
 util.ensure_mode_is(amode)
-    
+
 ''' % (util.get_addon_version(), bpy.app.version_string, get_fitting_presets(obj) )
     )
     file_preset.close()
 
-class TAMAGOYAKI_MT_fitting_presets_menu(Menu):
+class AVASTAR_MT_fitting_presets_menu(Menu):
     bl_label  = "Fitting Presets"
     bl_description = "Fitting Presets for custom attachments"
     preset_subdir = os.path.join("tamagoyaki","fittings")
@@ -790,7 +808,7 @@ class TamagoyakiAddPresetFitting(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.fitting_presets_add"
     bl_label = "Add Fitting Preset"
     bl_description = "Create new Preset from current Fitting Slider settings"
-    preset_menu = "TAMAGOYAKI_MT_fitting_presets_menu"
+    preset_menu = "AVASTAR_MT_fitting_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","fittings")
 
@@ -805,11 +823,11 @@ class TamagoyakiUpdatePresetFitting(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.fitting_presets_update"
     bl_label = "Update Fitting Preset"
     bl_description = "Store current Slider settings in last selected Preset"
-    preset_menu = "TAMAGOYAKI_MT_fitting_presets_menu"
+    preset_menu = "AVASTAR_MT_fitting_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","fittings")
 
     def invoke(self, context, event):
-        self.name = bpy.types.TAMAGOYAKI_MT_fitting_presets_menu.bl_label
+        self.name = bpy.types.AVASTAR_MT_fitting_presets_menu.bl_label
         print("Updating Preset", self.name)
         return self.execute(context)
 
@@ -820,7 +838,7 @@ class TamagoyakiRemovePresetFitting(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.fitting_presets_remove"
     bl_label = "Remove Fitting Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "TAMAGOYAKI_MT_fitting_presets_menu"
+    preset_menu = "AVASTAR_MT_fitting_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","fittings")
 
 def setPresetFitting(state):
@@ -841,9 +859,10 @@ def updateFittingStrength(self, context, bone_name=None):
         old_handler_state = util.set_disable_handlers(context.scene, True)
 
         obj   = context.object
+        obj.ObjectProp.fitting = True
         omode = obj.mode if obj.mode !='EDIT' else util.ensure_mode_is("OBJECT")
         original_group = obj.vertex_groups.active
-        
+
         if bone_name in PHYSICS_GROUPS.keys():
             try:
 
@@ -856,11 +875,11 @@ def updateFittingStrength(self, context, bone_name=None):
                 util.ErrorDialog.exception(e)
                 return
         else:
-            only_selected = util.update_only_selected_verts(obj, omode)
+            only_selected = util.update_only_selected_verts(obj, omode=omode)
             percent       = getattr(obj.FittingValues, bone_name)
-            active_group  = set_fitted_strength(context, obj, bone_name, percent, only_selected, omode)
+            active_group  = set_fitted_strength(context, obj, bone_name, percent, only_selected, omode=omode)
 
-        util.ensure_mode_is(omode)
+
 
         if active_group:
             obj.vertex_groups.active_index = active_group.index
@@ -868,6 +887,7 @@ def updateFittingStrength(self, context, bone_name=None):
             obj.vertex_groups.active_index = -1
 
         armobj  = obj.find_armature()
+        armobj_select = armobj.select_get()
         if update_fitting and self.auto_update:
 
 
@@ -903,6 +923,7 @@ def updateFittingStrength(self, context, bone_name=None):
 
             armobj['rig_display_mesh_count'] = 0
         util.ensure_mode_is(omode)
+        armobj.select_set(armobj_select)
 
     finally:
         util.set_disable_handlers(context.scene, old_handler_state)
@@ -917,7 +938,7 @@ def register_FittingValues_attributes():
                                   update = eval("lambda a,b:updateFittingStrength(a,b,'%s')"%bname),
                                   min      = 0, max      = 1.0,
                                   soft_min = 0, soft_max = 1.0,
-                                  default = 1.0))
+                                  default = 0.0))
 
 def unregister_FittingValues_attributes():
     for bname in MBONE_CVBONE_PAIRS.values():
@@ -927,7 +948,7 @@ def unregister_FittingValues_attributes():
 
 def has_collision_volumes(weighted_bones):
     return any([a in SLVOLBONES for a in weighted_bones])
-    
+
 def classic_fitting_preset(obj):
     setPresetFitting(True)
     armobj = obj.find_armature()
@@ -1100,12 +1121,12 @@ def mirror_vgroup(context, armobj, obj, tgt_name, src_name, use_topology):
     print("mirrored from %s -> %s"%(src_name,tgt_name))
 
 
-def getWeights(target_ob, source_ob, point, submesh = False, restrictTo=None):
+def getWeights(target_ob, source_ob, point, submesh = False, restrictTo=None, depsgraph=None):
 
     M = target_ob.matrix_world
     p = M.inverted() @ point
 
-    status, loc, face_normal, face_index = util.closest_point_on_mesh(target_ob, p)
+    status, loc, face_normal, face_index = util.closest_point_on_mesh(target_ob, p, depsgraph=depsgraph)
 
 
 
@@ -1218,7 +1239,7 @@ def copyBoneWeightsToSelectedBones(target, sources, selectedBoneNames, submeshIn
     original_mode = util.ensure_mode_is("WEIGHT_PAINT", object=target)
     if selectedBoneNames == None:
         selectedBoneNames = target.vertex_groups.keys()
-        
+
 
 
 
@@ -1325,24 +1346,23 @@ def create_message(op, context, template):
 
     tgt = "selected"
     if op.allVisibleBones and op.allHiddenBones:
-       tgt = "all"
+        tgt = "all"
     elif op.allVisibleBones:
-       tgt = "all visible"
+        tgt = "all visible"
     elif op.allHiddenBones:
-       tgt += " + hidden"
+        tgt += " + hidden"
 
     msg = template % (ss, tgt)
     return msg
 
-def get_used_group_names(obj):
-
-
-    vertices = obj.data.vertices
+def groups_with_weights(context, obj):
+    depsgraph = context.evaluated_depsgraph_get()
     used_group_names = set()
-    vertex_groups = obj.vertex_groups
+    me = util.getMesh(context, obj, apply_modifier_stack=True)
+    vertices = me.vertices
     for v in vertices:
         for group in [g for g in v.groups if g.weight > 0]:
-            used_group_names.add(vertex_groups[group.group].name)
+            used_group_names.add(obj.vertex_groups[group.group].name)
     return used_group_names
 
 def removePhysicsWeights(context, obj):
@@ -1354,6 +1374,19 @@ def removePhysicsWeights(context, obj):
         del obj['physics']
 
 def removeBoneWeightGroupsFromSelectedBones(context, obj, only_remove_empty, bone_names, remove_nondeform=False):
+
+    def clean_weight_groups(obj):
+        omode = util.ensure_mode_is('WEIGHT_PAINT')
+        upf = obj.data.use_paint_mask
+        upv = obj.data.use_paint_mask_vertex
+        obj.data.use_paint_mask=False
+        obj.data.use_paint_mask_vertex=False
+
+        bpy.ops.object.vertex_group_clean(group_select_mode='BONE_DEFORM', keep_single=False, limit=0)
+        obj.data.use_paint_mask=upf
+        obj.data.use_paint_mask_vertex=upv
+        util.ensure_mode_is(omode)
+
     armobj        = obj.find_armature()
     c = 0
 
@@ -1370,12 +1403,13 @@ def removeBoneWeightGroupsFromSelectedBones(context, obj, only_remove_empty, bon
     else:
         target_names = [g.name for g in obj.vertex_groups]
 
-    used_group_names = get_used_group_names(obj)
-    for name in [bone_name for bone_name in target_names if bone_name not in used_group_names]:
+    weight_group_names = groups_with_weights(context, obj)
+    for name in target_names:
         group = obj.vertex_groups[name]
-        obj.vertex_groups.active_index=group.index
-        bpy.ops.object.vertex_group_remove()
-        c += 1
+        if not (only_remove_empty and name in weight_group_names):
+            obj.vertex_groups.active_index=group.index
+            bpy.ops.object.vertex_group_remove()
+            c += 1
     return c
 
 def removeBoneWeightsFromSelectedBones(context, operator, allVerts, boneNames):
@@ -1504,8 +1538,24 @@ If active Object is an armature, apply to all bound Meshes'''
 
     all_selected : BoolProperty(
         name = "Apply to Selected",
-        default = False, 
+        default = False,
         description = "Apply the Operator to the current selection" )
+
+    @classmethod
+    def description(cls, context, properties):
+        obj       = context.object
+        armobj    = obj.find_armature()
+        if armobj:
+            return None
+        else:
+            return "This operator can only be used when the Mesh is bound to an armature."
+
+    @classmethod
+    def poll(self, context):
+        obj       = context.object
+        armobj    = obj.find_armature()
+        return armobj != None
+
 
     def draw(self, context):
         layout = self.layout
@@ -1718,7 +1768,7 @@ class ButtonCopyWeightsFromRigged(bpy.types.Operator):
     bl_description = \
 '''Copy weights from other Mesh objects rigged to same Armature.
 
-Important: 
+Important:
 1.) Please set the Armature to Pose mode before calling this operator
 2.) Only selected vertices are affected
 3.) Only weightmaps for selected bones (in the armature) will be created'''
@@ -1818,7 +1868,7 @@ class ButtonCopyWeightsFromSelected(bpy.types.Operator):
         except Exception as e:
             util.ErrorDialog.exception(e)
             return{'FINISHED'}
-            
+
 class ButtonWeldWeightsFromRigged(bpy.types.Operator):
     bl_idname = "tamagoyaki.weld_weights_from_rigged"
     bl_label = "Weld to Rigged"
@@ -1840,7 +1890,7 @@ class ButtonWeldWeightsFromRigged(bpy.types.Operator):
         description="Clean Target vertex Groups before performnig the copy action")
 
 
-    @staticmethod  
+    @staticmethod
     def weld_weights_from_rigged(context,
             onlySelectedVerts,
             cleanVerts,
@@ -1853,7 +1903,7 @@ class ButtonWeldWeightsFromRigged(bpy.types.Operator):
         try:
             obj       = context.object
             armobj    = obj.find_armature()
-            
+
             boneNames = get_bones_from_armature(armobj, allVisibleBones, allHiddenBones)
             omode     = util.ensure_mode_is('EDIT')
             sources = util.get_animated_meshes(context, armobj)
@@ -1884,11 +1934,11 @@ class ButtonWeldWeightsFromRigged(bpy.types.Operator):
             self.allVisibleBones,
             self.allHiddenBones
         )
-       
+
         if status == 'FINISHED':
             msg = create_message(self, context, "Copied%sweights from visible siblings and %s Weight Groups")
             self.report({'INFO'}, msg)
-        
+
         return {status}
 
 
@@ -2045,7 +2095,7 @@ def rebase_shapekeys(obj, from_name, to_name):
 
     keys = []
     for index, sk in enumerate(blocks):
-         if index > 0 and sk.relative_key == from_relative and sk != to_relative:
+        if index > 0 and sk.relative_key == from_relative and sk != to_relative:
             rebase_shapekey(obj, sk.name, to_name)
             keys.append(sk.name)
     return keys
@@ -2120,7 +2170,7 @@ def smooth_weights(context, obj, bm, from_group, to_group, count=1, factor=0.5, 
 
     shaped_mesh = util.getMesh(context, obj, rendertype, apply_mesh_rotscale=False, apply_armature=True, msg="S Shape ")
     shaped_mesh.name = "T_shaped"
-    
+
     original_weights = {}
 
     shape_cos = {}
@@ -2202,7 +2252,7 @@ def distribute_weights(context, obj, from_group, to_group, threshold=0.00001, al
 
 
 
-    
+
 
 
 
@@ -2256,7 +2306,7 @@ def distribute_weights(context, obj, from_group, to_group, threshold=0.00001, al
 
 
 
-    
+
     shape.refresh_shape(context, arm, obj, graceful=True)
 
     unsolved_verts = []
@@ -2387,7 +2437,10 @@ def get_pgroup(obj, cgroup_name, create=False):
     pgroup = fitting[cgroup_name]
     return pgroup
 
-def set_fitted_strength(context, obj, cgroup_name, percent, only_selected, omode):
+def set_fitted_strength(context, obj, cgroup_name, percent, only_selected, omode=None):
+    if omode == None:
+        omode=obj.mode
+
 
     selected_verts = obj.mode=='EDIT'
     cgroup       = get_bone_group(obj, cgroup_name, create=False)
@@ -2397,7 +2450,7 @@ def set_fitted_strength(context, obj, cgroup_name, percent, only_selected, omode
 
     if active_group not in [mgroup,cgroup]:
         active_group  = cgroup
-        
+
     mgroup_set  = get_weight_set(obj, mgroup)
     cgroup_set  = get_weight_set(obj, cgroup)
 
@@ -2444,7 +2497,7 @@ def set_fitted_strength(context, obj, cgroup_name, percent, only_selected, omode
             set_weight(v, mgroup, mw, cgroup, cw)
 
 
-    
+
     if only_selected:
         if omode != 'OBJECT':
             obj.update_from_editmode()
@@ -2547,7 +2600,7 @@ def edit_object_change_handler(scene):
     except:
         pass
 
-BONE_CATEGORIES = ['Head', 'Arm', 'Torso', 'Leg']        
+BONE_CATEGORIES = ['Head', 'Arm', 'Torso', 'Leg']
 SORTED_BASIC_BONE_CATEGORIES = {
     'Head' :[['HEAD','NECK']],
     'Arm'  :[['L_CLAVICLE', 'L_UPPER_ARM', 'L_LOWER_ARM', 'L_HAND'],['R_CLAVICLE', 'R_UPPER_ARM', 'R_LOWER_ARM', 'R_HAND']],
@@ -2565,26 +2618,27 @@ MESH_TO_WITH_WEIGHT_MAP = {
     'lowerBodyMesh' : ['with_lower_body', 'lower body'],
     'skirtMesh' : ['with_skirt', 'skirt']
 }
-    
+
 def get_prop_meta(obj):
     id = obj.get('mesh_id')
     return MESH_TO_WITH_WEIGHT_MAP.get(id) if id else None
- 
+
 class ButtonGenerateWeights(bpy.types.Operator):
     bl_idname = "tamagoyaki.generate_weights"
     bl_label = "Update Weight Maps"
     bl_description = "Create/Update Weight Maps\n\n"\
                    + "You must specify for which bones you want to get weights(above)\n"\
                    + "and from which sources you want to copy weights(below, if applicable)\n"
-    bl_options = {'REGISTER', 'UNDO'}  
+    bl_options = {'REGISTER', 'UNDO'}
 
     focus  : FloatProperty(name="Focus", min=0.0, max=1.5, default=1.0, description="Bone influence offset (very experimental)")
     gain   : FloatProperty(name="Gain", min=0, max=10, default=1, description="Pinch Factor (level gain)")
     clean  : FloatProperty(name="Clean", min=0, max=1.0, description="remove weights < this value")
     limit  : BoolProperty(name="Limit to 4", default=True, description = "Limit Weights per vert to 4 (recommended)" )
-    weightBoneSelection: g_weightBoneSelection    
+    weightBoneSelection: g_weightBoneSelection
     use_mirror_x : g_use_mirror_x
     clearTargetWeights : g_clearTargetWeights
+    smoothTargetWeights : g_smoothTargetWeights
     copyWeightsToSelectedVerts : g_copyWeightsToSelectedVerts
     keep_groups : g_keep_groups
 
@@ -2605,6 +2659,7 @@ class ButtonGenerateWeights(bpy.types.Operator):
     submeshInterpolation : g_submeshInterpolation
     with_hidden_tamagoyaki_meshes : g_with_hidden_tamagoyaki_meshes
     with_listed_tamagoyaki_meshes : g_with_listed_tamagoyaki_meshes
+    with_selected_tamagoyaki_meshes : g_with_selected_tamagoyaki_meshes
     with_hair : g_with_hair
     with_head : g_with_head
     with_eyes : g_with_eyes
@@ -2612,7 +2667,7 @@ class ButtonGenerateWeights(bpy.types.Operator):
     with_upper_body : g_with_upper_body
     with_lower_body : g_with_lower_body
     with_skirt : g_with_skirt
-    
+
     def draw(self, context):
         props = context.scene.MeshProp
         skelProp = context.scene.SkeletonProp
@@ -2690,17 +2745,17 @@ class ButtonGenerateWeights(bpy.types.Operator):
                 ccol.prop(obj.ObjectProp, 'fitting', text="Confirm Initialisation")
                 return
 
-        bones = armobj.data.bones        
+        bones = armobj.data.bones
 
-        last_select = bpy.types.TAMAGOYAKI_MT_fitting_presets_menu.bl_label
+        last_select = bpy.types.AVASTAR_MT_fitting_presets_menu.bl_label
         row = col.row(align=True)
-        row.menu("TAMAGOYAKI_MT_fitting_presets_menu", text=last_select )
+        row.menu("AVASTAR_MT_fitting_presets_menu", text=last_select )
         row.operator("tamagoyaki.fitting_presets_add", text="", icon=ICON_ADD)
         if last_select not in ["Fitting Presets", "Presets"]:
             row.operator("tamagoyaki.fitting_presets_update", text="", icon=ICON_FILE_REFRESH)
             row.operator("tamagoyaki.fitting_presets_remove", text="", icon=ICON_REMOVE).remove_active = True
 
-        
+
         if not context.scene.SceneProp.panel_appearance_enabled:
             box = layout.box()
             col = box.column(align=True)
@@ -2775,7 +2830,7 @@ class ButtonGenerateWeights(bpy.types.Operator):
                 else:
                     icon_value = get_icon(ICON_CHECKBOX_DEHLT)
             else:
-                    icon_value = get_icon(ICON_CHECKBOX_DEHLT)
+                icon_value = get_icon(ICON_CHECKBOX_DEHLT)
 
             p=row.operator("tamagoyaki.fitting_bone_selected_hint", text="", icon_value=icon_value)
             p.bone ='RIGHT_HANDLE'
@@ -2820,13 +2875,13 @@ class ButtonGenerateWeights(bpy.types.Operator):
                         display_name = bname if bones[bname].select else pname
                         label = get_bone_label(bname)
                         bone_type = ICON_CHECKBOX_DEHLT if not selected else 'mbone' if display_name[0]=='m' else 'vbone'
-                        icon_value = get_icon(bone_type) 
+                        icon_value = get_icon(bone_type)
                         row = col.row(align=True)
                         row.prop(obj.FittingValues, bname, slider=True, text=label)
                         p       = row.operator("tamagoyaki.fitting_bone_selected_hint", text="", icon_value=icon_value)
                         p.bone  = bname
                         p.bone2 = ''
-                        
+
                         pgroup = get_pgroup(obj, bname)
                         count  = len(pgroup) if pgroup != None else 0
                         icon   = ICON_LOAD_FACTORY if count > 0 else ICON_BLANK1
@@ -2845,14 +2900,15 @@ class ButtonGenerateWeights(bpy.types.Operator):
         altprop = context.scene.MeshProp
         with_hidden_tamagoyaki_meshes = get_property_from('with_hidden_tamagoyaki_meshes', prop, altprop, default=None)
         with_listed_tamagoyaki_meshes = get_property_from('with_listed_tamagoyaki_meshes', prop, altprop, default=None)
+        with_selected_tamagoyaki_meshes = get_property_from('with_selected_tamagoyaki_meshes', prop, altprop, default=None)
         box = layout
         box.label(text="Copy Weight from ...", icon=ICON_GROUP_VERTEX)
         col = box.column(align=True)
 
         only_visible = not with_hidden_tamagoyaki_meshes
-        meshes = util.get_animated_meshes(context, armobj, only_visible=only_visible)
+        meshes = util.get_animated_meshes(context, armobj, only_visible=False)
         if weight_source_type == 'COPY':
-            available_meshes = [ob for ob in meshes if ob!=context.object]
+            available_meshes = [ob for ob in meshes if ob!=context.object and (ob.select_get() or ob.ObjectProp.is_selected or not (ob.ObjectProp.is_hidden_from_op or ob.hide_viewport) or with_hidden_tamagoyaki_meshes)]
         else:
             available_meshes = {}
             for obj in meshes:
@@ -2893,6 +2949,9 @@ class ButtonGenerateWeights(bpy.types.Operator):
 
         col.separator()
         col.prop(prop, 'with_listed_tamagoyaki_meshes', toggle=False)
+        col.prop(prop, 'with_selected_tamagoyaki_meshes', toggle=False)
+        col = box.column(align=True)
+        col.enabled= not prop.with_selected_tamagoyaki_meshes
         col.prop(prop, 'with_hidden_tamagoyaki_meshes', toggle=False)
         col = box.column(align=True)
         col.label(text="Note: All listed sources influence")
@@ -2909,10 +2968,10 @@ class ButtonGenerateWeights(bpy.types.Operator):
             col.alert=True
             col.label(text="No %s %s %s" % (destination, type, marked), icon=ICON_HAND)
             col.alert=False
-    
+
     @staticmethod
     def weightmap_copy_panel_draw(armobj, context, box, op=None, with_opcall=True):
-        
+
         def get_label_from_selection(selection):
             if selection == 'SELECTED':
                 return 'selected'
@@ -2927,7 +2986,6 @@ class ButtonGenerateWeights(bpy.types.Operator):
 
         weightBoneSelection = get_property_from('weightBoneSelection', op, context.scene.MeshProp, default=None)
         weightSourceSelection = get_property_from('weightSourceSelection', op, context.scene.MeshProp, default=None)
-        weight_mapping = get_property_from('weight_mapping', op, context.scene.MeshProp, default=None)
 
         rig_sections, excludes = assign_extended_section(skelProp, weight_sources=weightSourceSelection)
         selected_count = get_selected_bone_count(armobj, weightBoneSelection, rig_sections, excludes)
@@ -2936,9 +2994,6 @@ class ButtonGenerateWeights(bpy.types.Operator):
         strategy_box = box.box()
         col = strategy_box.column(align=True)
         col.prop(op, "weightSourceSelection", toggle=True)
-        if weightSourceSelection in ['COPY']:
-            col.prop(op, "weight_mapping")
-            col.enabled=True
 
         selection_box = box.box()
         if weightSourceSelection != 'COPY':
@@ -2952,7 +3007,7 @@ class ButtonGenerateWeights(bpy.types.Operator):
                     ButtonGenerateWeights.add_bone_counter(col, selected_count, status, "bone", "used")
                 if enabled_count > -1:
                     ButtonGenerateWeights.add_bone_counter(col, enabled_count, "deform", "bone", "enabled")
-            
+
             if weightSourceSelection in ['EMPTY','AUTOMATIC']:
                 draw_include_binding(selection_box, skelProp, weightBoneSelection, armobj.RigProp.RigType)
             can_run = (enabled_count != 0 and selected_count != 0)
@@ -2960,27 +3015,29 @@ class ButtonGenerateWeights(bpy.types.Operator):
         if weightSourceSelection in ['COPY', 'AVASTAR', 'EXTENDED']:
             can_run = ButtonGenerateWeights.display_weights_from_meshes(context, armobj, op, selection_box, weightSourceSelection)
 
-        if True:#weightSourceSelection != 'COPY' or weight_mapping != 'POLYINTERP_AVASTAR':
+        if True:
             option_box = box.box()
             option_box.label(text="Options")
             col = option_box.column(align=True)
             if weightSourceSelection != 'COPY':
                 col.prop(op, 'use_mirror_x')
-            
+
             if weightSourceSelection not in ['EMPTY']:
                 col.prop(op, "keep_groups", toggle=False)
                 col = option_box.column(align=True)
                 col.prop(op, "clearTargetWeights", toggle=False)
+                col.prop(op, "smoothTargetWeights", toggle=False)
                 col.enabled = not op.copyWeightsToSelectedVerts
                 col = option_box.column(align=True)
                 col.prop(op, "copyWeightsToSelectedVerts", toggle=False)
+                col.prop(op, "copyWeightsForSelectedBones", toggle=False)
 
         col = box.column(align=True)
         col.enabled = can_run
         col.alert = not can_run
         txt = "Update Weights" if can_run else "No valid source selected"
         col.operator(ButtonGenerateWeights.bl_idname, text=txt, icon=ICON_PREFERENCES)
-    
+
 
     def weightmap_bind_panel_draw(armobj, context, box, op=None, is_redo=False):
         if not op:
@@ -2988,7 +3045,7 @@ class ButtonGenerateWeights(bpy.types.Operator):
 
         can_run = True
         skelProp = context.scene.SkeletonProp
-    
+
         weightBoneSelection = get_property_from('weightBoneSelection', op, context.scene.MeshProp, default=None)
         rig_sections, excludes = assign_extended_section(skelProp)
         selected_count = get_selected_bone_count(armobj, weightBoneSelection, rig_sections, excludes)
@@ -3001,7 +3058,6 @@ class ButtonGenerateWeights(bpy.types.Operator):
         col = strategy_box.column(align=True)
 
         if op.bindSourceSelection in ['COPY']:
-            col.prop(op, "weight_mapping")
             col.enabled=True
             can_run = ButtonGenerateWeights.display_weights_from_meshes(context, armobj, op, box, op.bindSourceSelection, is_redo=is_redo)
 
@@ -3014,6 +3070,7 @@ class ButtonGenerateWeights(bpy.types.Operator):
                 col.prop(skelProp, "weight_groin", text="Include Groin", toggle=False)
             col.prop(op, "keep_groups", toggle=False)
             col.prop(op, "clearTargetWeights", toggle=False)
+            col.prop(op, "smoothTargetWeights", toggle=False)
 
         return can_run
 
@@ -3029,7 +3086,8 @@ class ButtonGenerateWeights(bpy.types.Operator):
         self.with_skirt = props.with_skirt
         self.with_hidden_tamagoyaki_meshes = props.with_hidden_tamagoyaki_meshes
         self.with_listed_tamagoyaki_meshes = props.with_listed_tamagoyaki_meshes
-        
+        self.with_selected_tamagoyaki_meshes = props.with_selected_tamagoyaki_meshes
+
     def invoke(self, context, event):
         meshobj = context.object
         armobj = util.get_armature(meshobj)
@@ -3040,6 +3098,7 @@ class ButtonGenerateWeights(bpy.types.Operator):
         self.copyWeightsToSelectedVerts = props.copyWeightsToSelectedVerts
         self.keep_groups = props.keep_groups
         self.weightBoneSelection = props.weightBoneSelection
+        self.smoothTargetWeights = props.smoothTargetWeights
 
 
         assign_weight_properties(self, skelProps)
@@ -3066,8 +3125,9 @@ class ButtonGenerateWeights(bpy.types.Operator):
         props.weightBoneSelection = self.weightBoneSelection
         store_handlers_disabled_state = util.set_disable_handlers(context.scene, True)
 
+        selected_object_names = util.get_selected_object_names(context)
         for target in [ ob for ob in context.selected_objects if ob.type=='MESH']:
-            
+
             armobj = util.get_armature(target)
 
             if not armobj:
@@ -3094,8 +3154,13 @@ class ButtonGenerateWeights(bpy.types.Operator):
                 donecount += 1
             else:
                 failcount+=1
-
+ 
         util.set_disable_handlers(context.scene, store_handlers_disabled_state)
+
+        if amode == 'EDIT':
+            ensure_mode_is('OBJECT')
+        util.restore_object_select_states(context, selected_object_names)
+
         if  props.weightSourceSelection == 'FACEGEN':
             util.set_active_object(context, target if target else active)
         elif active:
@@ -3105,13 +3170,14 @@ class ButtonGenerateWeights(bpy.types.Operator):
         util.update_view_layer(context)
         return {'FINISHED'}
 
+
     def copy_weightmaps(self, context, armobj, target):
 
         def clean_vertex_weights(target, armobj):
 
             animation_groups = [g for g in target.vertex_groups if g.name in armobj.data.bones]
             if target.vertex_groups.active:
-                active_group_name = target.vertex_groups.active.name 
+                active_group_name = target.vertex_groups.active.name
             else:
                 active_group_name = None
 
@@ -3121,15 +3187,17 @@ class ButtonGenerateWeights(bpy.types.Operator):
 
             if active_group_name:
                 bpy.ops.object.vertex_group_set_active(group=active_group_name)
-            
+
         meshProps = context.scene.MeshProp
         skeletonProps = context.scene.SkeletonProp
         use_selected_bones = meshProps.weightBoneSelection == 'SELECTED'
         use_visible_bones = meshProps.weightBoneSelection == 'VISIBLE'
 
         active=context.object
-        copyWeightsToSelectedVerts = meshProps.copyWeightsToSelectedVerts and target.mode in ['EDIT', 'WEIGHT_PAINT']
+        copyWeightsToSelectedVerts = meshProps.copyWeightsToSelectedVerts
+        copyWeightsForSelectedBones = meshProps.copyWeightsForSelectedBones
         clearTargetWeights = meshProps.clearTargetWeights
+        active_weightmap = get_active_weightmap(target)
         if active == target and (copyWeightsToSelectedVerts or clearTargetWeights):
 
             selected_vert_indices = [v.index for v in active.data.vertices if v.select]
@@ -3170,7 +3238,7 @@ class ButtonGenerateWeights(bpy.types.Operator):
         util.ensure_mode_is("OBJECT", object=armobj)
         util.ensure_mode_is("POSE", object=armobj)
 
-        rig_sections, excludes = assign_extended_section(self)
+        rig_sections, excludes = assign_extended_section(self, all_sections=not copyWeightsForSelectedBones)
         weighted_bones = data.get_deform_bones(
             armobj,
             rig_sections,
@@ -3184,17 +3252,27 @@ class ButtonGenerateWeights(bpy.types.Operator):
         bone_select_info = util.get_pose_bone_select(armobj, weighted_bones)
         original_mode = util.ensure_mode_is('WEIGHT_PAINT', object=target)
 
-        wcontext = setup_weight_context(self, context, armobj, copyWeightsToSelectedVerts=copyWeightsToSelectedVerts)
+        wcontext = setup_weight_context(self,
+                   context,
+                   armobj,
+                   copyWeightsToSelectedVerts=copyWeightsToSelectedVerts,
+                   copyWeightsForSelectedBones=copyWeightsForSelectedBones
+                   )
         wcontext.target = target
         wcontext.weighted_bones = weighted_bones
         wcontext.rig_sections = rig_sections
         wcontext.excludes = excludes
         wcontext.weightSourceSelection = meshProps.weightSourceSelection
         wcontext.clearTargetWeights = clearTargetWeights
+        wcontext.active_weightmap = active_weightmap
         create_weight_groups(wcontext, for_bind=False)
 
+        util.set_active_object(context, cactive)
+        if self.smoothTargetWeights and not copyWeightsToSelectedVerts:
+            smooth_weight_groups()
+
         if not meshProps.weightSourceSelection in ["EMPTY", "NONE"] and not meshProps.keep_groups:
-            util.removeEmptyWeightGroups(target)
+            util.removeEmptyWeightGroups(target, wcontext.depsgraph)
 
         util.ensure_mode_is(original_mode, object=target)
         bpy.ops.tamagoyaki.reparent_mesh(object_name=target.name) #to pass in the generated weights
@@ -3218,6 +3296,14 @@ class ButtonGenerateWeights(bpy.types.Operator):
         log.warning("+-----------------------------------------------------")
         return True
 
+
+def get_active_weightmap(target):
+    try:
+        return target.vertex_groups.active.name
+    except:
+        return None
+
+
 class MeshesIndexPropGroup(bpy.types.PropertyGroup):
     index : IntProperty(name="index")
 
@@ -3238,13 +3324,26 @@ class AVASTAR_UL_MeshesPropVarList(bpy.types.UIList):
                   ):
         ob=context.scene.objects[item.name]
         col = layout.column(align=True)
+        alert = (ob.ObjectProp.is_hidden_from_op or ob.hide_viewport) and ob.ObjectProp.is_selected
+
+        if ob.ObjectProp.is_hidden_from_op:
+            icon_value = get_icon(ICON_RADIOBUT_OFF)
+        elif alert:
+            icon_value = get_icon('warningdot')
+        else:
+            icon_value = get_icon(ICON_RADIOBUT_ON)
+
         row=col.row(align=True)
-        row.prop(ob.ObjectProp,"is_hidden", text='', icon = ICON_HIDE_ON if ob.ObjectProp.is_hidden else ICON_HIDE_OFF, emboss=False)
+        row.prop(ob.ObjectProp,"is_hidden_from_op", text='', icon_value=icon_value, emboss=False)
         row.prop(ob,"hide_select", text='', emboss=False)
+        row.prop(ob,"hide_viewport", text='', emboss=False)
         if ob.hide_select:
             row.label(text=item.name, icon=ICON_BLANK1)
         else:
             row.prop(ob.ObjectProp,"is_selected", text=item.name)
+            if alert:
+                row.alert=True
+                row.label(text='hidden!')
 
 
 
@@ -3263,9 +3362,9 @@ class weight_context:
         self.copyWeightsToSelectedVerts = get_property_from('copyWeightsToSelectedVerts', op, props)
         self.keep_groups = get_property_from('keep_groups', op, props)
         self.clearTargetWeights = get_property_from('clearTargetWeights', op, props)
-        self.weight_mapping =get_property_from('weight_mapping', op,  props)
         self.with_hidden_tamagoyaki_meshes = get_property_from('with_hidden_tamagoyaki_meshes', op, props)
         self.with_listed_tamagoyaki_meshes = get_property_from('with_listed_tamagoyaki_meshes', op, props)
+        self.with_selected_tamagoyaki_meshes = get_property_from('with_selected_tamagoyaki_meshes', op, props)
         self.weight_sources = []
 
     def set_bone_options(self, bone_names=None, rig_sections=None, excludes=None):
@@ -3282,22 +3381,32 @@ def get_property_from(key, group, altgroup, default=None):
         except:
             return default
 
-def setup_weight_context(self, context, armature, copyWeightsToSelectedVerts=None):
+def setup_weight_context(
+    self,
+    context,
+    armature,
+    copyWeightsToSelectedVerts=None,
+    copyWeightsForSelectedBones=None):
     meshProps = context.scene.MeshProp
     if copyWeightsToSelectedVerts == None:
-        copyWeightsToSelectedVerts = get_property_from('copyWeightsToSelectedVerts', self, meshProps) 
+        copyWeightsToSelectedVerts = get_property_from('copyWeightsToSelectedVerts', self, meshProps)
+    if copyWeightsForSelectedBones == None:
+        copyWeightsForSelectedBones = get_property_from('copyWeightsForSelectedBones', self, meshProps)
 
     wcontext = weight_context(self, context, armature)
+    wcontext.depsgraph = context.evaluated_depsgraph_get()
     wcontext.weightSourceSelection = get_property_from('weightSourceSelection', self, meshProps)
     wcontext.bindSourceSelection = get_property_from('bindSourceSelection', self, meshProps)
-    wcontext.copyWeightsToSelectedVerts = copyWeightsToSelectedVerts 
-    
+    wcontext.copyWeightsToSelectedVerts = copyWeightsToSelectedVerts
+    wcontext.copyWeightsForSelectedBones = copyWeightsForSelectedBones
+
     with_hidden_sources = wcontext.with_hidden_tamagoyaki_meshes
     with_listed_sources = wcontext.with_listed_tamagoyaki_meshes
     only_selected_sources = not(with_listed_sources if with_listed_sources != None else False)
     wcontext.weight_sources = setup_weight_sources(self, wcontext, context, armature)
 
     return wcontext
+
 
 def setup_weight_sources(self, wcontext, context, armature):
     with_hidden_sources = wcontext.with_hidden_tamagoyaki_meshes
@@ -3314,44 +3423,10 @@ def setup_weight_sources(self, wcontext, context, armature):
             use_object_selector=True)
 
     return weight_sources
-    
 
-def do_smart_copy(
-            operator,
-            context,
-            armobj,
-            target,
-            weight_sources,
-            copy_type,
-            bone_names,
-            with_invisible_sources):
 
-    copy_mesh_weights(
-                operator,
-                context,
-                armobj,
-                target,
-                weight_sources,
-                clearTargetWeights=True,
-                weight_mapping='POLYINTERP_NEAREST',
-                copy_type = copy_type,
-                bone_names=bone_names,
-                with_invisible_sources=with_invisible_sources,
-                copyWeightsToSelectedVerts=False)
 
-    copy_mesh_weights(
-                operator,
-                context,
-                armobj,
-                target,
-                weight_sources,
-                clearTargetWeights=False,
-                weight_mapping='POLYINTERP_VNORPROJ',
-                copy_type = copy_type,
-                bone_names=bone_names,
-                with_invisible_sources=with_invisible_sources,
-                copyWeightsToSelectedVerts=False)
-
+def smooth_weight_groups():
     omode=util.ensure_mode_is('WEIGHT_PAINT')
     try:
         bpy.ops.object.vertex_group_smooth(group_select_mode='BONE_DEFORM', factor=1, repeat=5)
@@ -3361,7 +3436,8 @@ def do_smart_copy(
 
 
 def create_weight_groups(wcontext, for_bind):
-    
+
+    depsgraph = wcontext.depsgraph
     operator = wcontext.operator
     context = wcontext.context
     target = wcontext.target
@@ -3370,9 +3446,9 @@ def create_weight_groups(wcontext, for_bind):
     excludes = wcontext.excludes
     copy_type = wcontext.weightSourceSelection if for_bind else wcontext.weightSourceSelection
     copyWeightsToSelectedVerts = wcontext.copyWeightsToSelectedVerts
+    copyWeightsForSelectedBones = wcontext.copyWeightsForSelectedBones
     keep_empty_groups = wcontext.keep_groups
     clearTargetWeights = False if copyWeightsToSelectedVerts else wcontext.clearTargetWeights
-    weight_mapping = wcontext.weight_mapping
     with_hidden_sources = wcontext.with_hidden_tamagoyaki_meshes
     with_listed_sources = wcontext.with_listed_tamagoyaki_meshes
 
@@ -3397,7 +3473,7 @@ def create_weight_groups(wcontext, for_bind):
 
 
 
-    
+
     if copy_type == 'EMPTY':
         util.createEmptyGroups(target, bone_names)
 
@@ -3409,46 +3485,40 @@ def create_weight_groups(wcontext, for_bind):
 
         if not keep_empty_groups:
 
-            c = util.removeEmptyWeightGroups(target)
+            c = util.removeEmptyWeightGroups(target, depsgraph)
 
 
     elif copy_type in ['COPY', 'AVASTAR']:
 
         armobj = util.get_armature(target)
         weight_sources = wcontext.weight_sources
-        invisible_sources = [ob for ob in weight_sources if util.object_select_get(ob) and not util.object_visible_get(ob, context=context)]
+        invisible_sources = [ [ob, util.object_select_get(ob), ob.hide_viewport] for ob in weight_sources if ob.hide_viewport or not util.object_visible_get(ob, context=context)]
 
-        for ob in invisible_sources:
-           util.set_object_hide(ob, False)
+        for ob, select_in_scene, hide_in_viewport in invisible_sources:
+           util.object_hide_set(ob, False)
+           util.object_select_set(ob,True)
+           ob.hide_viewport=False
 
 
 
-        if weight_mapping == 'POLYINTERP_AVASTAR':
-            do_smart_copy(
-                operator,
-                context,
-                armobj,
-                target,
-                weight_sources,
-                copy_type,
-                bone_names,
-                with_invisible_sources)
-        else:
-            copy_mesh_weights(
+        copy_mesh_weights(
                 operator,
                 context,
                 armobj,
                 target,
                 weight_sources,
                 clearTargetWeights,
-                weight_mapping,
                 copy_type = copy_type,
                 bone_names=bone_names,
                 with_invisible_sources=with_invisible_sources,
-                copyWeightsToSelectedVerts=copyWeightsToSelectedVerts)
+                copyWeightsToSelectedVerts=copyWeightsToSelectedVerts,
+                copyWeightsForSelectedBones=copyWeightsForSelectedBones,
+                depsgraph=depsgraph)
 
-        for ob in invisible_sources:
-           util.set_object_hide(ob, True)
+        for ob, select_in_scene, hide_in_viewport in invisible_sources:
+           util.object_hide_set(ob, True)
+           util.object_select_set(ob,select_in_scene)
+           ob.hide_viewport=hide_in_viewport
 
 
 
@@ -3456,9 +3526,14 @@ def create_weight_groups(wcontext, for_bind):
 
 
 
-    
+
     elif copy_type == 'SWAP':
         swapCollision2Deform(target, keep_groups=keep_empty_groups)
+
+    if wcontext.active_weightmap:
+        map=target.vertex_groups.get(wcontext.active_weightmap)
+        if map:
+            target.vertex_groups.active=map
 
     util.ensure_mode_is(original_mode)
     util.set_active_object(context, active)
@@ -3471,11 +3546,12 @@ def copy_mesh_weights(operator,
         target,
         weight_sources,
         clearTargetWeights,
-        weight_mapping,
         copy_type=None,
         bone_names=None,
         with_invisible_sources=False,
-        copyWeightsToSelectedVerts=False):
+        copyWeightsToSelectedVerts=False,
+        copyWeightsForSelectedBones=False,
+        depsgraph=None):
 
     def backup_vertex_groups(obj):
         for group in obj.vertex_groups:
@@ -3544,7 +3620,7 @@ def copy_mesh_weights(operator,
     log.warning("+- copy bone weights -----------------------------------------------------")
     log.warning("| Copy_type: %s" % (copy_type))
     log.warning("| enabled sources: %s" % ([s.name for s in enabled_sources]) )
-    log.warning("| visible sources: %s" % ([s.name for s in enabled_sources if not util.object_visible_get(s, context=context)]) )
+    log.warning("| visible sources: %s" % ([s.name for s in enabled_sources if util.object_visible_get(s, context=context)]) )
     log.warning("| target: %s" % target.name )
     log.warning("| armature: %s" % armobj.name )
     log.warning("| using %d bones" % (len(bone_names)) )
@@ -3559,7 +3635,6 @@ def copy_mesh_weights(operator,
 
 
     valid_sources = []
-    tempobj = []
     other_mesh_count = 0
     for childobj in enabled_sources:
 
@@ -3573,18 +3648,17 @@ def copy_mesh_weights(operator,
                 operator.report({'WARNING'},"Mesh %s with 0 vertices can't be used as weight source"%(childobj.name))
                 continue
 
+            nob = childobj
             if copy_type == 'EXTENDED':
                 part = childobj.name.split('.')[0]
                 nob = get_extended_mesh(context, part)
                 if nob:
                     print("Get extended weights from %s" % (nob.name) )
-                    tempobj.append(nob)
-                    childobj = nob
                 else:
                     continue
 
             log.warning("| Add Weight Source Mesh: %s" % childobj.name)
-            valid_sources.append(childobj)
+            valid_sources.append([nob.evaluated_get(depsgraph), childobj])
 
 
     if len(valid_sources) == 0:
@@ -3611,53 +3685,78 @@ def copy_mesh_weights(operator,
 
     util.update_view_layer(context)
 
-    bpy.ops.object.select_all(action='DESELECT')
-    for ob in valid_sources:
-        util.object_select_set(ob, True)
-    util.object_select_set(target, True)
-    omode = util.ensure_mode_is('WEIGHT_PAINT', context=context)
+    if True:
 
-    face_paint_mask = target.data.use_paint_mask
-    vert_paint_mask = target.data.use_paint_mask_vertex
+        if copyWeightsForSelectedBones:
+            restricToBoneNames = [b.name for b in armobj.data.bones if b.select]
+        else:
+            restricToBoneNames = None
 
-    target.data.use_paint_mask = False
-    if copyWeightsToSelectedVerts:
-        backup_vertex_groups(target)
-        target.data.use_paint_mask_vertex = True
+        submeshInterpolation = True
+        log.warning("| Processing Target %s" % (target.name) )
+        M=target.matrix_world
+        clean_target_groups = []
+        active_vertex_group = target.vertex_groups.active_index
 
-    bpy.ops.object.data_transfer(use_reverse_transfer=True,
-                                    use_freeze=False,
-                                    data_type='VGROUP_WEIGHTS',
-                                    use_create=True,
-                                    vert_mapping=weight_mapping,
-                                    use_object_transform=True,
-                                    ray_radius=0,
-                                    layers_select_src='NAME',
-                                    layers_select_dst='ALL',
-                                    mix_mode='REPLACE',
-                                    mix_factor=1 )
+        nv = 0 # track number of vertices for reporting
+        fv = 0 # track number of verts which could not receive a weight
+        for vertex in target.data.vertices:
 
-    if copyWeightsToSelectedVerts:
-        transfer_weights_to_selected(target, armobj)
-        restore_vertex_groups(target)
+            if copyWeightsToSelectedVerts and not vertex.select:
+                continue
 
-    try:
+            vs = []
 
-        bpy.ops.object.vertex_group_clean(group_select_mode='BONE_DEFORM', limit=1e-05, keep_single=True)
-        bpy.ops.object.vertex_group_limit_total(group_select_mode='BONE_DEFORM', limit=4)
-        bpy.ops.object.vertex_group_normalize_all(group_select_mode='BONE_DEFORM', lock_active=False)
-    except:
+            pt = M @ vertex.co
 
-        bpy.ops.object.vertex_group_clean(group_select_mode='ALL', limit=1e-05, keep_single=True)
-        bpy.ops.object.vertex_group_limit_total(group_select_mode='ALL', limit=4)
-        bpy.ops.object.vertex_group_normalize_all(group_select_mode='ALL', lock_active=False)
+            for source in valid_sources:
 
-    target.data.use_paint_mask_vertex = vert_paint_mask
-    target.data.use_paint_mask = face_paint_mask
+                if source[CHILD_ORIGINAL].name != target.name:
 
-    util.ensure_mode_is(omode, context=context)
-    bpy.ops.tamagoyaki.clear_bone_weight_groups(all_selected=False)
-    bpy.ops.object.select_all(action='DESELECT')
+                    d, gdata = getWeights(
+                               source[CHILD_COPY],
+                               source[CHILD_ORIGINAL],
+                               pt,
+                               submeshInterpolation,
+                               depsgraph=depsgraph,
+                               restrictTo=restricToBoneNames)
+
+                    vs.append((d,gdata,source[CHILD_ORIGINAL]))
+
+
+            if len(vs) == 0:
+                fv += 1
+            else:
+                vmin = min(vs, key=lambda v: v[VS_DISTANCE])
+                if is_enabled_source(vmin[VS_SOURCE], copy_type):
+                    add_weight = 0
+                    for gn,w in vmin[VS_DATA].items():
+                        if bone_names and gn not in bone_names:
+                            continue
+                        if clearTargetWeights and gn in target.vertex_groups and gn not in clean_target_groups:
+                            target.vertex_groups.remove(target.vertex_groups[gn])
+
+
+                        if gn not in target.vertex_groups:
+                            target.vertex_groups.new(name=gn)
+                            clean_target_groups.append(gn)
+
+                        target.vertex_groups[gn].add([vertex.index], w, 'REPLACE')
+                        add_weight = 1
+
+                    nv+= add_weight
+
+        target.vertex_groups.active_index = active_vertex_group
+
+        if nv == 0:
+            operator.report({'INFO'},"No verts assigned from %d sources to target %s(%d verts)"%(len(valid_sources),target.name,len(target.data.vertices)))
+        else:
+            operator.report({'INFO'},"Collected %d verts from %d sources to target %s(%d verts)"%(nv,len(valid_sources),target.name,len(target.data.vertices)))
+        if fv > 0:
+            if fv == len(target.data.vertices):
+                operator.report({'WARNING'},"Could not find any weights for %s"%(target.name))
+            else:
+                operator.report({'WARNING'},"Failed to copy %d weights to target %s(%dverts)"%(fv,target.name,len(target.data.vertices)))
 
     util.set_active_object(context, active)
 
@@ -3737,7 +3836,7 @@ def generateWeightsFromBoneSet(obj, bone_names, type, clear, copyWeightsToSelect
     util.set_active_object(bpy.context, active)
 
     toc = time.time() - tic
-    log.warning ("|  generateWeightsFromBoneSet total runtime: %.4f seconds" % toc) 
+    log.warning ("|  generateWeightsFromBoneSet total runtime: %.4f seconds" % toc)
     return toc
 
 def get_enabled_bone_count(armobj, rig_sections, excludes):
@@ -3805,8 +3904,8 @@ def draw_include_binding(layout, skelProp, scope, rigtype):
     row.label(text="Enabled Deform Bone Groups")
 
     col = layout.column(align=True)
+    row = col.row(align=True)
     if rigtype == 'EXTENDED':
-        row = col.row(align=True)
         row.prop(skelProp, "weight_base_bones", toggle=True, icon_value=get_eye_icon('meye', skelProp.weight_base_bones))
         row.prop(skelProp, "weight_volumes", toggle=True, icon_value=get_eye_icon('meye', skelProp.weight_volumes))
         row.prop(skelProp, "weight_alt_eye_bones", toggle=True, icon_value=get_eye_icon('meye', skelProp.weight_alt_eye_bones))
@@ -3844,7 +3943,7 @@ class DisplayWeightsPerVert(bpy.types.Operator):
         if ob and ob.type == 'MESH':
             return ob.find_armature() is not None
         return True
-        
+
     @staticmethod
     def draw_generic(context, layout):
         col=layout.column(align=True)
@@ -3865,6 +3964,15 @@ COLORS = [
         Vector((1.0, 0.0, 0.0, 1.0))  #red    (>4 weights)
         ]
 
+DISTANCES = [
+        Vector((1.0, 1.0, 1.0, 1.0)), #white  (all to same bone)
+        Vector((0.0, 1.0, 0.0, 1.0)), #green  (using adjacent bones)
+        Vector((0.82, 1.0, 0.15, 1.0)), #light green (bones distance is 3)
+        Vector((1.0, 1.0, 0.0, 1.0)), #orange (bones distance is 4)
+        Vector((1.0, 0.0, 0.0, 1.0)), #red    (bones distance is >4)
+        Vector((0.0, 0.0, 0.0, 1.0))  #black  (fatal bone distance)
+        ]
+
 def show_weights_per_vert(obj):
     util.set_object_mode("OBJECT",       object=obj)
     util.set_object_mode("VERTEX_PAINT", object=obj)
@@ -3875,14 +3983,14 @@ def show_weights_per_vert(obj):
     else:
         vcol_layer = vcol_layers.new(name=SPK_WEIGHTS_PER_WEIGHT)
     vcol_layers.active = vcol_layer
-        
+
     data = vcol_layer.data
     arm  = obj.find_armature()
     deform_groups = {}
     for i,group in enumerate(obj.vertex_groups):
         if group.name in arm.data.bones and arm.data.bones[group.name].use_deform:
             deform_groups[i] = arm.data.bones[group.name]
-    
+
 
     for loop in me.loops:
         vi = loop.vertex_index
@@ -3891,11 +3999,132 @@ def show_weights_per_vert(obj):
         for g in v.groups:
             if g.group in deform_groups:
                 ngroups +=1
-                
+
         if ngroups > 4:
             ngroups = 5
-            
-        data[loop.index].color=COLORS[ngroups] 
+
+        data[loop.index].color=COLORS[ngroups]
+    me.update()
+
+
+class DisplayInconsistentWeights(bpy.types.Operator):
+    bl_idname = "sparkles.show_inconsistent_weights"
+    bl_label = "Weight Consistency checker"
+    bl_description = \
+""""find vertices with apparently wrong weights.
+This tool is experimental.
+Please give us feedback so we can improve."""
+
+    bl_options = {'REGISTER', 'UNDO'}
+
+
+    @classmethod
+    def poll(self, context):
+        ob = context.active_object
+        if ob and ob.type == 'MESH':
+            return ob.find_armature() is not None
+        return True
+
+
+    @staticmethod
+    def draw_generic(context, layout):
+        col=layout.column(align=True)
+        col.operator(DisplayInconsistentWeights.bl_idname, text="Show inconsistent weights map")
+
+    def execute(self, context):
+        show_inconsistent_weights(context.active_object)
+        return {'FINISHED'}
+
+
+def show_inconsistent_weights(obj):
+
+    def get_bone_chain(bone):
+        chain = [bone]
+        while bone.parent:
+            chain.insert(0,bone.parent)
+            bone = bone.parent
+        return chain
+
+
+    def get_distance(from_bone, to_bone, loc):
+        from_chain = get_bone_chain(from_bone)
+        to_chain = get_bone_chain(to_bone)
+
+        maxindex = min(len(from_chain), len(to_chain))
+        index=0
+        is_same_chain=True
+        for index in range(maxindex):
+            if from_chain[index]!= to_chain[index]:
+                is_same_chain = False
+                break
+
+        bone_count = from_bone['chain_length'] + to_bone['chain_length'] - 2*index
+        distance = (from_bone.head_local-loc).magnitude
+        return bone_count, distance
+
+    def set_chain_length(bone, len):
+        bone['chain_length'] = len
+        for ch in bone.children:
+            set_chain_length(ch, len+1)
+
+    def find_distances(bones, loc):
+        remaining_bones = bones.copy()
+        bone_count = 0
+        max_distance = 0
+        min_distance = 0
+        for bone,weight in bones.items():
+            del remaining_bones[bone]
+            if remaining_bones:
+                for other_bone, weight in remaining_bones.items():
+                    bcount, dist = get_distance(bone, other_bone, loc)
+                    dist=dist
+                    if bcount > bone_count:
+                        bone_count = bcount
+                    if dist > max_distance:
+                        max_distance = dist
+                    if dist < min_distance or min_distance==0:
+                        min_distance = dist
+
+        return bone_count, min_distance, max_distance
+
+    util.set_object_mode("OBJECT",       object=obj)
+    util.set_object_mode("VERTEX_PAINT", object=obj)
+    me = obj.data
+    vcol_layers = me.vertex_colors
+    if SPK_WEIGHTS_PER_WEIGHT in vcol_layers:
+        vcol_layer = vcol_layers[SPK_WEIGHTS_PER_WEIGHT]
+    else:
+        vcol_layer = vcol_layers.new(name=SPK_WEIGHTS_PER_WEIGHT)
+    vcol_layers.active = vcol_layer
+
+    data = vcol_layer.data
+    arm  = obj.find_armature()
+    deform_groups = {}
+    set_chain_length(arm.data.bones[0], 0)
+    for i,group in enumerate(obj.vertex_groups):
+        if group.name in arm.data.bones and arm.data.bones[group.name].use_deform:
+            deform_groups[i] = arm.data.bones[group.name]
+
+
+    for loop in me.loops:
+        vi = loop.vertex_index
+        v = me.vertices[vi]
+        maxdistance = 0
+        weighted_bones = {}
+        for g in v.groups:
+            if g.group in deform_groups:
+                bname = obj.vertex_groups[g.group].name
+                bone = arm.data.bones.get(bname)
+                if not bone.use_deform:
+                    continue
+                weighted_bones[bone]=g.weight
+
+        bone_count, min_distance, max_distance = find_distances(weighted_bones, Vector(v.co))
+        discountance = bone_count
+        if discountance > 4:
+            discountance = 4
+
+        data[loop.index].color=DISTANCES[discountance]
     me.update()
 
 
@@ -3928,7 +4157,7 @@ def mirror_vgroup(context, armobj, obj, bone_name, mirror_name, use_topology):
     bpy.ops.object.mode_set(mode='WEIGHT_PAINT')
     armobj.data.bones[mirror_name].select = original_select
     print("mirrored from %s -> %s"%(mirror_name,bone_name))
-    
+
 
 
 classes = (
@@ -3938,7 +4167,7 @@ classes = (
     ButtonRegeneratePhysics,
     ButtonEnablePhysics,
     ButtonGeneratePhysics,
-    TAMAGOYAKI_MT_fitting_presets_menu,
+    AVASTAR_MT_fitting_presets_menu,
     TamagoyakiAddPresetFitting,
     TamagoyakiUpdatePresetFitting,
     TamagoyakiRemovePresetFitting,
@@ -3957,6 +4186,7 @@ classes = (
     MeshesProp,
     AVASTAR_UL_MeshesPropVarList,
     DisplayWeightsPerVert,
+    DisplayInconsistentWeights
 )
 
 def register():
@@ -3974,7 +4204,7 @@ def register():
 def unregister():
     from bpy.utils import unregister_class
     unregister_FittingValues_attributes()
-    
+
     del bpy.types.Object.FittingValues
 
     for cls in reversed(classes):

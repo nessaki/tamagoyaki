@@ -1,8 +1,11 @@
-### Copyright 2015, Gaia Clary
+### Copyright     2021 The Machinimatrix Team
 ###
 ### This file is part of Tamagoyaki
-### 
-
+###
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -81,14 +84,14 @@ def write_basis_pose_to_textblock(arm, bindname):
     text = bpy.data.texts.new(bindname)
     text.write(str(dict))
     arm['bindpose']=text.name
-        
+
 class TamagoyakiStoreBindData(bpy.types.Operator):
     bl_idname      = "tamagoyaki.store_bind_data"
     bl_label       = "Set Bind Pose"
     bl_description = '''Apply Current Pose as Restpose.
 This is only used to bind an object to a different pose!
 
-Warning:  Meshes already bound to the Armature 
+Warning:  Meshes already bound to the Armature
 will revert to T-Pose. Also the appearence sliders
 will be disabled!'''
 
@@ -115,14 +118,14 @@ will be disabled!'''
         amode = util.ensure_mode_is('POSE')
         bpy.ops.pose.armature_apply()
         util.ensure_mode_is(amode)
-        
+
         if obj != arm:
             util.set_active_object(context, active)
             util.ensure_mode_is(omode)
-        
+
         return{'FINISHED'}
-     
-    
+
+
 class TamagoyakiDisplayInRestpose(bpy.types.Operator):
     bl_idname      = "tamagoyaki.display_in_restpose"
     bl_label       = "Display Default Pose"
@@ -175,7 +178,7 @@ class TamagoyakiAlterToRestpose(bpy.types.Operator):
     bl_idname      = "tamagoyaki.alter_to_restpose"
     bl_label       = "Alter to Default Pose"
     bl_description = "Reset Armature back to the default Tamagoyaki Pose\nAfter Reverting the Avatar shape will be back in operation"
-    
+
     @classmethod
     def poll(self, context):
         obj=context.object
@@ -188,7 +191,7 @@ class TamagoyakiAlterToRestpose(bpy.types.Operator):
     def execute(self, context):
         active      = context.active_object
         active_mode = util.ensure_mode_is('OBJECT')
-        
+
 
         obj = context.object
         arm = util.get_armature(obj)
@@ -196,7 +199,7 @@ class TamagoyakiAlterToRestpose(bpy.types.Operator):
         omode = None
 
         meshes = util.getCustomChildren(arm, type='MESH') if obj==arm else [obj]
-        
+
         for obj in meshes:
             util.apply_armature_modifiers(context, obj, preserve_volume=True)
 
@@ -204,7 +207,7 @@ class TamagoyakiAlterToRestpose(bpy.types.Operator):
         amode = util.ensure_mode_is('POSE')
         bpy.ops.pose.armature_apply()
         util.ensure_mode_is(amode)
-        
+
         for obj in meshes:
             mod = create_armature_modifier(obj, arm, name=arm.name, preserve_volume=True)
 
@@ -214,10 +217,10 @@ class TamagoyakiAlterToRestpose(bpy.types.Operator):
 
 
 
-        
+
         util.set_active_object(context, active)
         util.ensure_mode_is(active_mode)
-        
+
         return{'FINISHED'}
 
 def add_bind_preset(context, filepath):
@@ -248,7 +251,7 @@ def add_bind_preset(context, filepath):
     file_preset.close()
 
 
-class TAMAGOYAKI_MT_bind_presets_menu(Menu):
+class AVASTAR_MT_bind_presets_menu(Menu):
     bl_label  = "Bind Presets"
     bl_description = "Bind Presets for the Tamagoyaki Rig"
     preset_subdir = os.path.join("tamagoyaki","bindings")
@@ -259,7 +262,7 @@ class TamagoyakiAddPresetBind(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.bind_presets_add"
     bl_label = "Add Bind Preset"
     bl_description = "Create new Preset from current Slider settings"
-    preset_menu = "TAMAGOYAKI_MT_bind_presets_menu"
+    preset_menu = "AVASTAR_MT_bind_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","bindings")
 
@@ -274,11 +277,11 @@ class TamagoyakiUpdatePresetBind(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.bind_presets_update"
     bl_label = "Update Bind Preset"
     bl_description = "Store current Slider settings in last selected Preset"
-    preset_menu = "TAMAGOYAKI_MT_bind_presets_menu"
+    preset_menu = "AVASTAR_MT_bind_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","bindings")
 
     def invoke(self, context, event):
-        self.name = bpy.types.TAMAGOYAKI_MT_bind_presets_menu.bl_label
+        self.name = bpy.types.AVASTAR_MT_bind_presets_menu.bl_label
         log.info("Updating Preset", self.name)
         return self.execute(context)
 
@@ -289,7 +292,7 @@ class TamagoyakiRemovePresetBind(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.bind_presets_remove"
     bl_label = "Remove Bind Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "TAMAGOYAKI_MT_bind_presets_menu"
+    preset_menu = "AVASTAR_MT_bind_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","bindings")
 
 def cleanup_binding(context, armobj, sync=True, with_ik_bones=False, with_joint_tails=True, delete_only=False, only_meta=False):
@@ -309,9 +312,9 @@ def cleanup_binding(context, armobj, sync=True, with_ik_bones=False, with_joint_
             util.remove_text(text, do_unlink=True)
 
     result = ArmatureJointPosStore.exec_imp(
-             context, 
-             delete_only=delete_only, 
-             with_ik_bones=with_ik_bones, 
+             context,
+             delete_only=delete_only,
+             with_ik_bones=with_ik_bones,
              with_joint_tails=with_joint_tails,
              snap_control_to_rig=True,
              only_meta=only_meta)
@@ -340,8 +343,8 @@ def remove_binding(context, armobj, sync=True):
 
     log.info("remove_binding from %s %s" % (armobj.type, armobj.name) )
     result = ArmatureJointPosRemove.exec_imp(
-                context, 
-                keep_edit_joints=True, 
+                context,
+                keep_edit_joints=True,
                 affect_all_joints=True
              )
 
@@ -370,13 +373,13 @@ class ArmatureJointPosStore(bpy.types.Operator):
            description = "Only remove Joints\n(Only for debugging, Normally not needed)",
            default     = False
            )
-           
+
     only_meta : BoolProperty(
            name        = "Only Meta",
            description = "Only create Metadata\n(Only for debugging, Normally not needed)",
            default     = False
            )
-           
+
     vanilla_rig :  BoolProperty(
            name        = "Vanilla Rig",
            description = "Reset Rig Metadata\n(Only use when nothing else helps)",
@@ -404,16 +407,20 @@ class ArmatureJointPosStore(bpy.types.Operator):
         col.prop(self, "sync")
         col.prop(self, "only_meta")
         col.prop(self, "delete_only")
-        
+
     @staticmethod
-    def exec_imp(context, 
-                 delete_only=False, 
-                 with_ik_bones=False, 
+    def exec_imp(context,
+                 delete_only=False,
+                 with_ik_bones=False,
                  with_joint_tails=True,
                  only_meta=False,
                  vanilla_rig=False,
                  snap_control_to_rig=False,
                  store_as_bind_pose=None):
+
+
+
+
 
         oumode = util.set_operate_in_user_mode(False)
         try:
@@ -484,7 +491,7 @@ class ArmatureJointPosStore(bpy.types.Operator):
                      store_as_bind_pose=self.store_as_bind_pose
                      )
         return result
-        
+
 def reset_dirty_flag(armobj, cleanup=False):
     was_dirty = DIRTY_RIG in armobj
 
@@ -528,7 +535,7 @@ class ArmatureJointPosRemove(bpy.types.Operator):
             log.info("%s edited joint locations" % "Keept" if keep_edit_joints else "Removed")
             delete_joint_info = not keep_edit_joints
             all = affect_all_joints
-            log.info("%s Joints are affected" % ("All" if all else "Only selected") ) 
+            log.info("%s Joints are affected" % ("All" if all else "Only selected") )
 
             util.ensure_mode_is("EDIT")
             rig.del_offset_from_sl_armature(context, armobj, delete_joint_info, all=all)
@@ -582,7 +589,7 @@ def reconfigure_rig_display(context, arm, objs, verbose=True, force=False):
     else:
         type = arm.ObjectProp.rig_display_type
         for e in range(0,32):
-                arm.data.layers[e] = e==B_LAYER_DEFORM
+            arm.data.layers[e] = e==B_LAYER_DEFORM
 
         final_set = set()
         if type == 'VOL':
@@ -624,7 +631,10 @@ def get_binding_bones(context, obj, bone_set):
             if g.name in bone_set:
                 binding_bones.add(g.name)
 
+
+
     return binding_bones
+
 
 def configure_rig_display(props, context):
     obj = context.object
@@ -636,12 +646,16 @@ def configure_rig_display(props, context):
             arm['rig_display_type_set'] = ''
             reconfigure_rig_display(context, arm, objs)
 
+
+
+
+
 last_armobj = None
 def fix_bone_layers(context, scene, lazy=True, force=False):
     global last_armobj
 
     if context is None:
-         return
+        return
     if scene is None:
         scene = context.scene
 
@@ -678,6 +692,10 @@ def fix_bone_layers(context, scene, lazy=True, force=False):
         print("Force fixing bone layers failed...")
         raise
 
+
+
+
+
 def bindpose_to_restpose(context, obj):
     armobj = obj.find_armature()
     util.set_active_object(context, armobj)
@@ -700,6 +718,11 @@ def to_restpose(child, SKELETON=None):
         if SKELETON == None:
             SKELETON = data.getSkeletonDefinition('EXTENDED', 'PIVOT')
 
+
+
+
+
+
         for bname, weights in weightmaps.values():
             if weights:
                 calculate_shape_delta(arm, child, bname, weights, fco, precos, SKELETON)
@@ -713,7 +736,7 @@ def calculate_shape_delta(armobj, child, bname, weights, fco, precos, SKELETON):
 
     MRest = get_reference_matrix_data(dbone)
     MBind = get_bind_matrix_data(dbone, SKELETON)
-    
+
     coflen = len(fco)
 
     verts = child.data.vertices
@@ -729,6 +752,9 @@ def calculate_shape_delta(armobj, child, bname, weights, fco, precos, SKELETON):
             shape_local_co = R @ vert_local_co
             DL = weight * (shape_local_co - vert_local_co)
             shape.update_shape_delta(dco_index, fco, DL)
+
+
+
 
     return
 
@@ -821,7 +847,7 @@ classes = (
     TamagoyakiDisplayInRestpose,
     TamagoyakiCleanupBinding,
     TamagoyakiAlterToRestpose,
-    TAMAGOYAKI_MT_bind_presets_menu,
+    AVASTAR_MT_bind_presets_menu,
     TamagoyakiAddPresetBind,
     TamagoyakiUpdatePresetBind,
     TamagoyakiRemovePresetBind,

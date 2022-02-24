@@ -1,7 +1,5 @@
-### Copyright 2015, Gaia Clary
-### Modifications 2015 Gaia Clary
-### Modifications 2022 Nessaki
-### Contains code from Machinimatrix
+### Copyright     2021 The Machinimatrix Team
+###
 ### This file is part of Tamagoyaki
 ###
 ### The module has been created based on this document:
@@ -62,17 +60,18 @@ def warn_if_camera_locked_to_layers(view, layout):
 
 
 
+
 class PanelWorkflow(bpy.types.Panel):
     bl_space_type  = 'VIEW_3D'
     bl_region_type = UI_LOCATION
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Workflows"
-    bl_idname      = "TAMAGOYAKI_PT_workflow"
+    bl_idname      = "AVASTAR_PT_workflow"
     bl_options     = {'DEFAULT_CLOSED'}
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_WORKFLOW, msg=panel_info_workflow)
+        util.draw_info_header(self.layout.row(), AVASTAR_WORKFLOW, id='panel_info_workflow')
 
     def draw(self, context):
 
@@ -145,17 +144,17 @@ class PanelShaping(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Avatar Shape"
-    bl_idname      = "TAMAGOYAKI_PT_shaping"
+    bl_idname      = "AVASTAR_PT_shaping"
     bl_options     = {'DEFAULT_CLOSED'}
-    
+
     @staticmethod
     def recalculate_bone_usage(context, arm, pids):
         isCollisionRig = rig.is_collision_rig(context.object)
-        
+
         for pid in pids:
             P = arm.ShapeDrivers.DRIVERS.get(pid)
             if not P:
-                continue        
+                continue
             D = P[0]
             if arm.RigProp.RigType != 'BASIC' and pid in shape.SHAPE_FILTER['Extended']:
                 D['icon'] = get_cust_icon('ebone')
@@ -179,12 +178,12 @@ class PanelShaping(bpy.types.Panel):
         def get_icon_for_slider(armobj, pid):
             state = get_slider_state(armobj, pid)
             if state == 'cached':
-                icon = ICON_KEYTYPE_BREAKDOWN_VEC
+                icon_value = get_icon(ICON_KEYTYPE_BREAKDOWN_VEC)
             elif state == 'default':
-                icon = ICON_BLANK1
+                icon_value = get_icon(ICON_BLANK1)
             else:
-                icon = ICON_LOAD_FACTORY
-            return icon
+                icon_value=get_icon('modified')
+            return icon_value
 
         scn = context.scene
         obj = context.active_object
@@ -194,13 +193,19 @@ class PanelShaping(bpy.types.Panel):
             box.alert=True
             box.label(text="Sliders disabled")
             return
+        elif armobj.RigProp.SkeletonType=='ANIMESH':
+            box = layout.box()
+            box.alert=True
+            box.label(text="Sliders not available")
+            box.label(text="for Animesh Rigs")
+            return
 
         if DIRTY_RIG in armobj:
             if sceneProps.panel_appearance_enabled:
 
                 col = layout.row(align=True)
                 col.label(text="Dirty Rig!", icon=ICON_ERROR)
-                
+
                 row=layout.row(align=True)
                 op = row.operator("tamagoyaki.armature_jointpos_store", text="Recalculate Sliders",  icon=ICON_FILE)
                 row.prop(sceneProps, "snap_control_to_rig", text='', icon=ICON_ARROW_LEFTRIGHT)
@@ -228,7 +233,7 @@ class PanelShaping(bpy.types.Panel):
             supports_shapes   = sceneProps.panel_appearance_enabled
             supports_sparkles = 'toolset_pro' in dir(bpy.ops.sparkles)
 
-            last_select = bpy.types.TAMAGOYAKI_MT_shape_presets_menu.bl_label
+            last_select = bpy.types.AVASTAR_MT_shape_presets_menu.bl_label
             row = layout.row(align=True)
 
             subrow = row.row(align=True)
@@ -257,7 +262,7 @@ class PanelShaping(bpy.types.Panel):
                     subrow.operator("tamagoyaki.save_props", text="", icon=ICON_EXPORT).destination='FILE'
                     subrow.operator("tamagoyaki.load_props", text="", icon=ICON_IMPORT).source='FILE'
 
-                subrow.menu("TAMAGOYAKI_MT_shape_presets_menu", text=last_select )
+                subrow.menu("AVASTAR_MT_shape_presets_menu", text=last_select )
                 subrow.operator("tamagoyaki.shape_presets_add", text="", icon=ICON_ADD)
                 if last_select not in ["Shape Presets", "Presets"]:
                     subrow.operator("tamagoyaki.shape_presets_update", text="", icon=ICON_FILE_REFRESH)
@@ -358,7 +363,7 @@ class PanelShaping(bpy.types.Panel):
                     sliderRow.prop(armobj.ShapeDrivers, pid , slider=True, text = D['label'])
 
                     is_shaped_mesh = supports_shapes and obj!=armobj
-                    
+
                     if supports_sparkles:
                         if supports_shapes and obj!=armobj:# and icon=='SNAP_ON':
                             name = mesh.get_corrective_key_name_for(pid)
@@ -371,8 +376,8 @@ class PanelShaping(bpy.types.Panel):
                             prop = sliderRow.operator(opid, text="", icon=ICON_BLANK1)
                             prop.pid=pid
 
-                    icon = get_icon_for_slider(armobj, pid)
-                    sliderRow.operator("tamagoyaki.reset_shape_slider", text="", icon=icon).pid=pid
+                    icon_value = get_icon_for_slider(armobj, pid)
+                    sliderRow.operator("tamagoyaki.reset_shape_slider", text="", icon_value=icon_value).pid=pid
                     sliderRow.enabled = rig.appearance_editable(context)
 
                     if len(effective_keys) > 0:
@@ -431,14 +436,14 @@ class PanelShaping(bpy.types.Panel):
         p = util.getAddonPreferences()
         if p.show_panel_shape_editor == 'PROPERTIES':
             return False
-    
+
         obj = util.get_armature(context.active_object)
         return obj and obj.type=='ARMATURE' and "tamagoyaki" in obj
 
     def draw_header(self, context):
         sceneProps = context.scene.SceneProp
         row = self.layout.row(align=True)
-        util.draw_info_header(row, AVASTAR_APPEARANCE, msg=panel_info_appearance, op=sceneProps, is_enabled="panel_appearance_enabled")
+        util.draw_info_header(row, AVASTAR_APPEARANCE, id='panel_info_appearance', op=sceneProps, is_enabled="panel_appearance_enabled")
 
     def draw(self, context):
         armobj = util.get_armature(context.active_object)
@@ -501,10 +506,10 @@ def BoneLocationLockStates(armobj):
 
     try:
         control_bones   = rig.get_pose_bones(armobj, armobj.RigProp.ConstraintSet, spine_check=True, deforming=False)
-
+        control_bones  = [armobj.pose.bones[name] for name in control_bones.keys()]
         lockedBones    = []
         unlockedBones  = []
-        for b in control_bones.values():
+        for b in control_bones:
             (lockedBones if is_locked(b) else unlockedBones).append(b)
 
         locked_count   = len(lockedBones)
@@ -567,9 +572,9 @@ class PanelRigDisplay(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Rig Display"
-    bl_idname      = "TAMAGOYAKI_PT_rig_display"
+    bl_idname      = "AVASTAR_PT_rig_display"
     bl_options     = {'DEFAULT_CLOSED'}
-    
+
     @classmethod
     def poll(self, context):
 
@@ -586,7 +591,7 @@ class PanelRigDisplay(bpy.types.Panel):
             return False
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_RIG_DISPLAY, msg=panel_info_rigging)
+        util.draw_info_header(self.layout.row(), AVASTAR_RIG_DISPLAY, id='panel_info_rigging')
 
     def draw(self, context):
 
@@ -616,7 +621,7 @@ class PanelRigDisplay(bpy.types.Panel):
 
 
             if context.mode in ['OBJECT','PAINT_WEIGHT', 'PAINT_VERTEX', 'EDIT_MESH']:
-                all_attached   = (len(targets) > 0 and len(attached) == len(targets))            
+                all_attached   = (len(targets) > 0 and len(attached) == len(targets))
                 if all_attached or (len(tamagoyakis)==1 and (len(attached) > 0 or len(detached) > 0)):
 
                     skinning_label = ""
@@ -626,11 +631,13 @@ class PanelRigDisplay(bpy.types.Panel):
                     noconfig=0
                     if len(custom_meshes) > 0:
                         for ob in custom_meshes:
-                           if 'weightconfig' in ob:
-                               if ob['weightconfig'] == "BASIC": basic += 1
-                               else: fitted += 1
-                           else:
-                               noconfig +=1
+                            if 'weightconfig' in ob:
+                                if ob['weightconfig'] == "BASIC":
+                                    basic += 1
+                                else:
+                                    fitted += 1
+                            else:
+                                noconfig +=1
 
                         if noconfig   == len(custom_meshes): skinning_label = " (Basic)"
                         elif basic  == len(custom_meshes): skinning_label = " (Basic)"
@@ -639,7 +646,7 @@ class PanelRigDisplay(bpy.types.Panel):
 
 
 
-        
+
         if armobj is not None and (context.mode in ['PAINT_WEIGHT','OBJECT', 'EDIT_MESH', 'POSE', 'EDIT_ARMATURE']):
             if util.is_tamagoyaki(armobj) > 0:
                 mesh.displayShowBones(context, layout, active, armobj, with_bone_gui=True)
@@ -655,9 +662,9 @@ class PanelRiggingConfig(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Rig Config"
-    bl_idname      = "TAMAGOYAKI_PT_rig_config"
+    bl_idname      = "AVASTAR_PT_rig_config"
     bl_options     = {'DEFAULT_CLOSED'}
-    
+
     @classmethod
     def poll(self, context):
         ui_level = util.get_ui_level()
@@ -676,7 +683,7 @@ class PanelRiggingConfig(bpy.types.Panel):
             return False
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_RIG_CONFIG, msg=panel_info_rigging)
+        util.draw_info_header(self.layout.row(), AVASTAR_RIG_CONFIG, id='panel_info_rigging')
 
     def draw(self, context):
 
@@ -733,7 +740,7 @@ class PanelRiggingConfig(bpy.types.Panel):
         targets          = currentSelection['targets']
         active           = currentSelection['active']
 
-        if active:
+        if active and active.select_get():
             if active.type=="ARMATURE":
                 armobj = active
             else:
@@ -752,7 +759,7 @@ class PanelRiggingConfig(bpy.types.Panel):
 
 
             if context.mode in ['OBJECT','PAINT_WEIGHT', 'PAINT_VERTEX', 'EDIT_MESH']:
-                all_attached   = (len(targets) > 0 and len(attached) == len(targets))            
+                all_attached   = (len(targets) > 0 and len(attached) == len(targets))
                 if all_attached or (len(tamagoyakis)==1 and (len(attached) > 0 or len(detached) > 0)):
 
                     skinning_label = ""
@@ -762,11 +769,13 @@ class PanelRiggingConfig(bpy.types.Panel):
                     noconfig=0
                     if len(custom_meshes) > 0:
                         for ob in custom_meshes:
-                           if 'weightconfig' in ob:
-                               if ob['weightconfig'] == "BASIC": basic += 1
-                               else: fitted += 1
-                           else:
-                               noconfig +=1
+                            if 'weightconfig' in ob:
+                                if ob['weightconfig'] == "BASIC":
+                                    basic += 1
+                                else:
+                                    fitted += 1
+                            else:
+                                noconfig +=1
 
                         if noconfig   == len(custom_meshes): skinning_label = " (Basic)"
                         elif basic  == len(custom_meshes): skinning_label = " (Basic)"
@@ -776,7 +785,7 @@ class PanelRiggingConfig(bpy.types.Panel):
 
 
         ui_level = util.get_ui_level()
-                
+        box = None
         if armobj is not None and (context.mode in ['PAINT_WEIGHT','OBJECT', 'EDIT_MESH', 'POSE', 'EDIT_ARMATURE']):
 
 
@@ -832,31 +841,37 @@ class PanelRiggingConfig(bpy.types.Panel):
                 row.operator(mesh.ButtonDeformEnable.bl_idname, text="Enable").set='VOL'
                 row.operator(mesh.ButtonDeformDisable.bl_idname, text="Disable").set='VOL'
 
-        if ui_level > UI_STANDARD and armobj and context.mode != 'OBJECT' and len(tamagoyakis)==1:
-            if active in tamagoyakis:
-                col = box.column(align=True)
-                lock_state, mute_set = rig.SLBoneStructureRestrictStates(active)
+        if ui_level > UI_STANDARD and armobj:
+            if armobj in tamagoyakis:
+                if not box:
+                    box = layout.box()
+                    box.label(text="Bone Deform Settings", icon=ICON_MOD_ARMATURE)
+                
+                if armobj.mode != 'OBJECT':
+                    col = box.column(align=True)
+                    lock_state, mute_set = rig.SLBoneStructureRestrictStates(armobj)
 
-                if lock_state   == 'Disabled': icon = ICON_RESTRICT_SELECT_ON
-                elif lock_state == 'Enabled' : icon = ICON_RESTRICT_SELECT_OFF
-                else                         : icon = ICON_BLANK1
-                row = col.split(factor=0.5, align=True )
+                    if lock_state   == 'Disabled': icon = ICON_RESTRICT_SELECT_ON
+                    elif lock_state == 'Enabled' : icon = ICON_RESTRICT_SELECT_OFF
+                    else                         : icon = ICON_BLANK1
+                    row = col.split(factor=0.5, align=True )
 
-                row.label(text="Structure", icon=icon)
-                if mute_set != 'Disable':
-                    row.operator(mesh.ButtonArmatureAllowStructureSelect.bl_idname, text="Enable")
-                if mute_set != 'Enable':
-                    row.operator(mesh.ButtonArmatureRestrictStructureSelect.bl_idname, text="Disable")
+                    row.label(text="Structure", icon=icon)
+                    if mute_set != 'Disable':
+                        row.operator(mesh.ButtonArmatureAllowStructureSelect.bl_idname, text="Enable")
+                    if mute_set != 'Enable':
+                        row.operator(mesh.ButtonArmatureRestrictStructureSelect.bl_idname, text="Disable")
 
                 col = box.column(align=True)
                 col.prop(armobj.RigProp, "hip_compatibility")
+                col.prop(armobj.RigProp, "exportBakedGender")
 
-                add_spine_settings(layout, armobj)
+                if armobj.mode != 'OBJECT' and armobj.RigProp.RigType != 'BASIC':
+                    add_spine_settings(layout, armobj)
 
-        if ui_level > UI_STANDARD and armobj and context.mode != 'OBJECT' and len(tamagoyakis)==1:
-            if active in tamagoyakis:
-                add_eye_settings(layout, armobj)
- 
+        if ui_level > UI_STANDARD and armobj and armobj.mode != 'OBJECT':
+            add_eye_settings(layout, armobj)
+
 '''
 
 
@@ -868,7 +883,7 @@ class PanelTamagoyakiRigConvert(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label = "Rig Converter"
-    bl_idname = "TAMAGOYAKI_PT_rig_convert"
+    bl_idname = "AVASTAR_PT_rig_convert"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -876,7 +891,7 @@ class PanelTamagoyakiRigConvert(bpy.types.Panel):
         return True
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_RIG_CONVERTER, msg=panel_info_tools)
+        util.draw_info_header(self.layout.row(), AVASTAR_RIG_CONVERTER, id='panel_info_tools')
 
     def draw(self, context):
 
@@ -915,7 +930,7 @@ class PanelTamagoyakiRigImport(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label = "Developer Kits"
-    bl_idname = "TAMAGOYAKI_PT_devkit_manager"
+    bl_idname = "AVASTAR_PT_devkit_manager"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -923,7 +938,7 @@ class PanelTamagoyakiRigImport(bpy.types.Panel):
         return True
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_DEVKIT_MANAGER, msg=panel_info_devkit_manager)
+        util.draw_info_header(self.layout.row(), AVASTAR_DEVKIT_MANAGER, id='panel_info_devkit_manager')
 
     def draw(self, context):
 
@@ -958,10 +973,10 @@ class PanelRigJointOffsets(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Joint Positions"
-    bl_idname      = "TAMAGOYAKI_PT_rig_joint_offsets"
+    bl_idname      = "AVASTAR_PT_rig_joint_offsets"
     bl_context     = 'data'
     bl_options     = {'DEFAULT_CLOSED'}
-    
+
     @classmethod
     def poll(self, context):
         if not util.use_sliders(context):
@@ -984,7 +999,7 @@ class PanelRigJointOffsets(bpy.types.Panel):
             return False
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_JOINTS, msg=panel_info_rigging)
+        util.draw_info_header(self.layout.row(), AVASTAR_JOINTS, id='panel_info_rigging')
 
     def draw(self, context):
         layout = self.layout
@@ -1016,12 +1031,12 @@ class PanelAvatarMaterials(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Avatar Materials"
-    bl_idname      = "TAMAGOYAKI_PT_avatar_materials"
+    bl_idname      = "AVASTAR_PT_avatar_materials"
 
     bl_options      = {'DEFAULT_CLOSED'}
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_MATERIALS, msg=panel_info_materials)
+        util.draw_info_header(self.layout.row(), AVASTAR_MATERIALS, id='panel_info_materials')
 
     def draw(self, context):
         arm, objects = mesh.BakeMaterialsOperator.get_animated_objects(context)
@@ -1136,7 +1151,7 @@ class PanelSkinning(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Skinning"
-    bl_idname      = "TAMAGOYAKI_PT_skinning"
+    bl_idname      = "AVASTAR_PT_skinning"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -1153,9 +1168,9 @@ class PanelSkinning(bpy.types.Panel):
             return False
         except (TypeError, AttributeError):
             return False
-            
+
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_SKINNING, msg=panel_info_skinning)
+        util.draw_info_header(self.layout.row(), AVASTAR_SKINNING, id='panel_info_skinning')
 
     def check_bindable(self, detached):
         state = 0
@@ -1187,6 +1202,8 @@ class PanelSkinning(bpy.types.Panel):
         targets          = currentSelection['targets']
         active           = currentSelection['active']
         armobj           = tamagoyakis[0] if len(tamagoyakis) > 0 else None
+        skinning_box = None
+        freeze_box = None
 
         if context.mode in ['OBJECT','PAINT_WEIGHT', 'PAINT_VERTEX', 'EDIT_MESH', 'POSE']:
             all_attached   = (len(targets) > 0 and len(attached) == len(targets))
@@ -1199,18 +1216,19 @@ class PanelSkinning(bpy.types.Panel):
                 noconfig=0
                 if len(custom_meshes) > 0:
                     for ob in custom_meshes:
-                       if 'weightconfig' in ob:
-                           if ob['weightconfig'] == "BASIC": basic += 1
-                           else: fitted += 1
-                       else:
-                           noconfig +=1
+                        if 'weightconfig' in ob:
+                            if ob['weightconfig'] == "BASIC":
+                                basic += 1
+                            else:
+                                fitted += 1
+                        else:
+                            noconfig +=1
 
                     if noconfig   == len(custom_meshes): skinning_label = " (Basic)"
                     elif basic  == len(custom_meshes): skinning_label = " (Basic)"
                     elif fitted   == len(custom_meshes): skinning_label = " (Fitted)"
 
                 binding_box = None
-                skinning_box = None
                 appearance_box = None
 
                 if len(detached) > 0:
@@ -1306,27 +1324,26 @@ class PanelSkinning(bpy.types.Panel):
                         if (bone_count > 110):
                             add_cleanup_vgroup_button(active, bone_count, meshProps, skinning_box)
 
-                        row = skinning_box.row(align=True)
+                        col = skinning_box.column(align=True)
                         if not util.getAddonPreferences().enable_auto_mesh_update:
-                            row.alert = len(to_fix) > 0
-                            prop=row.operator("tamagoyaki.rebind_armature", text='Update Binding', icon=ICON_FILE_REFRESH)
+                            col.prop(meshProps,"auto_rebind_mesh", text='Automatic rebind')
+                            col.prop(sceneProps,"apply_as_bindshape", text='Apply Bindshape')
+                            col.alert = len(to_fix) > 0
+                            prop=col.operator("tamagoyaki.rebind_armature", text='Update Binding', icon=ICON_FILE_REFRESH)
                             prop.apply_as_bindshape=sceneProps.apply_as_bindshape
-                            row.alert=False
-                            row.prop(meshProps,"auto_rebind_mesh", text='', icon=ICON_AUTO)
-                            row = skinning_box.row(align=True)
-                            row.prop(sceneProps,"apply_as_bindshape", text='Apply Bindshape')
+                            col.alert=False
                             skinning_box.separator()
 
                         unbind_box = layout.box()
-
+                        unbind_box.label(text="Unbind", icon=ICON_MODIFIER)
                         col = unbind_box.column(align=True)
+                        col.prop(active.ObjectProp, "apply_armature_on_unbind")
+                        col.prop(active.ObjectProp, "purge_data_on_unbind")
+                        col.prop(active.ObjectProp, "break_parenting_on_unbind")
                         prop = col.operator(mesh.ButtonUnParentArmature.bl_idname, text=label)
                         prop.apply_armature_on_unbind = active.ObjectProp.apply_armature_on_unbind
                         prop.purge_data_on_unbind = active.ObjectProp.purge_data_on_unbind
                         prop.break_parenting_on_unbind = active.ObjectProp.break_parenting_on_unbind
-                        col.prop(active.ObjectProp, "apply_armature_on_unbind")
-                        col.prop(active.ObjectProp, "purge_data_on_unbind")
-                        col.prop(active.ObjectProp, "break_parenting_on_unbind")
 
                 if len(targets)>0:
                     if context.mode in ['OBJECT','PAINT_WEIGHT', 'PAINT_VERTEX', 'EDIT_MESH']:
@@ -1341,15 +1358,15 @@ class PanelSkinning(bpy.types.Panel):
                         has_shapekeys = util.selection_has_shapekeys(targets)
                         if  has_shapekeys or len(armatures) > 0 or len(tamagoyakis) == 1:
 
-                            box = layout.box()
-                            box.label(text="Freeze", icon=ICON_MODIFIER)
+                            freeze_box = layout.box()
+                            freeze_box.label(text="Freeze", icon=ICON_MODIFIER)
                             meshProps = bpy.context.scene.MeshProp
-                            col = box.column(align=True)
+                            col = freeze_box.column(align=True)
                             split = col.split(factor=0.4)
                             split.label(text="Original:")
                             split.prop(meshProps, "handleOriginalMeshSelection", text="", toggle=False)
 
-                            col = box.column(align=True)
+                            col = freeze_box.column(align=True)
                             standalone_posed_text = "As static mesh%s" % ("" if scn.MeshProp.standalonePosed else " ...")
                             join_parts_text = "Join Parts%s" % ("" if scn.MeshProp.joinParts else " ...")
                             col.prop(scn.MeshProp, "standalonePosed", text=standalone_posed_text, toggle=False)
@@ -1360,18 +1377,12 @@ class PanelSkinning(bpy.types.Panel):
                                 col.enabled=scn.MeshProp.standalonePosed
 
                             if len(targets) > 1:
-                                col = box.column(align=True)
+                                col = freeze_box.column(align=True)
                                 col.prop(scn.MeshProp, "joinParts", text=join_parts_text, toggle=False)
                                 if scn.MeshProp.joinParts:
                                     col = col.column(align=True)
                                     col.prop(scn.MeshProp, "removeDoubles", toggle=False)
                                     col.enabled=scn.MeshProp.joinParts
-
-                            col = box.column(align=True)
-                            col.prop(context.object.ObjectProp,"frozen_name")
-                            col.separator()
-                            op = col.operator("tamagoyaki.freeze_shape", icon=ICON_FREEZE)
-                            layout.separator()
 
             elif len(tamagoyakis) == 1:
 
@@ -1406,13 +1417,20 @@ class PanelSkinning(bpy.types.Panel):
                 row = appearance_box.row(align=True)
                 prop = row.operator(mesh.CleanupCustomProps.bl_idname)
 
+            if not freeze_box:
+                freeze_box = layout.box()
+            col = freeze_box.column(align=True)
+            col.prop(context.object.ObjectProp,"frozen_name")
+            col.separator()
+            col.operator("tamagoyaki.freeze_shape", icon=ICON_FREEZE)
+
 class PanelWeightCopy(bpy.types.Panel):
     bl_space_type  = 'VIEW_3D'
     bl_region_type = UI_LOCATION
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Weight Copy"
-    bl_idname      = "TAMAGOYAKI_PT_weight_copy"
+    bl_idname      = "AVASTAR_PT_weight_copy"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -1425,7 +1443,7 @@ class PanelWeightCopy(bpy.types.Panel):
         return False
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_WEIGHT_COPY, msg=panel_info_weight_copy)
+        util.draw_info_header(self.layout.row(), AVASTAR_WEIGHT_COPY, id='panel_info_weight_copy')
 
     def draw(self, context):
 
@@ -1441,25 +1459,25 @@ def check_repair_mesh(context, armobj, meshes, layout):
     else:
         to_fix = rig.need_rebinding(armobj, meshes)
     return to_fix
-    
+
 def add_repair_mesh_button(to_fix, layout):
-        col= layout.column(align=True)
-        row = col.row(align=True)
-        text = "Rebind all Meshes"
-        row.label(text=text)
-        row.operator("tamagoyaki.rebind_armature", text='', icon=ICON_RECOVER_AUTO, emboss=False)
+    col= layout.column(align=True)
+    row = col.row(align=True)
+    text = "Rebind all Meshes"
+    row.label(text=text)
+    row.operator("tamagoyaki.rebind_armature", text='', icon=ICON_RECOVER_AUTO, emboss=False)
 
 def add_cleanup_vgroup_button(active, bone_count, meshProps, layout):
     col= layout.column(align=True)
     col.alert=True
     row = col.row(align=True)
-    
+
     if meshProps.all_selected:
         text = "MultiClean Weightmaps"
     else:
         text = "Clean %d Weightmaps" % bone_count
-    
-    op = row.operator("tamagoyaki.clear_bone_weight_groups", 
+
+    op = row.operator("tamagoyaki.clear_bone_weight_groups",
          icon=ICON_RECOVER_AUTO,
          text=text
          )
@@ -1479,7 +1497,7 @@ class PanelPosing(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Posing"
-    bl_idname      = "TAMAGOYAKI_PT_panel_posing"
+    bl_idname      = "AVASTAR_PT_panel_posing"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -1506,7 +1524,7 @@ class PanelPosing(bpy.types.Panel):
 
         row.label(text="Bone Constraints", icon=ICON_MOD_ARMATURE)
         row.prop(armobj.RigProp,"ConstraintSet", text="")
-        
+
         col = box.column(align=True)
         lock_state, mute_set = BoneRotationLockStates(armobj, COPY_ROTATION)
         if lock_state   == 'Locked'  : icon_value = get_cust_icon('mlock')
@@ -1534,7 +1552,7 @@ class PanelPosing(bpy.types.Panel):
             row.operator(mesh.ButtonArmatureUnlockLocation.bl_idname, text="Unlock")
         if mute_set != "Unlock":
             row.operator(mesh.ButtonArmatureLockLocation.bl_idname, text="Lock")
-        
+
         col = box.column(align=True)
         lock_state, mute_set = BoneVolumeLockStates(armobj)
         if lock_state   == 'Locked'  : icon = ICON_LOCKED
@@ -1551,7 +1569,7 @@ class PanelPosing(bpy.types.Panel):
 
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_POSING, msg=panel_info_posing)
+        util.draw_info_header(self.layout.row(), AVASTAR_POSING, id='panel_info_posing')
 
     def draw(self, context):
 
@@ -1593,13 +1611,13 @@ class PanelPosing(bpy.types.Panel):
         if ui_level > UI_ADVANCED:
             layout.separator()
             sceneProps  = scn.SceneProp
-            last_select = bpy.types.TAMAGOYAKI_MT_armature_presets_menu.bl_label
+            last_select = bpy.types.AVASTAR_MT_armature_presets_menu.bl_label
             row = layout.row(align=True)
             row.prop(sceneProps, "armature_preset_apply_as_Restpose", text='', icon=ICON_FREEZE)
             row.prop(sceneProps, "armature_preset_apply_all_bones",   text='', icon=ICON_GROUP_BONE)
             if not sceneProps.armature_preset_apply_as_Restpose:
                 row.prop(sceneProps, "armature_preset_adjust_tails",   text='', icon=ICON_LINKED)
-            row.menu("TAMAGOYAKI_MT_armature_presets_menu", text=last_select )
+            row.menu("AVASTAR_MT_armature_presets_menu", text=last_select )
             row.operator("tamagoyaki.armature_presets_add", text="", icon=ICON_ADD)
             if last_select not in ["Armature Presets", "Presets"]:
                 row.operator("tamagoyaki.armature_presets_update", text="", icon=ICON_FILE_REFRESH)
@@ -1716,13 +1734,17 @@ class PanelFitting(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Fitting"
-    bl_idname      = "TAMAGOYAKI_PT_panel_fitting"
+    bl_idname      = "AVASTAR_PT_panel_fitting"
     bl_options     = {'DEFAULT_CLOSED'}
-    
+
     @classmethod
     def poll(self, context):
+        p = util.getAddonPreferences()
+        if not p.show_panel_fitting:
+            return False
         obj = context.object
         return obj and obj.type=='MESH' and not "tamagoyaki" in obj
+
 
     def draw(self, context):
         weights.ButtonGenerateWeights.draw_fitting_section(context, self.layout)
@@ -1743,10 +1765,10 @@ class PanelAvatarShape(bpy.types.Panel):
     bl_category    = "Skinning"
 
     bl_label = "Avatar Shape"
-    bl_idname = "TAMAGOYAKI_PT_avatar_shape"
+    bl_idname = "AVASTAR_PT_avatar_shape"
     bl_context = 'object'
     bl_options     = {'DEFAULT_CLOSED'}
-    
+
     @classmethod
     def poll(self, context):
         '''
@@ -1760,18 +1782,18 @@ class PanelAvatarShape(bpy.types.Panel):
         obj = context.active_object
         return obj and obj.type=='ARMATURE' and "tamagoyaki" in obj and (not 'bindpose' in obj)
 
-            
+
     def draw_header(self, context):
         row = self.layout.row()
         arm = context.active_object
         if DIRTY_RIG in arm:
             row.alert = DIRTY_RIG in arm
             icon = ICON_ERROR
-            msg = panel_warning_appearance
+            id = 'panel_warning_appearance'
         else:
             icon = ICON_NONE
-            msg = panel_info_appearance
-        util.draw_info_header(row, AVASTAR_APPEARANCE, msg=msg, icon=icon)
+            id = 'panel_info_appearance'
+        util.draw_info_header(row, AVASTAR_APPEARANCE, id=id, icon=icon)
 
     def draw(self, context):
         PanelShaping.draw_generic(self, context, context.active_object, self.layout)
@@ -1787,46 +1809,46 @@ class ButtonCheckMesh(bpy.types.Operator):
         try:
             original_mode = context.active_object.mode
             util.mode_set(mode='OBJECT')
-    
+
             targets = []
             for obj in context.selected_objects:
                 if obj.type=='MESH':
                     targets.append(obj)
-    
+
             report = analyseMeshes(context, targets)
 
             logging.warning(report)
             self.report({'INFO'},"%d Object report(s) on Console"%len(targets))
 
             util.mode_set(mode=original_mode)
-            return{'FINISHED'}    
+            return{'FINISHED'}
         except Exception as e:
             util.ErrorDialog.exception(e)
-            return{'FINISHED'}    
+            return{'FINISHED'}
 
 
 def analyseMeshes(context, targets):
-    
-    scn = context.scene    
-    
+
+    scn = context.scene
+
     report = ["--------------------Mesh Check----------------------------"]
     report.append('Number of meshes to examine: %d'%len(targets))
     report.append('')
-    
+
     for obj in targets:
         report.append("MESH: '%s'"%obj.name)
 
-        me = obj.to_mesh(preserve_all_data_layers=True) 
+        me = obj.to_mesh(preserve_all_data_layers=True)
         nfaces = len(obj.data.polygons)
         nfacesm = len(me.polygons)
         uvs = me.uv_layers
-        
+
         #
 
         #
-        report.append("\tNumber of vertices: %d, with modifiers applied: %d"%(len(obj.data.vertices),len(me.vertices))) 
-        report.append("\tNumber of faces: %d, with modifiers applied: %d"%(nfaces, nfacesm)) 
-        
+        report.append("\tNumber of vertices: %d, with modifiers applied: %d"%(len(obj.data.vertices),len(me.vertices)))
+        report.append("\tNumber of faces: %d, with modifiers applied: %d"%(nfaces, nfacesm))
+
         #
 
         #
@@ -1835,7 +1857,7 @@ def analyseMeshes(context, targets):
             report.append("\tControlling armature: %s"%armature.name)
         else:
             report.append("\tFound no controlling armature so mesh will be static")
-        
+
         #
 
         #
@@ -1856,29 +1878,29 @@ def analyseMeshes(context, targets):
                         deform.append(group)
                     else:
                         nondeform.append(group)
-        
+
         if len(groups) > 0:
             report.append("\tFound %d Vertex groups: {%s}" % (len(groups), ",".join(groups)))
 
         if len(unknowns) > 0:
             report.append("\tWARNING: unrecognized vertex groups (removed on export): {%s}"%",".join(unknowns))
-            
+
         if armature is not None:
             if len(deform) > 0:
                 report.append("\tDeforming bone weight groups: {%s}"%",".join(deform))
             else:
                 report.append("\tPROBLEM: armature modifier but no deforming weight groups present")
-                
+
             if len(nondeform) > 0:
                 report.append("\tWARNING: Non-deforming bone weight groups (removed on export): {%s}"%",".join(nondeform))
-                
-        
+
+
         #
 
         #
 
         v_report = mesh.findWeightProblemVertices(context, obj, use_sl_list=False, find_selected_armature=True)
-        
+
         if 'no_armature' in v_report['status']:
             report.append("\tObject %s is not rigged (weight map check omitted)"%obj.name)
         else:
@@ -1887,8 +1909,8 @@ def analyseMeshes(context, targets):
                 report.append("\tPROBLEM: Found %d vertices that have zero weight"%len(unweighted))
             if 'too_many' in v_report['status']:
                 problems = v_report['too_many']
-                report.append("\tWARNING: there are %d vertices with more that 4 vertex groups defined"%len(problems))            
-            
+                report.append("\tWARNING: there are %d vertices with more that 4 vertex groups defined"%len(problems))
+
         #
 
         #
@@ -1896,9 +1918,9 @@ def analyseMeshes(context, targets):
             report.append("\tUV map present")
         else:
             report.append("\tWARNING: no UV map present")
-            
+
         report.append('')
-        
+
     return "\n".join(report)
 
 
@@ -1911,9 +1933,9 @@ class PanelTamagoyakiTool(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label = "Tool Box"
-    bl_idname = "TAMAGOYAKI_PT_tools"
+    bl_idname = "AVASTAR_PT_tools"
     bl_options     = {'DEFAULT_CLOSED'}
-    
+
     @classmethod
     def poll(self, context):
         return True
@@ -1943,7 +1965,7 @@ class PanelTamagoyakiTool(bpy.types.Panel):
 
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_TOOLS, msg=panel_info_tools)
+        util.draw_info_header(self.layout.row(), AVASTAR_TOOLS, id='panel_info_tools')
 
 
     def draw_operator(self, col, operator_blid, text=None, icon_left=None, icon_right=None):
@@ -2019,7 +2041,7 @@ class PanelTamagoyakiTool(bpy.types.Panel):
         col = layout.column(align=True)
 
         col.label(text="Weight Tools", icon=ICON_BRUSH_DATA)
-        col = layout.column(align=True)     
+        col = layout.column(align=True)
 
         self.draw_weightmap_operators(context, col)
         self.draw_copy_operators(context, col)
@@ -2028,7 +2050,7 @@ class PanelTamagoyakiTool(bpy.types.Panel):
 
 
 
-
+    #
 
 
 
@@ -2052,14 +2074,9 @@ class PanelTamagoyakiTool(bpy.types.Panel):
             self.draw_operator(col, "tamagoyaki.find_zeroweights", icon_right=ICON_BLANK1)
 
         self.draw_operator(col, "sparkles.show_weights_per_vert", text="Weight Count on Mesh", icon_right=ICON_BLANK1)
-
-
-
-
-
-
-
-
+        ui_level = util.get_ui_level()
+        if ui_level==UI_EXPERIMENTAL:
+            self.draw_operator(col, "sparkles.show_inconsistent_weights", icon_right=ICON_BLANK1)
 
         return col
 
@@ -2101,27 +2118,35 @@ class PanelTamagoyakiTool(bpy.types.Panel):
 
 
                 if self.active and self.active.type == 'MESH':
-                    self.draw_operator(col, "tamagoyaki.weld_weights_from_rigged", icon_right=ICON_BLANK1, text="Weld to rigged")
+                    self.draw_operator(col, "tamagoyaki.weld_weights_from_rigged", icon_right=ICON_BLANK1, text="Align to rigged")
                     if util.get_ui_level() > UI_ADVANCED:
                         self.draw_operator(col, "tamagoyaki.shape_debug", icon_right=ICON_BLANK1)
 
                 self.draw_operator(col, "tamagoyaki.ensure_mirrored_groups", text="Add missing Mirror Groups", icon_right=ICON_BLANK1)
 
+                label = "Copy from rigged (%d)" % (self.sourceCount-1)
+                col.operator(weights.ButtonCopyWeightsFromRigged.bl_idname, icon=ICON_BONE_DATA, text=label)
+                selcount = len(context.selected_objects)
+                if selcount > 1:
+                    label = "Copy from selected (%d)" % (selcount - 1)
+                    col.operator(weights.ButtonCopyWeightsFromSelected.bl_idname, icon=ICON_BONE_DATA, text=label)
+
+            self.draw_operator(col, "tamagoyaki.clear_bone_weights", text="Remove Weightmaps", icon_right=ICON_BLANK1)
 
         return col
 
- 
+
 
 
 
     def draw_copy_operators(self, context, col):
         return col
 
-                
+
     def draw(self, context):
         self.initialize(context)
         layout = self.layout
-        
+
         view = context.space_data
         warn_if_camera_locked_to_layers(view, layout)
 
@@ -2143,7 +2168,7 @@ class PanelCustomExport(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Collada"
-    bl_idname      = "TAMAGOYAKI_PT_custom_collada"
+    bl_idname      = "AVASTAR_PT_custom_collada"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -2181,7 +2206,7 @@ class ArmatureInfo(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Rig Inspector"
-    bl_idname      = "TAMAGOYAKI_PT_armature_maintenance"
+    bl_idname      = "AVASTAR_PT_armature_maintenance"
     bl_options     = {'DEFAULT_CLOSED'}
 
 
@@ -2196,7 +2221,7 @@ class ArmatureInfo(bpy.types.Panel):
 
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_RIG_CONVERTER, msg=panel_info_tools)
+        util.draw_info_header(self.layout.row(), AVASTAR_RIG_CONVERTER, id='panel_info_tools')
 
 
     def draw(self, context):
@@ -2244,11 +2269,12 @@ class ArmatureInfo(bpy.types.Panel):
 
         col = box.column(align=True)
         col.label(text="Name: %s" % armobj.name)
-        
+
         if 'tamagoyaki' in armobj:
             col = box.column(align=True)
-            col.label(text="Rig type   : %s" % (armobj.RigProp.RigType))
-            col.label(text="Joint type : %s" % (armobj.RigProp.JointType))
+            col.label(text="Rig type      : %s" % (armobj.RigProp.RigType))
+            col.label(text="Joint type    : %s" % (armobj.RigProp.JointType))
+            col.label(text="Skeleton type : %s" % (armobj.RigProp.SkeletonType))
             if joint_count > 0 and DIRTY_RIG in armobj and util.use_sliders(context):
                 col.label(text="Unsaved Joint Offsets", icon=ICON_ERROR)
 
@@ -2368,7 +2394,7 @@ class PanelMeshInfo(bpy.types.Panel):
     bl_category    = "Tamagoyaki"
 
     bl_label       = "Mesh Inspector"
-    bl_idname      = "TAMAGOYAKI_PT_mesh_inspector"
+    bl_idname      = "AVASTAR_PT_mesh_inspector"
     bl_options     = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -2377,13 +2403,13 @@ class PanelMeshInfo(bpy.types.Panel):
            if obj.type=='MESH':
                return True
         return False
-        
-    
+
+
     def draw_header(self, context):
         util.draw_info_header(self.layout.row(), AVASTAR_MESH_INFO, msg=panel_info_mesh)
 
     def draw(self, context):
-    
+
         layout = self.layout
         scn = context.scene
 
@@ -2394,7 +2420,7 @@ class PanelMeshInfo(bpy.types.Panel):
                 return
         except (TypeError, AttributeError):
             return
-        
+
 
         currentSelection = util.getCurrentSelection(context)
         targets          = currentSelection['targets']
@@ -2442,7 +2468,7 @@ class PanelMeshInfo(bpy.types.Panel):
                     stat_info[STATS_FACE_COUNT] += stats.get(STATS_FACE_COUNT, 0)
                     stat_info[STATS_VERTEX_COUNT] += stats.get(STATS_VERTEX_COUNT, 0)
                     stat_info[STATS_TRI_COUNT] += stats.get(STATS_TRI_COUNT, 0);
-              
+
                     mat = stats.get(STATS_MAT_COUNT, 0)
                     mate = stats.get(STATS_EXTENDED_MAT_COUNT, 0)
                     if mat + mate  > stat_info[STATS_MAT_COUNT]:
@@ -2514,7 +2540,7 @@ class PanelMeshInfo(bpy.types.Panel):
                 op=row.operator("tamagoyaki.generic_info_operator", text="   Tris:", icon=meshsize_icon, emboss=False)
                 op.msg="Sum of all Triangles in All selected meshes"
                 row.label(text="%d"%stat_info[STATS_TRI_COUNT])
-            
+
             if stat_info[STATS_UV_COUNT] > 0:
                 row = col.row(align=True)
                 row.alignment='LEFT'
@@ -2538,7 +2564,7 @@ class PanelMeshInfo(bpy.types.Panel):
                     msg = "Material Count of Mesh with most defined Materials"
                     label = "%d" % stat_info[STATS_MAT_COUNT]
                 add_mat_error(col, icon, msg, label)
-                
+
                 if stat_info[STATS_UNASSIGNED_POLYS] > 0:
                     icon = ICON_ERROR
                     msg = "Total number of polygons not assigned to any material"
@@ -2557,11 +2583,11 @@ class PanelMeshInfo(bpy.types.Panel):
                     label = "%d unused material slots" % stat_info[STATS_UNASSIGNED_MATS]
                     add_mat_error(col, icon, msg, label, text='')
 
-            ld = len(stat_info[STATS_NWC_DISCARDED]) 
+            ld = len(stat_info[STATS_NWC_DISCARDED])
             le = len(stat_info[STATS_NWC_EFFECTIVE])
 
-            if ld + le > 0:        
-                
+            if ld + le > 0:
+
                 ibox = box.box()
                 icol = ibox.column()
                 if le > 0:
@@ -2583,7 +2609,7 @@ class PanelMeshInfo(bpy.types.Panel):
                 if ld > 0:
                     col = box.column(align=True)
                     col.label(text="Deforming Weight Maps")
-                
+
                     row = col.row(align=True)
                     op = row.operator("tamagoyaki.weightmap_info_operator", text="", icon=ICON_ERROR, emboss=False)
                     msg= messages.msg_discarded_weightgroups % len(stat_info[STATS_NWC_DISCARDED])
@@ -2608,7 +2634,7 @@ class PanelMeshInfo(bpy.types.Panel):
                 icol.label(text="Estimates:")
                 ibox = box.box()
                 icol = ibox.column(align=True)
-                
+
                 row = icol.row(align=True)
                 row.label(text="LOD")
                 row.label(text="Tris")
@@ -2618,12 +2644,12 @@ class PanelMeshInfo(bpy.types.Panel):
                 row.label(text="High")
                 row.label(text="%d"%stat_info[STATS_TRI_COUNT])
                 row.label(text="%d"%stat_info[STATS_VC_HIGH])
- 
+
                 row = icol.row(align=True)
                 row.label(text="Medium")
                 row.label(text="%d"%max(MIN_SIZE, int(stat_info[STATS_TRI_COUNT]/4)))
                 row.label(text="%d"%int(stat_info[STATS_VC_MID]))
-                                       
+
                 row = icol.row(align=True)
                 row.label(text="Low")
                 row.label(text="%d"%max(MIN_SIZE, int(stat_info[STATS_TRI_COUNT]/16)))
@@ -2635,11 +2661,11 @@ class PanelMeshInfo(bpy.types.Panel):
                 row.label(text="%d"%int(stat_info[STATS_VC_LOWEST]))
 
                 icol = ibox.column(align=True)
-                
+
                 row = icol.row(align=True)
                 row.label(text="Server Costs")
                 row.label(text="%.1f"%(0.5*len(targets)))
-                        
+
             col = box.column(align=True)
             col.operator(ButtonCheckMesh.bl_idname, icon=ICON_QUESTION)
 
@@ -2654,7 +2680,7 @@ class PanelTamagoyakiUpdate(bpy.types.Panel):
     bl_category = "Tamagoyaki"
 
     bl_label    = "Maintenance"
-    bl_idname   = "TAMAGOYAKI_PT_update_migrate"
+    bl_idname   = "AVASTAR_PT_update_migrate"
     bl_options  = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -2662,7 +2688,7 @@ class PanelTamagoyakiUpdate(bpy.types.Panel):
         return True
 
     def draw_header(self, context):
-        util.draw_info_header(self.layout.row(), AVASTAR_MAINTENANCE, msg=panel_info_register)
+        util.draw_info_header(self.layout.row(), AVASTAR_MAINTENANCE, id='panel_info_register')
 
     def draw(self, context):
 
@@ -2697,118 +2723,33 @@ class PanelTamagoyakiUpdate(bpy.types.Panel):
             row.label(text=info['name']    )
             row.label(text=str(info['version']) )
 
-        can_report   = True
-        is_logged_in = True
-        if addonProps.update_status=='CANUPDATE':
-            opn   = 'tamagoyaki.check_for_updates'
-            label = 'Login to Get %s' % addonProps.version
-            can_report   = False
-            is_logged_in = False
-        elif addonProps.update_status=='UPDATE':
-            opn   = 'tamagoyaki.download_update'
-            label = 'Download Tamagoyaki-%s' % addonProps.version
-        elif addonProps.update_status=='ONLINE':
-            opn   = 'tamagoyaki.check_for_updates'
-            label = 'Redo Check for updates'
-        elif addonProps.update_status=='READY_TO_INSTALL':
-            opn   = 'tamagoyaki.download_install'
-            label = 'Install Tamagoyaki-%s' % addonProps.version
-        elif addonProps.update_status=='ACTIVATE':
-            opn   = 'tamagoyaki.download_reload'
-            label = 'Reload Addon to Activate'
-        else:
-            opn   = 'tamagoyaki.check_for_updates'
-            label = 'Check for updates' if addonProps.username == '' or addonProps.password == '' else 'Login at Machinimatrix'
-            can_report   = False
-            is_logged_in = False
-        
+        opn   = 'tamagoyaki.check_for_updates'
+        label = 'Check for updates'
 
-        if can_report:
-            box   = layout.box()
-            box.label(text="Support Request")
-
-            col = box.column(align=True)
-            col.prop(addonProps, "ticketTypeSelection")
-            col = box.column(align=True)
-            col.prop(addonProps, "productName" )
-
-            col = box.column(align=True)
-            col.prop(addonProps, "addonVersion")
-            col.prop(addonProps, "blenderVersion")
-            col.prop(addonProps, "operatingSystem")
-            col.enabled = False
-            col = box.column(align=True)
-            col.operator('tamagoyaki.send_report', text="Create Report", icon=ICON_RADIOBUT_ON)
-        
-
-
-        
         box   = layout.box()
-        box.label(text="My account")
-        col = box.column(align=True)
-        row = col.row(align=True)
-        
-        wlabel = "Welcome, %s" % addonProps.user.replace("+"," ") if addonProps.user != '' else "My Machinimatrix Account"
-        
-        row.operator("wm.url_open", text=wlabel, icon=ICON_NONE, emboss=False).url=AVASTAR_DOWNLOAD
-        row.operator("wm.url_open", text="",icon=ICON_INFO,emboss=False).url=AVASTAR_DOWNLOAD
-        
-        col = box.column(align=True)
-        col.prop(addonProps,"username",  text= "Logged in as" if is_logged_in else "User", emboss = not is_logged_in)
-        
-        if not is_logged_in:
-            col.prop(addonProps,"password",  emboss = not is_logged_in)
-            row = box.row(align=True)
-            row.alignment='RIGHT'
-            row.prop(addonProps,"keep_cred", emboss = not is_logged_in)
-
-        row=box.row(align=True)
-        row.operator(opn, text=label, icon=ICON_URL)
-        row.operator("tamagoyaki.download_reset", text='', icon=ICON_X)
 
         col = box.column(align=True)
-        if addonProps.update_status=='CANUPDATE':
-            col.label(text="Update available after login", icon=ICON_ERROR)
-        elif addonProps.update_status=='UPDATE':
-            split = col.split(factor=0.2)
-            split.label(text="Server:")
+        col.operator(opn, text=label, icon=ICON_URL)
 
-            split.alignment='RIGHT'
-            split.label(text=addonProps.server)
+        col = box.column(align=True)
+        col.enabled=False
+        col.prop(addonProps, "update_status", text='', emboss=False, icon=ICON_NONE)
 
+        col = box.column(align=True)
+        col.operator("wm.url_open", text="Open My Download page", icon=ICON_URL).url=AVASTAR_DOWNLOAD
 
-
-
-
-
-
-
-
-        else:
-            split = col.split(factor=0.2, align=True)
-            split.label(text="Status:")
-            split.alignment='RIGHT'
-            label = addonProps.update_status
-            if label == 'ONLINE':
-                label = "You are up to date"
-                split.label(text=label)
-            else:
-                split.prop(addonProps, "update_status", text='', emboss=False)
-                split.alignment='RIGHT'
-                split.enabled=False
-        
 class PanelRiggingInfo(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = UI_LOCATION
     bl_category    = "Rigging"
 
     bl_label ="Rigging"
-    bl_idname = "TAMAGOYAKI_PT_animation_rigging_info"
+    bl_idname = "AVASTAR_PT_animation_rigging_info"
 
     @classmethod
     def poll(self, context):
 
-        if not (context and context.active_object): 
+        if not (context and context.active_object):
             show_tab = True
         else:
             armobj = util.get_armature_from_context(context)
@@ -2825,7 +2766,7 @@ class PanelRiggingInfo(bpy.types.Panel):
         if has_tamagoyakis or is_tamagoyaki:
             box.label(text='This panel is empty')
         else:
-            box.label(text='This panel is inactive')
+            box.label(text='())')
 
         col=box.column(align=True)
         col.label(text='wake up as follows:')
@@ -2834,7 +2775,7 @@ class PanelRiggingInfo(bpy.types.Panel):
             col.label(text='- Add an Tamagoyaki')
         if not is_tamagoyaki:
             col.label(text='- Select the Tamagoyaki')
-        col.label(text='- Switch to Pose mode')            
+        col.label(text='- Switch to Pose mode')
 
         col.separator()
         bbox=box.box()
@@ -2862,7 +2803,7 @@ class PanelRigLayers(bpy.types.Panel):
     bl_category    = "Rigging"
 
     bl_label ="Mesh display"
-    bl_idname = "TAMAGOYAKI_PT_rig_layers"
+    bl_idname = "AVASTAR_PT_rig_layers"
     bl_context = 'data'
 
     @classmethod

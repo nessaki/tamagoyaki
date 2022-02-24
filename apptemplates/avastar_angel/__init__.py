@@ -1,20 +1,14 @@
-### Copyright 2017      Gaia Clary
-###
-### This file is part of Tamagoyaki 2.
-###
-### Tamagoyaki is distributed under an End User License Agreement and you
-### should have received a copy of the license together with Tamagoyaki.
-### The license can also be obtained from http://www.machinimatrix.org/
+### Tamagoyaki license (GPL)
 
 bl_info = {
-    "name": "Tamagoyaki 2 Template",
-    "author": "Machinimatrix",
+    "name": "Tamagoyaki",
+    "author": "Nessaki",
     "version": (1, 0),
     "blender": (2, 78, 0),
     "location": "View3D > Toolshelf, Properties editor",
-    "description": "Tamagoyaki 2 Template",
+    "description": "Tamagoyaki",
     "warning": "",
-    "wiki_url": "",
+    "wiki_url":  "https://github.com/nessaki/tamagoyaki/wiki",
     "category": "Object",
 }
 

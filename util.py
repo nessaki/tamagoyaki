@@ -1,10 +1,11 @@
-### Copyright 2011, Magus Freston, Domino Marama, and Gaia Clary
-### Modifications 2013-2015 Gaia Clary
-### Modifications 2015      Matrice Laville
+### Copyright     2021 The Machinimatrix Team
 ###
-### This file is part of Tamagoyaki 1.
-### 
-
+### This file is part of Tamagoyaki
+###
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -23,23 +24,29 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-from collections import namedtuple
-import logging, traceback
-import bpy, sys, os, gettext
-from math import radians, sqrt, pi
-from mathutils import Vector, Matrix, Quaternion,Euler, Color
+import logging
+import traceback
+import bpy
+import sys
+import os
+import gettext
 import bmesh
+import time
+import shutil
+import io
+
+from collections import namedtuple
+from math import radians, sqrt, pi
+from mathutils import Vector, Matrix, Quaternion, Euler, Color
 from bpy.app.handlers import persistent
 from bpy.props import *
 from . import bl_info, const, messages
 from .const import *
-import time, shutil, io
-
 from mathutils import geometry
 
 LOCALE_DIR = os.path.join(os.path.dirname(__file__), 'locale')
-TMP_DIR    = os.path.join(os.path.dirname(__file__), 'tmp')
-DATAFILESDIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)),'lib')
+TMP_DIR = os.path.join(os.path.dirname(__file__), 'tmp')
+DATAFILESDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),'lib')
 
 log = logging.getLogger("tamagoyaki.util")
 timerlog = logging.getLogger("tamagoyaki.timer")
@@ -51,7 +58,7 @@ registerlog = logging.getLogger("tamagoyaki.register")
 
 
 def get_context_copy(context):
-    return context.copy()
+    return {}
 
 
 def object_get_collections(context, obj):
@@ -153,8 +160,9 @@ def set_con_axis(con, axis_id, val):
     elif axis_id == 2:
         con.use_z = val
     else:
-        log.error("illegal axis_id %d for constraint %s" % (axis_id, con.name))
-        raise
+        msg = "illegal axis_id %d for constraint %s" % (axis_id, con.name)
+        log.error(msg)
+        raise msg
 
 def link_object(context, obj):
     context.collection.objects.link(obj)
@@ -169,7 +177,7 @@ def unlink_object(context, obj):
 def get_active_object(context):
     view_layer = get_value_from(context, 'view_layer')
     if view_layer:
-        active = view_layer.objects.active 
+        active = view_layer.objects.active
     else:
         active = get_value_from(context, 'active')
     return active
@@ -300,14 +308,24 @@ def tprint(s):
     tic = toc
     return toc
 
-def draw_info_header(layout, link, msg="panel|the awesome message", emboss=False, icon=ICON_INFO, op=None, is_enabled=None):
+def draw_info_header(layout, link, id=None, msg=None, emboss=False, icon=ICON_INFO, op=None, is_enabled=None):
+    if not has_module("docu_on_top"):
+        return
+
+    from docu_on_top import messages
+    if id:
+        msg = messages.info_panel.get(id)
+
+    if not msg:
+        msg= 'ID [%s] is not defined' % id
+           
     preferences = getAddonPreferences()
     if preferences.verbose:
         prop = layout.operator("tamagoyaki.generic_info_operator", text="", icon=icon, emboss=emboss)
         prop.url=link
         prop.msg=msg
         prop.type=SEVERITY_INFO
-        
+
         if op and is_enabled:
             layout.prop(op, is_enabled, text="")
 
@@ -343,7 +361,7 @@ class TrisInfoOperator(bpy.types.Operator):
 
     msg        : StringProperty()
     icon       : StringProperty()
-    
+
     def execute(self, context):
         ErrorDialog.dialog(self.msg, self.icon)
         return {"FINISHED"}
@@ -431,7 +449,7 @@ def missing_uv_map_text(targets):
         nwo += "* " + obj.name+"\n"
     msg= messages.msg_missing_uvmaps % (no_uv_layers, pluralize("Mesh", no_uv_layers), nwo)
     return msg
-        
+
 class UVmapInfoOperator(bpy.types.Operator):
     bl_idname      = "tamagoyaki.uvmap_info_operator"
     bl_label       = "UVmap info"
@@ -439,7 +457,7 @@ class UVmapInfoOperator(bpy.types.Operator):
 
     msg        : StringProperty()
     icon       : StringProperty()
-    
+
     def execute(self, context):
         ErrorDialog.dialog(self.msg, self.icon)
         return {"FINISHED"}
@@ -485,14 +503,14 @@ class OperatorCallContext():
 
         self.curact = get_active_object(bpy.context)
         self.cursel = { ob : ob.select for ob in scene.objects }
-        
+
 
 
         self.use_global_undo = prefs.edit.use_global_undo
         prefs.edit.use_global_undo = False
 
         return (self.curact, self.cursel)
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
         context = bpy.context
         scene = context.scene
@@ -508,11 +526,11 @@ class OperatorCallContext():
 def select_single_object(ob):
     context = bpy.context
     scene = context.scene
-    
+
     set_active_object(context, ob)
     for tob in scene.objects:
         object_select_set(tob, (tob == ob))
-        
+
 def unselect_all_objects(scene):
     for tob in scene.objects:
         object_select_set(tob, False)
@@ -562,7 +580,7 @@ def generate_dialog(messages, template):
 class ErrorDialog(bpy.types.Operator):
     bl_idname = "tamagoyaki.error"
     bl_label = ""
-    
+
     msg=""
     sysinfo=""
     error_list = None
@@ -572,7 +590,7 @@ class ErrorDialog(bpy.types.Operator):
 '''Unfortunately Tamagoyaki-%s detected a program error.
 %sIf you need further help, then create a ticket and report this error to:
 
-https://support.machinimatrix.org/tickets
+https://www.avalab.org/support
 
 The Error Context (needed for tickets):
 %s'''
@@ -586,14 +604,14 @@ Operating system: %s
 The Stack trace :
 
 %s'''
-    
+
     @staticmethod
     def exception(e, context=None):
         ErrorDialog.error_list = None
         if isinstance(e, MeshError):
             ErrorDialog.dialog(str(e), SEVERITY_MESH_ERROR)
         elif isinstance(e, ArmatureError):
-            ErrorDialog.dialog(str(e), SEVERITY_ARMATRUE_ERROR)
+            ErrorDialog.dialog(str(e), SEVERITY_ARMATURE_ERROR)
         elif isinstance(e, ColladaExportError):
             msg, ErrorDialog.error_list, label = e.args
             ErrorDialog.dialog(msg, SEVERITY_EXPORT_ERROR, label=label)
@@ -634,7 +652,7 @@ The Stack trace :
             sysinfo = ErrorDialog.sysinfo_template % (pref.addonVersion, pref.blenderVersion, rig_versions, pref.operatingSystem, traceback.format_exc())
             msg = ErrorDialog.msg_template % (pref.addonVersion, cause, sysinfo)
             ErrorDialog.dialog(msg, SEVERITY_ERROR, sysinfo)
-        
+
     @staticmethod
     def dialog(msg, severity, sysinfo="", label=""):
         ErrorDialog.msg = msg
@@ -651,7 +669,7 @@ The Stack trace :
 
         def create_label(layout, severity, label):
             if severity != SEVERITY_HINT:
-                box = layout.column() 
+                box = layout.column()
 
                 if severity == SEVERITY_INFO:
                     box.label(text="Info: %s"%label, icon=ICON_INFO)
@@ -682,9 +700,9 @@ The Stack trace :
                 if len(paragraph) > 0:
                     help_topic = " --> %s" % paragraphs[3] if len(paragraphs)>3 else paragraph
                     if paragraph[0] in [".","/"]:
-                       help_url = DOCUMENTATION+paragraph
+                        help_url = DOCUMENTATION+paragraph
                     else:
-                       help_url = paragraph
+                        help_url = paragraph
         else:
 
             text  = "\n"+msg
@@ -701,15 +719,12 @@ The Stack trace :
         if ErrorDialog.error_list:
             has_operator = False # use one link per line instead, see below
             for err, help_topic in ErrorDialog.error_list:
-                row=col.row(align=True)
                 if help_topic and help_topic != '':
-                    help_url = DOCUMENTATION + help_topic
-                    row.operator("wm.url_open", icon=ICON_QUESTION).url=help_url
+                    help_url = help_topic if help_topic.startswith(DOCUMENTATION) else (DOCUMENTATION + help_topic)
+                    col.operator("wm.url_open", icon=ICON_URL, text=err[1:-1]).url=help_url
                     help_url = None
                 else:
-                    row.label(text="", icon=ICON_BLANK1)
-                row.label(text=err[0:-1])
-                col = box.column(align=True)
+                    col.label(text="", icon=ICON_BLANK1)
 
         has_operator = draw_textblock(col, text, help_topic, help_url)
 
@@ -723,20 +738,20 @@ The Stack trace :
 
     def execute(self, context):
         return {'FINISHED'}
-    
+
     def invoke(self, context, event):
         user_preferences = getPreferences()
         width = 500
         return context.window_manager.invoke_props_dialog(self, width=width)
- 
+
 class ButtonCopyToPastebuffer(bpy.types.Operator):
     bl_idname = "tamagoyaki.copy_to_paste_buffer"
     bl_label = "Copy message"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Copy message to paste buffer"
-    
+
     msg : StringProperty()
-    
+
     def draw(self, context):
         help_text = "Go to your text editor. Then\n"\
                   + "press CTRL-V to paste the text.\n\n"\
@@ -942,8 +957,8 @@ def get_bone_scales(bone, use_custom=True):
         sc = Vector((x,y,z))
         if abs(sc.magnitude-s0.magnitude) > MIN_BONE_LENGTH and \
            abs(sc.normalized().dot(s0.normalized()) - 1) > MIN_BONE_LENGTH:
-                log.debug("Custom Scale: SL: %s -> Custom: %s  Bone: %s" % (s0, sc, bone.name) )
-                s0 = sc
+            log.debug("Custom Scale: SL: %s -> Custom: %s  Bone: %s" % (s0, sc, bone.name) )
+            s0 = sc
     ds = Vector(bone.get('scale',(0,0,0)))
 
     return ds, s0
@@ -956,7 +971,7 @@ def subtract_list(alist, rlist, mask):
 
 def mul(v1,v2):
     return Vector([v1[i]*v2[i] for i in range(3)])
-    
+
 def get_bone_scale_matrix(bone, f=1, inverted=False, normalized=True):
     scale = get_bone_scale(bone, f, normalized)
     M = matrixScale(scale)
@@ -969,7 +984,7 @@ def get_bone_scale(bone, f=1, normalized=True, use_custom=True):
     scale = f*ds+s0
 
     if normalized:
-       scale = Vector([scale[i]/s0[i] for i in range(3)])
+        scale = Vector([scale[i]/s0[i] for i in range(3)])
 
     return scale
 
@@ -981,7 +996,7 @@ def bone_can_scale(armobj, bone):
     else:
         allow_scaling = True
     return allow_scaling
-    
+
 
 def getBoneScaleMatrix(armobj, bone, MScale=None, normalize=True, verbose=False, use_custom=True, with_appearance=True):
 
@@ -1029,13 +1044,13 @@ def get_joint_cache(armobj, include_ik=True, copy=False):
             return cache
         result = {}
         for key,joint in cache.items():
-           j= { "key":key,
+            j= { "key":key,
                 "head":Vector(joint['head']),
                 "tail":Vector(joint['tail']),
                 "hmag":joint['hmag'],
                 "tmag":joint['tmag']
-              }
-           result[key]=j
+                }
+            result[key]=j
         return result
 
     return {key:j for key,j in cache.items() if key[0:2] != 'ik'}
@@ -1066,6 +1081,7 @@ def adjust_hand_structure(arm, scale):
                     if structure:
                         v = find_hand_structure_head(wrist, finger, fingertip, scale)
                         if v:
+
                             structure.head = v
                     else:
                         log.warning("Structure bone %s not in Rig" % structure_name)
@@ -1133,12 +1149,12 @@ def material_extensions(obj):
         extensions += int(tricount / 21844)
 
     return len(mat_polycounters), extensions, unassigned_polys, unassigned_slots, unassigned_mats
-    
+
 def selection_has_shapekeys(targets):
     for obj in targets:
         if obj.active_shape_key:
             return True
-    return False  
+    return False
 
 def get_armature_from_context(context):
     obj = get_active_object(context)
@@ -1172,11 +1188,11 @@ def get_armatures(selection=None, tamagoyaki_only=False):
 def getSelectedArmsAndObjs(context):
     ob = context.object
     if not ob:
-       ob = context.active_object
-   
+        ob = context.active_object
+
     arms = {}
     objs = []
-    
+
     if ob:
         if ob.type == 'ARMATURE':
             arms[ob.name] = ob
@@ -1219,7 +1235,7 @@ def getSelectedArmsAndAllObjs(context):
     ob = context.object
     arms = {}
     objs = {}
-    
+
     if ob:
         if context.mode=='EDIT_MESH':
             arm = ob.find_armature()
@@ -1232,7 +1248,7 @@ def getSelectedArmsAndAllObjs(context):
                 if arm:
                     log.debug("Add Armature %s" % ob.name)
                     arms[arm.name] = arm
-                    
+
     for arm in arms.values():
 
         for obj in getCustomChildren(arm, type='MESH'):
@@ -1293,7 +1309,7 @@ def get_weight_group_names(selection):
     return set(groups)
 
 def get_animated_meshes(context, armature, with_tamagoyaki=True, only_selected=False, return_names=False, only_visible=True, filter=None, use_object_selector=False):
-    system_meshes, animated_meshes = get_animated_elements(context, armature, 
+    system_meshes, animated_meshes = get_animated_elements(context, armature,
                                  with_tamagoyaki=with_tamagoyaki,
                                  only_selected=only_selected,
                                  return_names=return_names,
@@ -1302,7 +1318,14 @@ def get_animated_meshes(context, armature, with_tamagoyaki=True, only_selected=F
                                  use_object_selector=use_object_selector)
     return animated_meshes
 
-def get_animated_elements(context, armature, with_tamagoyaki=True, only_selected=False, return_names=False, only_visible=True, filter=None, use_object_selector=False):
+def get_animated_elements(context,
+                          armature,
+                          with_tamagoyaki=True,
+                          only_selected=False,
+                          return_names=False,
+                          only_visible=True,
+                          filter=None,
+                          use_object_selector=False):
 
     def is_selected(mesh, use_object_selector):
         return mesh.ObjectProp.is_selected if use_object_selector else mesh.select_get()
@@ -1337,7 +1360,7 @@ def get_animated_elements(context, armature, with_tamagoyaki=True, only_selected
                 animated_meshes.append(mesh.name if return_names else mesh)
 
 
-           
+
     return system_meshes, animated_meshes
 
 
@@ -1370,7 +1393,7 @@ def get_select_and_hide(selection, select=None, hide_select=None, hide=None, hid
             obj.hide_select = hide_select
         if hide_viewport != None:
             obj.hide_viewport = hide_viewport
-    return backup        
+    return backup
 
 def select_hierarchy(obj, select=True, context=None):
     selection = getChildren(obj, context=context)
@@ -1427,7 +1450,7 @@ def add_bone_and_children(bone, bone_set):
         add_bone_and_children(child, bone_set)
 
 def getTamagoyakiArmaturesFromSelection(selection):
-    armatures = [get_armature(obj) for obj in selection if (obj.type == 'ARMATURE' and 'tamagoyaki' in obj) or (obj.type=='MESH' and not 'tamagoyaki-mesh' in obj and obj.find_armature())]        
+    armatures = [get_armature(obj) for obj in selection if (obj.type == 'ARMATURE' and 'tamagoyaki' in obj) or (obj.type=='MESH' and not 'tamagoyaki-mesh' in obj and obj.find_armature())]
     armatures = set([arm for arm in armatures if 'tamagoyaki' in arm])
     return armatures
 
@@ -1448,9 +1471,9 @@ def getHiddenBoneNames(armobj):
     bones = get_modify_bones(armobj)
     hidden_bones = [bone.name for bone in bones if bone.hide or not (any(bone.layers[i] for i in visible_layers))]
     return hidden_bones
-    
+
 def getVisibleSelectedBones(armobj):
-    visible_layers = [i for i, l in enumerate(bpy.data.armatures[armobj.data.name].layers) if l]    
+    visible_layers = [i for i, l in enumerate(bpy.data.armatures[armobj.data.name].layers) if l]
     bones = get_modify_bones(armobj)
     selected_bones = [bone for bone in bones if bone.select and not bone.hide and any(bone.layers[i] for i in visible_layers)]
     return selected_bones
@@ -1501,18 +1524,18 @@ def get_deform_bones(armobj, only=None, visible=False, selected=False):
     result = get_modify_bones(armobj, only, visible, selected)
     deform_bones = [b for b in result if b.use_deform]
     return deform_bones
-    
+
 def get_bone_type(bone, bones):
     name = bone.name
     if name[0]=="m" and name[1:] not in bones:
         return BONE_UNSUPPORTED
-    if 'm'+name in armobj.data.edit_bones:
+    if 'm'+name in bones:
         return BONE_CONTROL
     if name[0] == 'm':
         return BONE_SL
     if name[0] == 'a':
         return BONE_ATTACHMENT
-    if dbone_name in SLVOLBONES:
+    if name in SLVOLBONES:
         return BONE_VOLUME
     return 'META' #IKBone or other stuff
 
@@ -1523,7 +1546,7 @@ def get_modify_bones(armobj, only=None, visible=False, selected=False):
 
     if selected:
         result = [b for b in result if b.select]
-    
+
     if visible:
         result = [b for b in result if bone_is_visible(armobj, b)]
 
@@ -1570,7 +1593,7 @@ def getCurrentSelection(context, verbose=False):
             targets.insert(0,obj) if obj==active else targets.append(obj) #active obj first in list
             if verbose: print("Append Target %s" % obj.name)
             armobj = getArmature(obj)
-            
+
             if not ('weight' in obj and obj['weight']=='locked'):
                 weighttargets.append(obj)
 
@@ -1604,22 +1627,22 @@ def getCurrentSelection(context, verbose=False):
     currentSelection['shapekeys']     = shapekeys
 
     return currentSelection
- 
+
 def set_mesh_select_mode(select_modes):
     mesh_select_mode = bpy.context.scene.tool_settings.mesh_select_mode
     bpy.context.scene.tool_settings.mesh_select_mode = select_modes
     return mesh_select_mode
-        
+
 def set_object_mode(new_mode, def_mode=None, object=None):
     if new_mode is None:
         if def_mode is None:
             return None
         new_mode = def_mode
-    
+
     try:
         if object == None:
             object = get_active_object(bpy.context)
-            
+
         if object == None:
             return None
 
@@ -1627,7 +1650,7 @@ def set_object_mode(new_mode, def_mode=None, object=None):
             return new_mode
     except:
         pass
-        
+
     original_mode = object.mode
     try:
         mode_set(mode=new_mode)
@@ -1646,9 +1669,9 @@ def change_active_object(context, new_active_object, new_mode=None, msg=""):
     if old_active_object and old_active_object != new_active_object:
         if old_active_mode != 'OBJECT':
             mode_set(mode='OBJECT')
-    
+
         set_active_object(context, new_active_object)
-    
+
     if new_mode and new_mode != new_active_object.mode:
         mode_set(mode=new_mode)
 
@@ -1739,17 +1762,17 @@ def update_only_selected_verts(obj, omode=None):
 
 
 def select_all_doubles(me, dist=0.0001):
-    
+
     bpy.ops.mesh.select_all(action='DESELECT')
     bm  = bmesh.from_edit_mesh(me)
     map = bmesh.ops.find_doubles(bm,verts=bm.verts, dist=dist)['targetmap']
     count = 0
-    
+
     try:
         bm.verts.ensure_lookup_table()
     except:
         pass
-        
+
     for key in map:
         bm.verts[key.index].select=True
         bm.verts[map[key].index].select=True
@@ -1757,21 +1780,21 @@ def select_all_doubles(me, dist=0.0001):
 
     bmesh.update_edit_mesh(me)
     return count
-    
+
 def select_edges(me, edges, seam=None, select=None):
     bm  = bmesh.from_edit_mesh(me)
-    
+
     try:
         bm.edges.ensure_lookup_table()
     except:
         pass
-        
+
     for i in edges:
         if not seam is None:   bm.edges[i].seam   = seam
         if not select is None: bm.edges[i].select = select
     bmesh.update_edit_mesh(me)
 
-def get_vertex_coordinates(ob):    
+def get_vertex_coordinates(ob):
     me = ob.data
     vcount = len(me.vertices)
     coords  = [0]*vcount*3
@@ -1781,9 +1804,9 @@ def get_vertex_coordinates(ob):
         coords[3*index+0] = co[0]
         coords[3*index+1] = co[1]
         coords[3*index+2] = co[2]
-   
+
     return coords
-    
+
 def get_weights(ob, vgroup):
     weights = []
     for index, vert in enumerate(ob.data.vertices):
@@ -1826,7 +1849,7 @@ def rescale(value1, vmin1, vmax1, vmin2, vmax2):
 
     value2 = max(min(value2, vmax2), vmin2)
     return value2
-    
+
 
 def clamp_range(smallest,val,biggest):
     return max(min(val, biggest), smallest)
@@ -1838,7 +1861,7 @@ def s2bo(p):
 
 def s2b(p):
     return Vector((p[1],-p[0],p[2]))
-    
+
 def b2s(p):
     return Vector((-p[1],p[0],p[2]))
 
@@ -1962,19 +1985,19 @@ def progress_begin(min=0,max=9999):
         bpy.context.window_manager.progress_begin(min,max)
         progress = 0
     except:
-        pass    
-        
+        pass
+
 def progress_update(val, absolute=True):
     global progress
     if absolute:
         progress = val
     else:
         progress += val
-        
+
     try:
         bpy.context.window_manager.progress_update(progress)
     except:
-        pass    
+        pass
 
 def progress_end():
     try:
@@ -2016,7 +2039,8 @@ def getMesh(context,
     shape_data=None,
     sl_rotation=True):
 
-    evaluated_object, evaluated_data = getEvaluatedMesh(context,
+    depsgraph = context.evaluated_depsgraph_get()
+    evaluated_object, evaluated_data = getEvaluatedMesh(depsgraph,
     obj,
     apply_modifier_stack,
     apply_mesh_rotscale = apply_mesh_rotscale,
@@ -2029,7 +2053,7 @@ def getMesh(context,
     return evaluated_data
 
 
-def getEvaluatedMesh(context,
+def getEvaluatedMesh(depsgraph,
     obj,
     apply_modifier_stack,
     apply_mesh_rotscale = True,
@@ -2056,9 +2080,7 @@ def getEvaluatedMesh(context,
     log.debug("get Mesh: + begin ++++++++++++++++++++++++++++++++++++++++++++")
     log.debug("get Mesh: Get Mesh for %s" % (obj.name) )
 
-    disabled_modifiers, armature_modifiers = prepare_modifiers(obj, apply_modifier_stack, apply_armature)
-
-    depsgraph = context.evaluated_depsgraph_get()
+    disabled_modifiers, armature_modifiers = prepare_modifiers(depsgraph, obj, apply_modifier_stack, apply_armature)
     evaluated_object = obj.evaluated_get(depsgraph)
     evaluated_data = evaluated_object.to_mesh(preserve_all_data_layers=True, depsgraph=depsgraph)
     mdc= evaluated_data.copy()
@@ -2106,10 +2128,11 @@ def getEvaluatedMesh(context,
     return evaluated_object, evaluated_data
 
 
-def prepare_modifiers(obj, apply_modifier_stack, apply_armature):
+def prepare_modifiers(depsgraph, obj, apply_modifier_stack, apply_armature):
 
     disabled_modifiers = []
     armature_modifiers = []
+    need_update = False
 
     for m in obj.modifiers:
         log.debug("get Mesh: Examine modifier %s %s %s" % (m.name, m.show_viewport, m.show_render))
@@ -2119,6 +2142,7 @@ def prepare_modifiers(obj, apply_modifier_stack, apply_armature):
                 disabled_modifiers.append(m)
                 m.show_viewport=False
                 log.debug("get Mesh: Disabled PREVIEW modifier %s" % m.name)
+                need_update = True
         elif m.type == 'ARMATURE':
             if apply_armature:
                 armature_modifiers.append([m,m.use_deform_preserve_volume])
@@ -2130,11 +2154,15 @@ def prepare_modifiers(obj, apply_modifier_stack, apply_armature):
                     m.show_viewport=False
                     disabled_modifiers.append(m)
                     log.debug("get Mesh: Disabled modifier %s" % (m.name))
+                    need_update = True
                 else:
                     log.debug("get Mesh: Enabled modifier %s" % (m.name))
         else:
             log.debug("get Mesh: Use modifier %s for viewport:%s render:%s" % \
                      (m.name, m.show_viewport, m.show_render))
+
+    if need_update:
+            depsgraph.update()
 
     return disabled_modifiers, armature_modifiers
 
@@ -2143,7 +2171,7 @@ def prepare_modifiers(obj, apply_modifier_stack, apply_armature):
 def get_uv_vert_count(me):
     edge_count = len([e.use_seam for e in me.edges if e.use_seam])
     return edge_count + len(me.vertices)
-    
+
 
 def get_nearest_vertex_normal(source_verts, target_vert):
     solution = None
@@ -2151,14 +2179,14 @@ def get_nearest_vertex_normal(source_verts, target_vert):
         dist = (target_vert.co - source_vert.co).magnitude
         if dist < 0.001:
             if not solution or solution[0] > dist :
-                solution = [dist, source_vert.normal]
+                solution = [dist, source_vert]
     return solution[1] if solution else None
 
-def get_boundary_verts(bmsrc, context, obj, apply_modifier_stack=False, apply_mesh_rotscale = True):
-    evaluated_object, evaluated_data = getEvaluatedMesh(context, obj, apply_modifier_stack, apply_mesh_rotscale)
+def get_boundary_verts(bmsrc, depsgraph, obj, apply_modifier_stack=False, apply_mesh_rotscale = True):
+    evaluated_object, evaluated_data = getEvaluatedMesh(depsgraph, obj, apply_modifier_stack, apply_mesh_rotscale)
     bmsrc.from_mesh(evaluated_data)
     evaluated_object.to_mesh_clear()
-    
+
     invalidverts = []
     boundaryvert = False
     for edge in bmsrc.edges:
@@ -2173,11 +2201,11 @@ def get_boundary_verts(bmsrc, context, obj, apply_modifier_stack=False, apply_me
                     continue
                 else:
                     invalidverts.append(vert)
-                    
+
     for vert in invalidverts:
         if vert.is_valid:
             bmsrc.verts.remove(vert)
-            
+
     return bmsrc.verts
 
 def select_boundary_verts(bmsrc, context, obj, apply_mesh_rotscale = True):
@@ -2193,32 +2221,38 @@ def select_boundary_verts(bmsrc, context, obj, apply_mesh_rotscale = True):
                 for edge in vert.link_edges:
                     if len(edge.link_faces) < 2:
                         boundaryvert = True
-                vert.select = boundaryvert    
+                vert.select = boundaryvert
 
 
 def get_adjusted_vertex_normals(context, sources, apply_modifier_stack, apply_mesh_rotscale):
+
+    def get_adjusted_normals(obj, normals_repository):
+        if not obj.name in normals_repository:
+            normals_repository[obj.name]={}
+        return normals_repository[obj.name]
+
+
     bm_source  = bmesh.new()
     bm_target  = bmesh.new()
-    
+
     targets = sources.copy()
-    source_normals    = {}
-    
+    normals_repository = {}
+    depsgraph = context.evaluated_depsgraph_get()
     for obj in sources:
         try:
             bm_target.verts.ensure_lookup_table()
             bm_source.verts.ensure_lookup_table()
         except:
             pass
-            
-        target_verts = get_boundary_verts(bm_target, context, obj, apply_modifier_stack, apply_mesh_rotscale)
+
+        target_verts = get_boundary_verts(bm_target, depsgraph, obj, apply_modifier_stack, apply_mesh_rotscale)
         targets.remove(obj)
         for otherobj in sources:
             if otherobj == obj:
                 continue
-            source_verts = get_boundary_verts(bm_source, context, otherobj, apply_modifier_stack, apply_mesh_rotscale)
-            if not obj.name in source_normals:
-                source_normals[obj.name]={}
-            normals = source_normals[obj.name]
+            source_verts = get_boundary_verts(bm_source, depsgraph, otherobj, apply_modifier_stack, apply_mesh_rotscale)
+            normals = get_adjusted_normals(obj, normals_repository)
+            onormals = get_adjusted_normals(otherobj, normals_repository)
             fixcount = 0
 
             log.info("Weld %s(%d verts) with %s(%d verts)" % (obj.name, len(target_verts), otherobj.name, len(source_verts)) )
@@ -2226,20 +2260,27 @@ def get_adjusted_vertex_normals(context, sources, apply_modifier_stack, apply_me
             for vert in target_verts:
                 near = get_nearest_vertex_normal(source_verts, vert)
                 if near:
-                    vert.normal = (vert.normal + near) * 0.5
-                    vert.normal.normalize()
-                    normals[vert.index] = vert.normal.copy()
+
+                    normal = onormals.get(near.index)
+                    if normal:
+                         normals[vert.index] = normal.copy()
+                         continue
+
+                    normal = (vert.normal + near.normal) * 0.5
+                    normal.normalize()
+                    normals[vert.index] = normal.copy()
+                    onormals[near.index] = normal.copy()
                     fixcount +=1
-                    
+
             if fixcount > 0:
                 print("merged %d normals from %s with target %s" % (fixcount, otherobj.name, obj.name) )
             bm_source.clear()
         bm_target.clear()
-        
-    bm_source.free()        
+
+    bm_source.free()
     bm_target.free()
-    return source_normals
-        
+    return normals_repository
+
 
 ABERRANT_PLURAL_MAP = {
     'appendix': 'appendices',
@@ -2258,7 +2299,7 @@ VOWELS = set('aeiou')
 def pluralize(singular, count=2, plural=None):
     '''
     singular : singular form of word
-    count    : if count > 1 return plural form of word 
+    count    : if count > 1 return plural form of word
                otherwise returns word as is
     plural   : for irregular words
     '''
@@ -2271,7 +2312,7 @@ def pluralize(singular, count=2, plural=None):
     plural = ABERRANT_PLURAL_MAP.get(singular)
     if plural:
         return plural
-        
+
     root = singular
     try:
         if singular[-1] == 'y' and singular[-2] not in VOWELS:
@@ -2310,14 +2351,14 @@ class V_ORG(namedtuple('V', 'x, y, z')):
     '''
     Simple vector class
     '''
-    
+
     def __new__(_cls, *args):
         'Create new instance of Q(x, y, z)'
         if len(args)==1:
             x,y,z = args[0]
         else:
             x,y,z = args
-        return super().__new__(_cls, x, y, z) 
+        return super().__new__(_cls, x, y, z)
     def __add__(self, other):
         if type(other) == V:
             return V( *(s+o for s,o in zip(self, other)) )
@@ -2331,7 +2372,7 @@ class V_ORG(namedtuple('V', 'x, y, z')):
 
     def __neg__(self):
         return V(-self.x, -self.y, -self.z)
- 
+
     def __sub__(self, other):
         if type(other) == V:
             return V( *(s-o for s,o in zip(self, other)) )
@@ -2347,23 +2388,23 @@ class V_ORG(namedtuple('V', 'x, y, z')):
         except:
             return NotImplemented
         return V(self.x * f, self.y * f, self.z * f)
-    
+
     def __truediv__(self, other):
         try:
             f = float(other)
         except:
             return NotImplemented
         return V(self.x / f, self.y / f, self.z / f)
-    
+
     def copy(self):
         return V(self.x, self.y, self.z)
-        
+
     def magnitude(self):
         v = Vector((self.x, self.y, self.z))
         return v.magnitude
-    
+
     __rmul__ = __mul__
-    
+
 
 def findTamagoyakiMeshes(parent, meshobjs=None, armature_version=None):
 
@@ -2379,15 +2420,15 @@ def findTamagoyakiMeshes(parent, meshobjs=None, armature_version=None):
         except:
             armature_version = 0
 
-        
+
     for child in parent.children:
         findTamagoyakiMeshes(child, meshobjs, armature_version)
         if child.type=='MESH':
-            name = child.name.split(".")[0] 
+            name = child.name.split(".")[0]
             if name in ['headMesh','hairMesh','upperBodyMesh','lowerBodyMesh','skirtMesh','eyelashMesh','eyeBallLeftMesh','eyeBallRightMesh']:
                 if armature_version == 2 and not 'tamagoyaki-mesh' in child:
                     continue
-                    
+
                 if name in meshobjs:
 
 
@@ -2431,8 +2472,8 @@ def ensure_shadow_exists(key, arm, obj, me = None):
         shadow.parent      = arm
 
 
-        if 'tamagoyaki-mesh' in shadow: del shadow['tamagoyaki-mesh'] 
-        if 'mesh_id'      in shadow: del shadow['mesh_id']      
+        if 'tamagoyaki-mesh' in shadow: del shadow['tamagoyaki-mesh']
+        if 'mesh_id'      in shadow: del shadow['mesh_id']
 
         unlink_object(context, shadow)
 
@@ -2517,7 +2558,7 @@ def flipName(name):
         fname = ""
 
     return fname
-    
+
 class BindBone:
 
     def __init__(self,bone):
@@ -2528,10 +2569,10 @@ class BindBone:
         self.parent    = bone.parent.name if bone.parent else None
 
         self.matrix    = bone.matrix_basis.copy()
-        
+
         if bone.name=="CollarRight":
             print("matrix:", self.matrix)
-        
+
 
 
 
@@ -2540,7 +2581,7 @@ class AlterToRestPose(bpy.types.Operator):
     bl_label = "Alter To Reference Pose"
     bl_description ="Alter pose to Reference Pose"
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     @classmethod
     def poll(self, context):
         obj = context.active_object
@@ -2555,10 +2596,10 @@ class AlterToRestPose(bpy.types.Operator):
         if not reference:
             print("Can not alter to rest pose. No reference pose found")
             return False
-        
+
         pbones = arm.pose.bones
         bbones = reference.bbones
-            
+
         omode = ensure_mode_is('POSE', object=arm)
         for key in bbones:
             rbone  = bbones[key]
@@ -2578,7 +2619,7 @@ class AlterToRestPose(bpy.types.Operator):
 class ArmatureBinding:
 
     armature_bindings={}
-    
+
     def __init__(self, arm, reference):
         self.reference = reference
         ArmatureBinding.armature_bindings[arm.name]=self
@@ -2594,13 +2635,13 @@ class BindSkeleton:
         self.bbones = {}
         omode = ensure_mode_is('POSE', object=arm)
         for bone in arm.pose.bones:
-           bbone = BindBone(bone)
-           self.bbones[bbone.name] = bbone
+            bbone = BindBone(bone)
+            self.bbones[bbone.name] = bbone
 
         ensure_mode_is(omode, object=arm)
 
 
-        
+
 class BindToCurrentPose(bpy.types.Operator):
     bl_idname = "tamagoyaki.bind_to_pose"
     bl_label = "Bind To Pose"
@@ -2613,7 +2654,7 @@ class BindToCurrentPose(bpy.types.Operator):
             active = context.active_object
             return active and active.type=='ARMATURE'
         return False
-        
+
     @classmethod
     def createBinding(self,arm, context):
 
@@ -2684,8 +2725,8 @@ def get_approximate_lods(ob, vertex_count, normals_count, uv_count, triangle_cou
     rx = ob.dimensions[0] * ob.scale[0] / 2
     ry = ob.dimensions[1] * ob.scale[1] / 2
     rz = ob.dimensions[2] * ob.scale[2] / 2
-    radius = max(rx,ry,rz)# sqrt(rx*rx + ry*ry + rz*rz) 
-    
+    radius = max(rx,ry,rz)# sqrt(rx*rx + ry*ry + rz*rz)
+
     if triangle_count == 0:
         correction=1
     else:
@@ -2694,7 +2735,7 @@ def get_approximate_lods(ob, vertex_count, normals_count, uv_count, triangle_cou
     low_lod    = max(limit_vertex_count(vcount/(3*correction), triangle_count/16) + extra_normals/24, MIN_SIZE)
     medium_lod = max(limit_vertex_count(vcount/correction    , triangle_count/4)  + extra_normals/6 , MIN_SIZE)
     high_lod   = vcount
-    
+
     return radius, lowest_lod, low_lod, medium_lod, high_lod
 
 def get_streaming_costs(radius, vc_lowest, vc_low, vc_mid, vc_high, triangle_count):
@@ -2710,7 +2751,7 @@ def get_streaming_costs(radius, vc_lowest, vc_low, vc_mid, vc_high, triangle_cou
 
 
 
-    
+
     trilowest = max(vc_lowest - DISCOUNT,MIN_SIZE)
     trilow    = max(vc_low    - DISCOUNT,MIN_SIZE)
     trimid    = max(vc_mid    - DISCOUNT,MIN_SIZE)
@@ -2720,13 +2761,13 @@ def get_streaming_costs(radius, vc_lowest, vc_low, vc_mid, vc_high, triangle_cou
     amid    = min(pi * dlow*dlow,       MAX_AREA)
     alow    = min(pi * dlowest*dlowest, MAX_AREA)
     alowest = MAX_AREA
-    
+
     alowest -= alow
     alow    -= amid
     amid    -= ahigh
 
     atot = ahigh + amid + alow + alowest
-    
+
     wahigh   = ahigh/atot
     wamid    = amid/atot
     walow    = alow/atot
@@ -2736,7 +2777,7 @@ def get_streaming_costs(radius, vc_lowest, vc_low, vc_mid, vc_high, triangle_cou
            trimid    * wamid  + \
            trilow    * walow  + \
            trilowest * walowest
-           
+
     cost = (wavg * FAKTOR)
     return cost
 
@@ -2752,7 +2793,7 @@ def unparent_selection(context, selection, type='CLEAR_KEEP_TRANSFORM', clear_ar
     if clear_armature:
         for ob in selection:
             for mod in [mod for mod in ob.modifiers if mod.type=='ARMATURE']:
-                 ob.modifiers.remove(mod)
+                ob.modifiers.remove(mod)
     set_select(selection)
     bpy.ops.object.parent_clear(type=type)
 
@@ -2762,7 +2803,7 @@ def parent_selection(context, tgt, selection, keep_transform=False):
     set_select(selection)
     object_select_set(tgt, True)
     set_active_object(context, tgt)
-    
+
     bpy.ops.object.parent_set(type='OBJECT', keep_transform=keep_transform)
 
 def get_selection_recursive(selection, include=True):
@@ -2780,7 +2821,7 @@ def get_select_from_scene(scene):
 def set_select(selection, reset=False):
     if reset:
         bpy.ops.object.select_all(action='DESELECT')
-    
+
     for ob in selection:
         object_select_set(ob, True)
 
@@ -2799,7 +2840,7 @@ def move_children(context, src, tgt, root, ignore):
         obj.parent=tgt
         for mod in [mod for mod in obj.modifiers if mod.type=='ARMATURE']:
             mod.object=root
-        sources.extend(move_children(context, obj, obj, tgt, ignore))            
+        sources.extend(move_children(context, obj, obj, tgt, ignore))
 
 
     return sources
@@ -2820,7 +2861,7 @@ def reparent_selection(context, src, tgt, ignore):
     for obj in sources:
         for mod in [mod for mod in obj.modifiers if mod.type=='ARMATURE']:
             if mod.object == src:
-               mod.object = tgt
+                mod.object = tgt
 
 
     return sources
@@ -2842,14 +2883,14 @@ def fix_modifier_order(context, ob):
             break
 
     if mod_arm_index > mod_data_index > -1:
-       print("Need to move weld higher up by",  mod_arm_index - mod_data_index, "slots")
+        print("Need to move weld higher up by",  mod_arm_index - mod_data_index, "slots")
 
-       active = get_active_object(context)
-       set_active_object(context, ob)
-       while mod_arm_index > mod_data_index:
-          mod_data_index +=1
-          bpy.ops.object.modifier_move_down(modifier=mod_data_name)
-       set_active_object(context, active)
+        active = get_active_object(context)
+        set_active_object(context, ob)
+        while mod_arm_index > mod_data_index:
+            mod_data_index +=1
+            bpy.ops.object.modifier_move_down(modifier=mod_data_name)
+        set_active_object(context, active)
 
 def copy_object_attributes(context, src_armature, tgt_armature, tgt, src):
     print("copy_object_attributes...")
@@ -2880,27 +2921,22 @@ def copy_attributes(context, src_armature, tgt_armature, sources, target_set):
 
 
 
-def remove_selection(selected, src):
-    for obj in selected:
-        if obj.parent == src or any([mod for mod in obj.modifiers if mod.type=='ARMATURE' and mod.object == src]):
-            remove_children(obj, context)
-            remove_object(context, obj)            
 
 def remove_object(context, obj, do_unlink=True, recursive=False):
 
-        if recursive and obj.children:
-            for child in obj.children:
-                remove_object(context, child, do_unlink=do_unlink, recursive=recursive)
+    if recursive and obj.children:
+        for child in obj.children:
+            remove_object(context, child, do_unlink=do_unlink, recursive=recursive)
 
 
-        bpy.data.objects.remove(obj, do_unlink=do_unlink)
+    bpy.data.objects.remove(obj, do_unlink=do_unlink)
 
 
 def remove_text(text, do_unlink=True):
-        bpy.data.texts.remove(text, do_unlink=do_unlink)
+    bpy.data.texts.remove(text, do_unlink=do_unlink)
 
 def remove_action(action, do_unlink=True):
-        bpy.data.actions.remove(action, do_unlink=do_unlink)
+    bpy.data.actions.remove(action, do_unlink=do_unlink)
 
 
 def remove_children(src, context):
@@ -2926,7 +2962,7 @@ def setSelectOption(armobj, bone_names, exclusive=True):
                 backup[bone.name] = bone.select
                 bone.select = False
     return backup
-        
+
 def setDeformOption(armobj, bone_names, exclusive=True):
     backup = {}
     bones = get_modify_bones(armobj)
@@ -2940,17 +2976,17 @@ def setDeformOption(armobj, bone_names, exclusive=True):
                 backup[bone.name] = bone.use_deform
                 bone.use_deform = False
     return backup
-    
+
 def restoreDeformOption(armobj, backup):
     bones = get_modify_bones(armobj)
     for key, val in backup.items():
         bones[key].use_deform = val
-        
+
 def restoreSelectOption(armobj, backup):
     bones = get_modify_bones(armobj)
     for key, val in backup.items():
         bones[key].select = val
-        
+
 
 def remove_weights_from_deform_bones(obj, use_all_verts=False):
     arm = get_armature(obj)
@@ -2964,28 +3000,18 @@ def remove_weights_from_deform_bones(obj, use_all_verts=False):
 def remove_weights_from_selected_groups(obj, weight_group_names, use_all_verts=False):
     active = get_active_object(bpy.context)
     set_active_object(bpy.context, obj)
-    original_mode = ensure_mode_is("EDIT") 
+    original_mode = ensure_mode_is("EDIT")
     removed_groups_counter=0
     for gname in [ name for name in weight_group_names if name in obj.vertex_groups]:
-        bpy.ops.object.vertex_group_set_active(group=gname) 
+        bpy.ops.object.vertex_group_set_active(group=gname)
         bpy.ops.object.vertex_group_remove_from(use_all_verts=use_all_verts)
         print("Removed selected from vgroup %s" % gname)
         removed_groups_counter += 1
     ensure_mode_is(original_mode)
     set_active_object(bpy.context, active)
     return removed_groups_counter
-    
-def remove_weights_from_all_groups(obj):
-    active = get_active_object(bpy.context)
-    set_active_object(bpy.context, obj)
-    original_mode = ensure_mode_is("EDIT")
-    bpy.ops.object.vertex_group_set_active(group=gname) 
-    bpy.ops.object.vertex_group_remove_from(all=True)
-    log.warning("|  Removed selected verts from all vgroups in Mesh %s" % obj.name)
-    ensure_mode_is(original_mode)
-    set_active_object(bpy.context, active)
 
-def removeWeightGroups(obj, weight_group_names): 
+def removeWeightGroups(obj, weight_group_names):
     for gname in [ name for name in weight_group_names if name in obj.vertex_groups]:
         vgroup = obj.vertex_groups.get(gname)
         if vgroup:
@@ -2995,27 +3021,24 @@ def removeWeightGroups(obj, weight_group_names):
             log.warning("Tried to remove not existing vertex group %s" % gname)
 
 
-def removeEmptyWeightGroups(obj):
+def removeEmptyWeightGroups(obj, depsgraph):
 
-    def get_empty_groups(bm, obj):
+    def get_empty_groups(obj):
         empty_groups = []
-        dvert_lay = bm.verts.layers.deform.active
+        countmap = {}
+        for v in obj.data.vertices:
+            for g in v.groups:
+                if countmap.get(g.group) == None:
+                    countmap[g.group]=True
+
         for g in obj.vertex_groups:
-            if not any(v for v in bm.verts if obj.vertex_groups[g.name].index in v[dvert_lay]):
+            if not g.index in countmap:
                 empty_groups.append(g.name)
         return empty_groups
 
     if obj and obj.type=='MESH':
-        bm = bmesh.new()
-        bm.from_mesh(obj.data)
-        
-        try:
-            bm.verts.ensure_lookup_table()
-        except:
-            pass
-            
-        dvert_lay = bm.verts.layers.deform.active
-        empty_groups = get_empty_groups(bm, obj)
+        evaluated_object = obj.evaluated_get(depsgraph)
+        empty_groups = get_empty_groups(evaluated_object)
         if len(empty_groups) > 0:
             removeWeightGroups(obj, empty_groups)
         return len(empty_groups)
@@ -3026,7 +3049,7 @@ def removeEmptyWeightGroups(obj):
             name= "None"
         print("WARN: can not remove weightgroups from Object %s" % name)
         return 0
-        
+
 def createEmptyGroups(obj, names=None):
     arm = obj.find_armature()
     if names == None:
@@ -3058,15 +3081,21 @@ def always_alter_to_restpose():
 
 def get_rig_type(rigType=None):
     if rigType == None:
-        sceneProps = context.scene.SceneProp
+        sceneProps = bpy.context.scene.SceneProp
         rigType    = sceneProps.tamagoyakiRigType
     return rigType
 
 def get_joint_type(jointType=None):
     if jointType == None:
-        sceneProps = context.scene.SceneProp
+        sceneProps = bpy.context.scene.SceneProp
         jointType  = sceneProps.tamagoyakiJointType
     return jointType
+
+def get_skeleton_type(skeletonType=None):
+    if skeletonType == None:
+        sceneProps = bpy.context.scene.SceneProp
+        skeletonType  = sceneProps.tamagoyakiSkeletonType
+    return skeletonType
 
 def resolve_definition_file(file):
     if os.path.exists(file):
@@ -3092,7 +3121,7 @@ def get_shape_filename(name):
         os.makedirs(TMP_DIR)
     return os.path.join(TMP_DIR, name+'.xml')
 
-Identity = Matrix()    
+Identity = Matrix()
 def print_mat(msg, Mat):
     if Mat == Identity:
         print(msg,"Identity")
@@ -3100,16 +3129,16 @@ def print_mat(msg, Mat):
         print(msg,Mat)
 
 def is_identity(M):
-   M4=M.copy()
-   sanitize(M4, 6)
-   M3 = M.to_3x3()
-   return M3 == M3.inverted()
+    M4=M.copy()
+    sanitize(M4, 6)
+    M3 = M.to_3x3()
+    return M3 == M3.inverted()
 
 def get_version_info(obj):
     ''' Return Version information:
         if obj is not an armature, return version of bound armature
         if obj is an armature, return version info of obj
-        
+
         tamagoyakiversion : textstring, 3 parts: "2.0.50"
         rigversion     : textstring, 3 parts: "2.0.45" or None
         rigid          : integer identify rigversion: 5 or None
@@ -3132,7 +3161,7 @@ def get_version_info(obj):
             rigversion = None
 
     return tamagoyakiversion, rigversion, rigid, rigType
-    
+
 def copydir(src,dst, overwrite=False):
     for root, dirs, files in os.walk(src):
         srcdir=root
@@ -3140,7 +3169,7 @@ def copydir(src,dst, overwrite=False):
         dstdir=dst+folder
         if not os.path.exists(dstdir):
             os.makedirs(dstdir)
-            
+
         for file in files:
             dstfile = os.path.join(dstdir,file)
             if overwrite or not os.path.exists(dstfile):
@@ -3174,6 +3203,15 @@ def copyblend(src, dst, overwrite=False):
     log.warning("  Copied %d template files to" % counter)
     log.warning("  %s" % dst)
 
+def remove_file(filename):
+    try:
+        os.remove(filename)
+    except OSError as e: # this would be "except OSError, e:" before Python 2.6
+        import errno
+        if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
+            raise # re-raise exception if a different error occurred
+
+
 class slider_context():
 
     was_disabled = False
@@ -3186,7 +3224,7 @@ class slider_context():
         if self.was_disabled:
 
             return True
-        
+
         visitlog.debug("Enter slider_context. (Disable slider updates)")
         set_disable_update_slider_selector(True)
         return False
@@ -3197,7 +3235,7 @@ class slider_context():
             log.error("Exception type: %s" % type )
             log.error("Exception value: %s" % value)
             log.error("traceback: %s" % traceback)
-            raise
+            raise ("%s : %s" % type, value)
 
         if not self.was_disabled:
             visitlog.debug("Exit slider_context. (Enable slider updates)")
@@ -3270,7 +3308,7 @@ def is_use_bind_pose_update_in_progress():
 
 def get_modifiers(ob, type):
     return [mod for mod in ob.modifiers if mod.type==type]
-    
+
 def get_tri_count(faces, loops):
     tris = 0
     if faces > 0:
@@ -3295,8 +3333,8 @@ def shorten_text(text, maxlen=24, cutbegin=False, cutend=False):
         newtext = text[0:splitlen] + "..." + text[-splitlen:]
     return newtext
 
-def closest_point_on_mesh(ob,co):
-    status, co, no, index = ob.closest_point_on_mesh(co)
+def closest_point_on_mesh(ob,co, depsgraph=None):
+    status, co, no, index = ob.closest_point_on_mesh(co, depsgraph=depsgraph)
     return status, co, no, index
 
 def ray_cast(ob, co, nor):
@@ -3305,10 +3343,10 @@ def ray_cast(ob, co, nor):
 
 def get_center(context, ob):
 
-    active = get_active_object(context)    
+    active = get_active_object(context)
     set_active_object(context, ob)
     cursor_location = get_cursor(context)
-    
+
     omode = ensure_mode_is('EDIT')
 
     bpy.ops.mesh.select_all(action='SELECT')
@@ -3420,7 +3458,7 @@ def matrixScale(scale, M=None, replace=False):
         M[0][0] = scale[0]
         M[1][1] = scale[1]
         M[2][2] = scale[2]
-   
+
     else:
         M[0][0] *= scale[0]
         M[1][1] *= scale[1]
@@ -3454,7 +3492,7 @@ def apply_transform(ob, with_loc=True, with_rot=True, with_scale=True):
         M = M @ rot.to_matrix().to_4x4()
     if with_loc:
         M = matrixLocation(loc, M)
-    
+
     ob.data.transform(M)
     ob.matrix_world = ob.matrix_world @ M.inverted()
     ob.rotation_euler = Euler()
@@ -3489,15 +3527,34 @@ def sanitize_v(vec, precision=6):
     result = [sanitize_f(f, precision) for f in vec]
     return Vector(result)
 
-def sanitize(mat, precision):
-    if not precision:
-        return mat
-
+def sanitize(mat, precision=6, inplace=False):
+    result = mat if inplace else Matrix()
     for i in range(0,4):
         for j in range(0,4):
-            val = round(mat[i][j], precision)
-            mat[i][j] = val
-    return mat
+            val = sanitize_f(mat[i][j], precision=precision)
+            result[i][j] = val
+    return result
+
+def printmat(mat, p=6):
+    template = "{0}({1[0]: .%df}, {1[1]: .%df}, {1[2]: .%df}, {1[3]: .%df}){2}" % (p,p,p,p)
+    mat = sanitize(mat, precision=p)
+    result = template.format("Matrix((", mat[0],',\n')\
+           + template.format("        ", mat[1],',\n')\
+           + template.format("        ", mat[2],',\n')\
+           + template.format("        ", mat[3],'))')
+    return result
+
+class PMatrix(Matrix):
+    __repr__ = printmat
+
+def printmat(mat, p=6):
+    template = "{0}({1[0]: .%df}, {1[1]: .%df}, {1[2]: .%df}, {1[3]: .%df}){2}" % (p,p,p,p)
+    mat = sanitize(mat, precision=p)
+    print(template.format("Matrix((", mat[0],','))
+    print(template.format("        ", mat[1],','))
+    print(template.format("        ", mat[2],','))
+    print(template.format("        ", mat[3],'))'))
+
 
 def similar_quaternion(A, B, abs_tol=0.001):
     for i in range(4):
@@ -3518,7 +3575,7 @@ def similar_matrix(A,B):
 def clear_transforms(context, srcobjs):
     old_parents = {}
     bpy.ops.object.select_all(action='DESELECT')
-    
+
     for ob in srcobjs:
         old_parents[ob.name]=ob.parent
         object_select_set(ob, True)
@@ -3555,14 +3612,14 @@ def transform_empty_to_target(ob, delta):
     ob.matrix_world.translation -= delta
     for ch in ob.children:
         ch.matrix_world.translation += delta
-        
+
 def transform_origins_to_target(context, tgtobj, srcobjs, delta=V0):
 
     scene = context.scene
     active = get_active_object(context)
     if tgtobj != active:
         set_active_object(context, tgtobj)
-        
+
     cloc = get_cursor(context)
     tloc = tgtobj.location.copy()
     set_cursor(context, tloc)
@@ -3581,7 +3638,7 @@ def transform_origins_to_target(context, tgtobj, srcobjs, delta=V0):
     log.info("transform origins to target: Move %d Origins to %s" % (len(srcobjs), get_cursor(context)))
     bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
     restore_object_select_states(context, selected_object_names)
-    
+
     set_cursor(context, cloc)
     if tgtobj != active:
         set_active_object(context, active)
@@ -3595,7 +3652,7 @@ def transform_matrices_to_target(srcobjs, delta):
         else:
             ob.matrix_world.translation -= delta
 
-    
+
 def transform_rootbone_to_origin(context, armobj):
     log.info("Transform Root Bone to Origin for [%s]" % context.object.name)
     active = context.object
@@ -3642,7 +3699,7 @@ def transform_origin_to_rootbone(context, armobj):
     set_active_object(context, active)
     ensure_mode_is(amode)
     return origin_loc
-    
+
 def set_bone_select_mode(armobj, state, boneset=None, additive=True):
     bones = get_modify_bones(armobj)
     if boneset == None:
@@ -3704,10 +3761,10 @@ def bone_is_visible(armobj, bone, check_paired_bone=False):
     return is_visible
 
 def match_armature_scales(source, target):
-    tlocs = [v for bone in target.data.bones if bone.use_deform for v in (bone.head_local, bone.tail_local)]
-    slocs = [v for bone in source.data.bones if bone.use_deform for v in (bone.head_local, bone.tail_local)]
-    source_size = source.scale[2] * (max([location[2] for location in slocs]) - min([location[2] for location in slocs]))
-    target_size = target.scale[2] * (max([location[2] for location in tlocs]) - min([location[2] for location in tlocs]))
+    tlocs = [v for bone in target.data.bones if bone.use_deform for v in (target.matrix_world @ bone.head_local, target.matrix_world @ bone.tail_local)]
+    slocs = [v for bone in source.data.bones if bone.use_deform for v in (source.matrix_world @ bone.head_local, source.matrix_world @ bone.tail_local)]
+    source_size = (max([location[2] for location in slocs]) - min([location[2] for location in slocs]))
+    target_size = (max([location[2] for location in tlocs]) - min([location[2] for location in tlocs]))
     source.scale *=  target_size / source_size
     print("Source size:", source.scale[2]*source_size, "Target size:", target.scale[2]*target_size)
 
@@ -3743,7 +3800,7 @@ def gp_init_callback(context, gp, palette):
             color.color=(1,0,1)
             print("Added default color to palette", palette.name)
     return
-    
+
 def get_gp_palette(context, gname='gp', pname='gp', callback=gp_init_callback):
     gp = get_gp(context, gname)
     palette = gp.palettes.get(pname)
@@ -3851,7 +3908,7 @@ def is_linked_hierarchy(selection):
         if is_linked_item(ob):
             log.warning("Found linked object %s" % ob.name)
             return True
-        
+
         if is_linked_hierarchy(ob.children):
             log.warning("Found linked childlist in %s" % ob.name)
             return True
@@ -3888,7 +3945,7 @@ def get_head_tail(arm_obj, bname, msg=""):
     else:
         log.warning("Bone %s does not exist" % bname)
     return mag
-        
+
 
 def has_joint_position(joints, dbone, check_tail=True):
     if not joints:
@@ -3918,7 +3975,7 @@ def has_head_offset(joints, bone):
         return False
     if not joints:
         return False
- 
+
     joint = joints.get(bone.name)
     if not joint or not joint['enabled']:
         return False
@@ -4002,7 +4059,7 @@ def context_or_mode_changed(obj):
         is_same = (obj == last_context_object and mode == last_context_mode)
     else:
         is_same = True
-    
+
     last_context_object = obj
     last_context_mode = mode
 
@@ -4021,7 +4078,7 @@ def toVector(prop):
 
     vec3d = [prop[i] for i in range(3)]
     return Vector(vec3d)
-    
+
 def get_local_matrix(armobj, dbone):
     if armobj.mode == 'EDIT':
         return dbone.matrix
@@ -4122,7 +4179,7 @@ def start_profiler():
 def end_profiler(pr):
     import cProfile, pstats
     pr.disable()
-    pr.dump_stats("D://blendergit/addon_development/tamagoyaki-1/tmp/test.profile")
+    pr.dump_stats("D://blendergit/addon_development/tamagoyaki/tmp/test.profile")
     s = io.StringIO()
     sortby = pstats.SortKey.CUMULATIVE
     ps = pstats.Stats(pr, stream=s).sort_stats(sortby)

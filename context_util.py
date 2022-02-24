@@ -1,8 +1,11 @@
-### Copyright 2016 Gaia Clary (Machinimatrix)
+### Copyright     2021 The Machinimatrix Team
 ###
 ### This file is part of Tamagoyaki
-### 
-
+###
+### The module has been created based on this document:
+### A Beginners Guide to Dual-Quaternions:
+### http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.407.9047
+###
 ### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -21,7 +24,9 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy, logging
+import bpy
+import logging
+
 from . import util
 
 log = logging.getLogger('tamagoyaki.context')
@@ -34,7 +39,7 @@ class set_context:
         self.active = self.context.active_object if context else None
         self.amode = self.active.mode if self.active else None
         self.asel = util.object_select_get(self.active) if self.active else None
-        
+
         self.obj = obj
         self.nmode = mode
         self.omode = self.obj.mode if self.obj else None

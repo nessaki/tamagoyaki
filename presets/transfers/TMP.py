@@ -14,6 +14,7 @@ updateRigProp.tgtRigType = 'BASIC'
 updateRigProp.handleTargetMeshSelection = 'DELETE'
 updateRigProp.transferJoints = True
 updateRigProp.JointType = 'PIVOT'
+updateRigProp.SkeletonType = 'AVASTAR'
 updateRigProp.rig_use_bind_pose = True
 updateRigProp.sl_bone_ends = True
 updateRigProp.sl_bone_rolls = True
