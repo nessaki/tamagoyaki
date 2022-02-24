@@ -590,7 +590,7 @@ class ErrorDialog(bpy.types.Operator):
 '''Unfortunately Tamagoyaki-%s detected a program error.
 %sIf you need further help, then create a ticket and report this error to:
 
-https://www.avalab.org/support
+https://www.BENTOBOX.org/support
 
 The Error Context (needed for tickets):
 %s'''

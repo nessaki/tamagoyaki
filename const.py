@@ -322,11 +322,11 @@ REFERENCE_GUIDES     = DOCUMENTATION + "/help/"
 
 TAMAGOYAKI_RIG_IMPORT   = DOCUMENTATION + "/help/rig-transfer-tool/"
 TAMAGOYAKI_SHAPE_IO     = DOCUMENTATION + "/help/properties/object/shape/io/"
-HELP_PAGE            = BENTOBOX+ "/help/"
-TAMAGOYAKI_URL          = BENTOBOX+ "/tamagoyaki"
-TAMAGOYAKI_REGISTER     = BENTOBOX+ "/register-download-page/"
-TAMAGOYAKI_DOWNLOAD     = BENTOBOX+ "/my-account/products/"
-XMLRPC_SERVICE       = BENTOBOX+ "/xmlrpc.php"
+HELP_PAGE            = BENTOBOX + "/help/"
+TAMAGOYAKI_URL          = BENTOBOX + "/tamagoyaki"
+TAMAGOYAKI_REGISTER     = BENTOBOX + "/register-download-page/"
+TAMAGOYAKI_DOWNLOAD     = BENTOBOX + "/my-account/products/"
+XMLRPC_SERVICE       = BENTOBOX + "/xmlrpc.php"
 FIRST_STEPS          = DOCUMENTATION + "/reference/usermanual/first-steps/"
 
 CHECKSUM = "ava_checksum"
@@ -1860,10 +1860,7 @@ GSkeletonTypeItems = [
 GSkeletonType = EnumProperty(
     items=GSkeletonTypeItems,
     name="Skeleton Type",
-    description=\
-'''The Skeleton type can be:
-- TAMAGOYAKI (default, good for Avatars of any kind)
-- ANIMESH (only useful for Animesh development) ''',
+    description="The Skeleton type can be:- TAMAGOYAKI (default, good for Avatars of any kind)- ANIMESH (only useful for Animesh development) ",
     default='TAMAGOYAKI'
 )
 
@@ -1979,9 +1976,7 @@ g_srcRigType = EnumProperty(
         (SLMAP,      SLMAP,      'Second Life Base Rig\n\nWe assume the character looks towards positive X\nwhich means it looks to the right side when in front view'),
         (MANUELMAP,  MANUELMAP,  'Manuel Bastioni Rig\n\nWe assume the character has been imported directly from Manuellab and has not changed.'),
         (GENERICMAP, GENERICMAP, 'Generic Rig\n\nWe assume the character looks towards negative Y\nwhich means it looks at you when in Front view'),
-	(TAMAGOYAKIMAP, TAMAGOYAKIMAP, 'Tamagoyaki Rig\n\nThe character is already rigged to an Tamagoyaki or Tamagoyaki Rig\nNote: Do not use this option unless you have been instructed to set it'),
-        (TAMAGOYAKIMAP, TAMAGOYAKIMAP, 'Avastar Rig\n\nThe character is already rigged to an Avastar or Tamagoyaki Rig\nNote: Do not use this option unless you have been instructed to set it'),
-
+        (TAMAGOYAKIMAP, TAMAGOYAKIMAP, 'Rig\n\nThe character is already rigged to an TAMAGOYAKI Rig\nNote: Do not use this option unless you have been instructed to set it'),
     ),
     name="Source Rig",
     description="Rig Type of the active Object, can be TAMAGOYAKI, MANUELLAB, SL or Generic",

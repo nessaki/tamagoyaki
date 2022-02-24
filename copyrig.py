@@ -856,7 +856,7 @@ def import_blend(context, filepath):
 def import_rig_from_file(context, prop):
     scene = context.scene
 
-    filepath = prop.devkit_filepath.replace("AVASTAR_ADDON_ROOT_FOLDER", AVASTAR_DIR)
+    filepath = prop.devkit_filepath.replace("TAMAGOYAKI_ADDON_ROOT_FOLDER", TAMAGOYAKI_DIR)
     shapefile = os.path.splitext(filepath)[0]+".shape"
     if not os.path.exists(shapefile):
         shapefile = ""
@@ -886,7 +886,7 @@ def import_rig_from_file(context, prop):
     if scale != 1.0:
         armobj.scale = scale*armobj.scale
 
-    if prop.srcRigType == 'AVASTAR':
+    if prop.srcRigType == 'TAMAGOYAKI':
         if armobj.RigProp.JointType == prop.JointType:
             return armobj
 
@@ -981,7 +981,7 @@ def armature_needs_update(armobj):
     if not (rig_id or rig_version):
         return True
 
-    repair = (tamagoyaki_version == rig_version or AVASTAR_RIG_ID == rig_id)
+    repair = (tamagoyaki_version == rig_version or TAMAGOYAKI_RIG_ID == rig_id)
     return not repair
 
 
@@ -1136,7 +1136,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
         return (self.apply_pose or self.applyRotation) and self.sources
 
     def draw(self, context):
-        if self.inplace_transfer == False or self.srcRigType != 'AVASTAR':
+        if self.inplace_transfer == False or self.srcRigType != 'TAMAGOYAKI':
             ButtonCopyTamagoyaki.draw_generic(self, context, self.layout, self.src_armature, self.targets)
 
     @staticmethod
@@ -1172,7 +1172,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
 
         if "tamagoyaki"  in src_armature:
             title = "Rig Update Tool"
-            srcRigType = 'AVASTAR'
+            srcRigType = 'TAMAGOYAKI'
             need_pelvis_fix = rig.needTinkerFix(src_armature)
             need_rig_fix = rig.needRigFix(src_armature)
         else:
@@ -1204,14 +1204,14 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
         col = box.column(align=True)
         if 'tamagoyaki' in armobj:
             tag = " (Animesh)" if armobj.RigProp.SkeletonType=='ANIMESH' else ""
-            col.label(text="Source Rig: AVASTAR%s"%tag)
+            col.label(text="Source Rig: TAMAGOYAKI%s"%tag)
         else:
             row = col.row(align=True)
             row.label(text="Source Rig:")
             row.prop(updateRigProp, "srcRigType", text='')
             row.prop(updateRigProp, "up_axis", text='')
 
-        if srcRigType =='AVASTAR' and not 'tamagoyaki' in armobj:
+        if srcRigType =='TAMAGOYAKI' and not 'tamagoyaki' in armobj:
             col   = box.column(align=True)
             col.label(text="Source rig is not Tamagoyaki",icon=ICON_ERROR)
             col.label(text="You Reimport an Tamagoyaki?", icon=ICON_BLANK1)
@@ -1225,7 +1225,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
 
             col = box.column()
 
-        if op or len(targets) > 0 or srcRigType!='AVASTAR':
+        if op or len(targets) > 0 or srcRigType!='TAMAGOYAKI':
 
             if True:#len(targets) == 0:
 
@@ -1234,7 +1234,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
                 split.prop(updateRigProp, "handleTargetMeshSelection", text="", toggle=False)
                 col  = box.column()
 
-            if srcRigType == 'AVASTAR':
+            if srcRigType == 'TAMAGOYAKI':
                 col.prop(updateRigProp, "transferMeshes")
                 col.prop(updateRigProp, "preserve_bone_colors")
                 col.prop(updateRigProp, "fix_reference_meshes")
@@ -2248,7 +2248,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
 
 
         bone_names = Skeleton.bones_in_hierarchical_order(tgt_armature)
-        if src_rig_type == 'AVASTAR':
+        if src_rig_type == 'TAMAGOYAKI':
             has_bind_data = update_from_bone_store(ebones, pbones, bone_store)
         else:
             has_bind_data = copy_bone_store(bone_names, ebones, pbones, bone_store, src_rig_type)
@@ -2734,7 +2734,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
         updateRigProp = scene.UpdateRigProp
 
         if 'tamagoyaki' in self.src_armature:
-            self.srcRigType = 'AVASTAR'
+            self.srcRigType = 'TAMAGOYAKI'
         else:
             self.srcRigType = updateRigProp.srcRigType
 
@@ -2744,7 +2744,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
             self.rig_display_type = 'ALL'
 
 
-        if self.srcRigType == 'AVASTAR':
+        if self.srcRigType == 'TAMAGOYAKI':
             shape.ensure_drivers_initialized(self.src_armature)
             self.sl_bone_ends = False
             self.pose_library = self.src_armature.pose_library
@@ -2837,7 +2837,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
         self.src_armature              = util.get_armature(context.object)
 
         if self.src_armature and 'tamagoyaki' in self.src_armature:
-            self.srcRigType            = 'AVASTAR'
+            self.srcRigType            = 'TAMAGOYAKI'
             self.use_male_shape        = self.src_armature.RigProp.gender == 'MALE'
             self.use_male_skeleton     = self.src_armature.RigProp.gender == 'MALE'
             self.SkeletonType          = self.src_armature.RigProp.SkeletonType
@@ -2938,7 +2938,7 @@ class ButtonCopyTamagoyaki(bpy.types.Operator):
         util.set_active_collection_of(context, self.src_armature)
 
         log.warning("Copy Rig:| Convert %s Armature '%s' to %s Tamagoyaki Rig" % (self.srcRigType, self.src_armature.name, tgt_rigtype))
-        if self.srcRigType != 'AVASTAR':
+        if self.srcRigType != 'TAMAGOYAKI':
 
             tgt_armature = convert_sl(
                 self,
@@ -3162,9 +3162,9 @@ def extract_bone_data(context, armature, bone_store, rot):
 
 
 def create_transfer_preset(layout):
-    last_select = bpy.types.AVASTAR_MT_transfer_presets_menu.bl_label
+    last_select = bpy.types.TAMAGOYAKI_MT_transfer_presets_menu.bl_label
     row = layout.row(align=True)
-    row.menu("AVASTAR_MT_transfer_presets_menu", text=last_select )
+    row.menu("TAMAGOYAKI_MT_transfer_presets_menu", text=last_select )
     row.operator("tamagoyaki.transfer_presets_add", text="", icon=ICON_ADD)
     if last_select not in ["Transfer Presets", "Presets"]:
         row.operator("tamagoyaki.transfer_presets_update", text="", icon=ICON_FILE_REFRESH)
@@ -3209,7 +3209,7 @@ def add_transfer_preset(context, filepath):
 
     file_preset.close()
 
-class AVASTAR_MT_transfer_presets_menu(Menu):
+class TAMAGOYAKI_MT_transfer_presets_menu(Menu):
     bl_label  = "Transfer Presets"
     bl_description = "Transfer Presets for Tamagoyaki\nHere you define configurations for updating/importing Rigs."
     preset_subdir = os.path.join("tamagoyaki","transfers")
@@ -3220,7 +3220,7 @@ class TamagoyakiAddPresetTransfer(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.transfer_presets_add"
     bl_label = "Add Transfer Preset"
     bl_description = "Create new Preset from current Panel settings"
-    preset_menu = "AVASTAR_MT_transfer_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_transfer_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","transfers")
 
@@ -3235,11 +3235,11 @@ class TamagoyakiUpdatePresetTransfer(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.transfer_presets_update"
     bl_label = "Update Transfer Preset"
     bl_description = "Update active Preset from current Panel settings"
-    preset_menu = "AVASTAR_MT_transfer_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_transfer_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","transfers")
 
     def invoke(self, context, event):
-        self.name = bpy.types.AVASTAR_MT_transfer_presets_menu.bl_label
+        self.name = bpy.types.TAMAGOYAKI_MT_transfer_presets_menu.bl_label
         print("Updating Preset", self.name)
         return self.execute(context)
 
@@ -3250,7 +3250,7 @@ class TamagoyakiRemovePresetTransfer(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.transfer_presets_remove"
     bl_label = "Remove Transfer Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "AVASTAR_MT_transfer_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_transfer_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","transfers")
 
 #######################################################################
@@ -3258,9 +3258,9 @@ class TamagoyakiRemovePresetTransfer(AddPresetBase, Operator):
 #######################################################################
 
 def create_devkit_preset(layout):
-    last_select = bpy.types.AVASTAR_MT_devkit_presets_menu.bl_label
+    last_select = bpy.types.TAMAGOYAKI_MT_devkit_presets_menu.bl_label
     row = layout.row(align=True)
-    prop = row.menu("AVASTAR_MT_devkit_presets_menu", text=last_select)
+    prop = row.menu("TAMAGOYAKI_MT_devkit_presets_menu", text=last_select)
 
 
     if last_select not in ["Devkit Presets", "Presets"]:
@@ -3268,8 +3268,8 @@ def create_devkit_preset(layout):
         row.operator("tamagoyaki.devkit_presets_remove", text="", icon=ICON_REMOVE).remove_active = True
 
 def create_devkit_exec(layout):
-    last_select = bpy.types.AVASTAR_MT_devkit_preset_exec_menu.bl_label
-    paths =  bpy.utils.preset_paths(bpy.types.AVASTAR_MT_devkit_presets_menu.preset_subdir)
+    last_select = bpy.types.TAMAGOYAKI_MT_devkit_preset_exec_menu.bl_label
+    paths =  bpy.utils.preset_paths(bpy.types.TAMAGOYAKI_MT_devkit_presets_menu.preset_subdir)
     col = layout.column(align=True)
 
     has_presets = False
@@ -3358,15 +3358,15 @@ def add_devkit_preset(context, filepath, allow_overwrite):
         os.remove(newpath)
     return None
 
-class AVASTAR_MT_devkit_presets_menu(Menu):
-    bl_idname = "AVASTAR_MT_devkit_presets_menu"
+class TAMAGOYAKI_MT_devkit_presets_menu(Menu):
+    bl_idname = "TAMAGOYAKI_MT_devkit_presets_menu"
     bl_label  = "Devkit Presets"
     bl_description = "Devkit Presets for Tamagoyaki\nHere you define configurations for updating/importing Rigs."
     preset_subdir = os.path.join("tamagoyaki","devkits")
     preset_operator = "tamagoyaki.load_devkit_preset"
     draw = Menu.draw_preset
 
-class AVASTAR_MT_devkit_preset_exec_menu(Menu):
+class TAMAGOYAKI_MT_devkit_preset_exec_menu(Menu):
     bl_label  = "Devkit Presets"
     bl_description = "Devkit Presets for Tamagoyaki\nHere you define configurations for updating/importing Rigs."
     preset_subdir = os.path.join("tamagoyaki","devkits")
@@ -3382,7 +3382,7 @@ def menu_devkit_presets(self, context):
         if is_tamagoyaki_devkit:
             filepath = getattr(bop, 'filepath')
             name = bpy.path.display_name(filepath)
-            op = layout.operator(WM_OT_AVASTAR_RemoveDevkitPreset.bl_idname,
+            op = layout.operator(WM_OT_TAMAGOYAKI_RemoveDevkitPreset.bl_idname,
                 text="Delete %s"%name,
                 icon=ICON_X
             )
@@ -3396,7 +3396,7 @@ class WM_MT_button_context(Menu):
         pass
 
 
-class WM_OT_AVASTAR_RemoveDevkitPreset(Operator):
+class WM_OT_TAMAGOYAKI_RemoveDevkitPreset(Operator):
     """Remove a developer kit preset"""
     bl_idname = "tamagoyaki.remove_devkit_preset"
     bl_label = "Delete"
@@ -3428,7 +3428,7 @@ All actual developerkit files are preserved.''' % name
         else:
             return {'CANCELLED'}
 
-class WM_OT_AVASTAR_ExecuteDevkitPreset(Operator):
+class WM_OT_TAMAGOYAKI_ExecuteDevkitPreset(Operator):
     """Add a character from a development kit"""
     bl_idname = "tamagoyaki.execute_devkit_preset"
     bl_label = "Add Devkit"
@@ -3455,7 +3455,7 @@ class WM_OT_AVASTAR_ExecuteDevkitPreset(Operator):
 
 
         try :
-            status = bpy.ops.script.execute_preset(filepath=self.filepath, menu_idname=AVASTAR_MT_devkit_presets_menu.bl_idname)
+            status = bpy.ops.script.execute_preset(filepath=self.filepath, menu_idname=TAMAGOYAKI_MT_devkit_presets_menu.bl_idname)
             if not 'FINISHED' in status:
                 return status
 
@@ -3492,7 +3492,7 @@ class LoadDevkitPreset(Operator):
         context.scene.UpdateRigProp.devkit_scale=1.0 #reset the scale for old preset definitions
         context.scene.UpdateRigProp.up_axis = 'Z'
 
-        status = bpy.ops.script.execute_preset(filepath=self.filepath, menu_idname=AVASTAR_MT_devkit_presets_menu.bl_idname)
+        status = bpy.ops.script.execute_preset(filepath=self.filepath, menu_idname=TAMAGOYAKI_MT_devkit_presets_menu.bl_idname)
 
         return status
 
@@ -3501,7 +3501,7 @@ class TamagoyakiAddPresetDevkit(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.devkit_presets_add"
     bl_label = "Add Devkit Preset"
     bl_description = "Create new Preset from current Panel settings"
-    preset_menu = "AVASTAR_MT_devkit_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_devkit_presets_menu"
 
     preset_subdir = os.path.join("tamagoyaki","devkits")
 
@@ -3521,11 +3521,11 @@ class TamagoyakiUpdatePresetDevkit(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.devkit_presets_update"
     bl_label = "Update Devkit Preset"
     bl_description = "Update active Preset from current Panel settings"
-    preset_menu = "AVASTAR_MT_devkit_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_devkit_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","devkits")
 
     def invoke(self, context, event):
-        self.name = bpy.types.AVASTAR_MT_devkit_presets_menu.bl_label
+        self.name = bpy.types.TAMAGOYAKI_MT_devkit_presets_menu.bl_label
         print("Updating Preset", self.name)
         return self.execute(context)
 
@@ -3540,7 +3540,7 @@ class TamagoyakiRemovePresetDevkit(AddPresetBase, Operator):
     bl_idname = "tamagoyaki.devkit_presets_remove"
     bl_label = "Remove Devkit Preset"
     bl_description = "Remove last selected Preset from the list"
-    preset_menu = "AVASTAR_MT_devkit_presets_menu"
+    preset_menu = "TAMAGOYAKI_MT_devkit_presets_menu"
     preset_subdir = os.path.join("tamagoyaki","devkits")
 
 #######################################################################
@@ -3640,14 +3640,14 @@ def move_rigged(context, from_rig, to_rig):
 classes = (
     ImportColladaDevkit,
     ButtonCopyTamagoyaki,
-    AVASTAR_MT_transfer_presets_menu,
+    TAMAGOYAKI_MT_transfer_presets_menu,
     TamagoyakiAddPresetTransfer,
     TamagoyakiUpdatePresetTransfer,
     TamagoyakiRemovePresetTransfer,
-    AVASTAR_MT_devkit_presets_menu,
-    AVASTAR_MT_devkit_preset_exec_menu,
-    WM_OT_AVASTAR_ExecuteDevkitPreset,
-    WM_OT_AVASTAR_RemoveDevkitPreset,
+    TAMAGOYAKI_MT_devkit_presets_menu,
+    TAMAGOYAKI_MT_devkit_preset_exec_menu,
+    WM_OT_TAMAGOYAKI_ExecuteDevkitPreset,
+    WM_OT_TAMAGOYAKI_RemoveDevkitPreset,
     WM_MT_button_context,
     LoadDevkitPreset,
     TamagoyakiAddPresetDevkit,

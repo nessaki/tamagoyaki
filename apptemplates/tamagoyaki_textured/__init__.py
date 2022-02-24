@@ -8,7 +8,7 @@ bl_info = {
     "location": "View3D > Toolshelf, Properties editor",
     "description": "Tamagoyaki 2 Template",
     "warning": "",
-    "wiki_url":  "https://avalab.org/tamagoyaki/293/",
+    "wiki_url":  "https://BENTOBOX.org/tamagoyaki/293/",
     "category": "Object",
 }
 

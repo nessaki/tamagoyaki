@@ -860,7 +860,7 @@ M014_msg_empty_selection = "M014 : No objects selected of type '%s' (Nothing to 
 ### Code pieces
 
 pose_reset_script_lsl = '''/* ====================================================================
- Copyright 2021 Avalab
+ Copyright 2021 BENTOBOX
 
  This file is part of Tamagoyaki and may be used in combination with any
  rigged Mesh that was created by Tamagoyaki.

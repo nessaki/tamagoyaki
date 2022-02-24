@@ -32,7 +32,7 @@
 bl_info = {
     "name": "Tamagoyaki",
     "author": "Nessaki",
-    "version": (2, 93, 10),
+    "version": (3, 00, 01),
     "blender": (2, 81, 0),
     "api": 36147,
     "location": "Add Menu, 3D View Properties, Property sections and Tools",
@@ -407,7 +407,7 @@ class Tamagoyaki(AddonPreferences):
     update_status  : EnumProperty(
         items=(
             ('BROKEN', 'Broken', 'We could not setup the Remote caller on your system.\nPlease visit the BENTOBOXwebsite and\ncheck manually for new updates.'),
-            ('UNKNOWN', '', 'You need to Login at Avalab\nor at least Check for Updates to see your update status'),
+            ('UNKNOWN', '', 'You need to Login at BENTOBOX\nor at least Check for Updates to see your update status'),
             ('UPTODATE', 'No new Update available', 'You have already installed the newest product version'),
             ('ONLINE', 'Up to date', 'You have already installed the newest product version'),
             ('CANUPDATE', 'Can Update', 'A newer product version is available (Please login to get the download)'),
@@ -1265,7 +1265,7 @@ class CreateReport(bpy.types.Operator):
         )
         page = urllib.parse.quote_plus('page:%s'%page)
 
-        url = ("https://www.avalab.org/wp-login.php?log=%s&pwd=%s&%s" % (user, pwd, page)).replace("page%3A","page=")
+        url = ("https://www.BENTOBOX.org/wp-login.php?log=%s&pwd=%s&%s" % (user, pwd, page)).replace("page%3A","page=")
         new = 2
 
         print("Open page [%s]" % url )
@@ -1283,7 +1283,7 @@ class CheckForUpdates(bpy.types.Operator):
             import xml
             import xmlrpc.client
         except:
-            print("xmlrpc: i can not configure the remote call to Avalab.")
+            print("xmlrpc: i can not configure the remote call to BENTOBOX.")
             print("Sorry, we can not provide this feature on your computer")
             addonProps.update_status = 'BROKEN'
             return {'CANCELLED'}
